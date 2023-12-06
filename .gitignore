@@ -117,8 +117,4 @@ ENV/
 # data files
 # ignore entire folder with all its contents
 Data/
-Data/data_prep/
-Data/model_dev/models/
-Data/model_dev/best_config/
-
 Figures/
