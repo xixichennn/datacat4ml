@@ -8,6 +8,19 @@ DataCat4ML
 
 A tool using language model to properly categorize activity data for training more reliable machine learning models for virtual screening in drug discovery.
 
+
+### Installation
+It is required to install pytorch. 
+
+```bash
+conda env create --file environment-gpu.yml
+conda activate datacat4ml
+```
+
+To install datacat4ml and its dependencies (excluding pytorch), run
+```bash
+pip install -e .
+```
 ### Copyright
 
 Copyright (c) 2023, Yu Chen

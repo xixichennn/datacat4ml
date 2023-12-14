@@ -1,0 +1,14 @@
+name: datacat4ml
+channels:
+  - conda-forge
+# add the reuqired python version below
+dependencies:
+  - python==3.10.13
+  - pytorch==1.11.0
+  - pytorch-gpu==1.11.0
+  - numpy==1.26.2
+  - chembl_webresource_client==0.10.8
+  - rdkit==2023.09.3
+  - scikit-learn==1.3.2
+  - transformers===4.36.0
+  - sentence-transformers==2.2.2
