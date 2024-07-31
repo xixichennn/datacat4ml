@@ -119,6 +119,9 @@ test.ipynb
 # Files in Data folder
 # ignore entire folder with all its contents
 Data/
+# ignore chembl database
+chembl_34.db
+INSTALL_sqlite
 
 # Files in Figures folder
 Figures/
