@@ -7,10 +7,6 @@ from pathlib import Path
 import sys
 from enum import Enum
 
-# inner modules
-#from OpioML.Scripts.utils import mkdirs
-#from OpioML.Scripts.model_dev.ml import RFC, RFR, SVRR, SVCC, KNNR, KNNC, GBC, GBR
-
 #====================== path ======================#
 def get_project_root() -> Path:
     return Path(__file__).parent.parent
@@ -19,10 +15,14 @@ def get_project_root() -> Path:
 ROOT_PATH = get_project_root()
 
 # subdirectories
-SCRIPT_DIR = os.path.join(ROOT_PATH, "datacat4ml")
+DATACAT4ML_DIR = os.path.join(ROOT_PATH, "datacat4ml")
+
+# scripts directories
+SCRIPTS_DIR = os.path.join(DATACAT4ML_DIR, "Scripts")
+
 
 # data directories
-DATA_DIR = os.path.join(ROOT_PATH, "Data")
+DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
 FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
 CATEGORIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
 FEATURIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
@@ -90,7 +90,7 @@ RESULTS_ASSAYWISE_ALPHA_MED_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha80.5
 RESULTS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha321.9')
 
 # figures directories
-FIG_DIR= os.path.join(ROOT_PATH, "Figures")
+FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
 CURATE_FIG_DIR = os.path.join(FIG_DIR, "curate")
 SPLIT_FIG_DIR = os.path.join(FIG_DIR, "split")
 
