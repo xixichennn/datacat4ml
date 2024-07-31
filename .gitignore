@@ -118,7 +118,7 @@ ENV/
 test.ipynb
 # Files in Data folder
 # ignore entire folder with all its contents
-Data/chembl_34_sqlite/
+Data/
 
 # Files in Figures folder
 Figures/
