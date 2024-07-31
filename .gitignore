@@ -114,8 +114,12 @@ ENV/
 # In-tree generated files
 */_version.py
 
-# data files
+# Files in Main folder
+test.ipynb
+# Files in Data folder
 # ignore entire folder with all its contents
-Data/chembl_34_sqlite
+Data/chembl_34_sqlite/
+
+# Files in Figures folder
 Figures/
 
