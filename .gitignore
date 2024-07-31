@@ -116,5 +116,6 @@ ENV/
 
 # data files
 # ignore entire folder with all its contents
-Data/
+Data/chembl_34_sqlite
 Figures/
+
