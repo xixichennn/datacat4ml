@@ -17,20 +17,28 @@ ROOT_PATH = get_project_root()
 # subdirectories
 DATACAT4ML_DIR = os.path.join(ROOT_PATH, "datacat4ml")
 
-# scripts directories
+# Scripts directories
 SCRIPTS_DIR = os.path.join(DATACAT4ML_DIR, "Scripts")
 
 
-# data directories
+# Data directories
 DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
-FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
+FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "1_data_fetch")
+FEATURIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "2_data_featurize")
+
 CATEGORIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
-FEATURIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 ASSAY_DESC_DIR = os.path.join(CATEGORIZE_DATA_DIR, "assay_desc")
 DATASETS_DIR = os.path.join(CATEGORIZE_DATA_DIR, "datasets")
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
 AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml')
+
+# Figures directories
+FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
+FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "1_data_fetch")
+FEATURIZE_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "2_data_featurize")
+
+RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
 
 # best config
 # inner testset
@@ -88,13 +96,6 @@ RESULTS_ASSAYWISE_DIR = os.path.join(DATA_DIR, 'model_dev', 'results', 'assaywis
 RESULTS_ASSAYWISE_MCC_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'mcc')
 RESULTS_ASSAYWISE_ALPHA_MED_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha80.5')
 RESULTS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha321.9')
-
-# figures directories
-FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
-CURATE_FIG_DIR = os.path.join(FIG_DIR, "curate")
-SPLIT_FIG_DIR = os.path.join(FIG_DIR, "split")
-
-RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
 
 
 
