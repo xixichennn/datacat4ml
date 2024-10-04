@@ -118,17 +118,17 @@ ENV/
 test.ipynb
 # Files in Data folder
 # ignore entire folder with all its contents
-Data/
+datacat4ml/Data
 # ignore chembl database
 chembl_34.db
 INSTALL_sqlite
 
 # Files in Figures folder
-Figures/
+datacat4ml/Figures
 
 # Files in Scripts folder
-Scripts/model_dev/enztrans_test
-Scripts/model_dev/runs
-Scripts/model_dev/outputs
-Scripts/model_dev/cache_dir
+datacat4ml/Scripts/model_dev/enztrans_test
+datacat4ml/Scripts/model_dev/runs
+datacat4ml/Scripts/model_dev/outputs
+datacat4ml/Scripts/model_dev/cache_dir
 
