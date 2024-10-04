@@ -45,13 +45,13 @@ def get_activity(pchembl_value:float):
     else:
         return 'inactive'
     
-def process_df(inputfile:str, outputfile:str):
+def process_df(inputfolder:str, inputfile:str, outputfolder, outputfile:str):
     '''
     Process the dataframe and save the processed dataframe to a new csv file.
     '''
     
     # load the data
-    df = pd.read_csv(os.path.join(FETCH_DATA_DIR, inputfile))
+    df = pd.read_csv(os.path.join(inputfolder, inputfile))
     print(f'The shape of the {inputfile[:-8]}df is {df.shape}')
 
     # calculate the ECFP4 fingerprint
@@ -62,16 +62,24 @@ def process_df(inputfile:str, outputfile:str):
     df['activity'] = df['pchembl_value'].apply(get_activity)
 
     # save the processed dataframe to a pickle file (not csv file, otherwise the fingerprint will be saved as string)
-    df.to_pickle(os.path.join(FEATURIZE_DATA_DIR, outputfile))
+    df.to_pickle(os.path.join(outputfolder, outputfile))
 
 #================================ Main =================================
 def main():
-    process_df('ic50_mincur_data.csv', 'ic50_mincur_fp.pkl')
-    process_df('ic50_maxcur_data.csv', 'ic50_maxcur_fp.pkl')
-    process_df('ki_mincur_data.csv', 'ki_mincur_fp.pkl')
-    process_df('ki_maxcur_data.csv', 'ki_maxcur_fp.pkl')
-    process_df('ec50_mincur_data.csv', 'ec50_mincur_fp.pkl')
-    process_df('ec50_maxcur_data.csv', 'ec50_maxcur_fp.pkl')
+    process_df(FETCH_DATA_DIR, 'ic50_mincur_8_data.csv', FEATURIZE_DATA_DIR, 'ic50_mincur_8_fp.pkl')
+    process_df(FETCH_DATA_DIR, 'ic50_maxcur_8_data.csv', FEATURIZE_DATA_DIR, 'ic50_maxcur_8_fp.pkl')
+    process_df(FETCH_DATA_DIR, 'ki_mincur_8_data.csv', FEATURIZE_DATA_DIR, 'ki_mincur_8_fp.pkl')
+    process_df(FETCH_DATA_DIR, 'ki_maxcur_8_data.csv', FEATURIZE_DATA_DIR, 'ki_maxcur_8_fp.pkl')
+    process_df(FETCH_DATA_DIR, 'ec50_mincur_8_data.csv', FEATURIZE_DATA_DIR, 'ec50_mincur_8_fp.pkl')
+    process_df(FETCH_DATA_DIR, 'ec50_maxcur_8_data.csv', FEATURIZE_DATA_DIR, 'ec50_maxcur_8_fp.pkl')
+
+    folders = ['ic50_mincur', 'ki_mincur', 'ec50_mincur']
+    for folder in folders:
+        print(f'Processing {folder}...')
+        for file in os.listdir(os.path.join(FETCH_DATA_DIR, folder)):
+            if file[-4:] == '.csv':
+                print(f'Processing {file}...')
+                process_df(os.path.join(FETCH_DATA_DIR, folder), file, os.path.join(FEATURIZE_DATA_DIR, folder), file[:-4]+'_fp.pkl')
 
 
 if __name__ == "__main__":
