@@ -30,6 +30,7 @@ CATEGORIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
 ASSAY_DESC_DIR = os.path.join(CATEGORIZE_DATA_DIR, "assay_desc")
 DATASETS_DIR = os.path.join(CATEGORIZE_DATA_DIR, "datasets")
 
+
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
 AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml')
 
