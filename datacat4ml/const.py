@@ -23,8 +23,8 @@ SCRIPTS_DIR = os.path.join(DATACAT4ML_DIR, "Scripts")
 
 # Data directories
 DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
-FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "1_data_fetch")
-FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "2_data_featurize")
+FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
+FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
 ASSAY_DESC_DIR = os.path.join(CAT_DATA_DIR, "assay_desc")
@@ -37,8 +37,8 @@ AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml
 
 # Figures directories
 FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
-FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "1_data_fetch")
-FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "2_data_featurize")
+FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_fetch")
+FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_featurize")
 CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
 
 RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
@@ -106,6 +106,7 @@ RESULTS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha321
 # data categorize
 
 OR_chembl_ids = ['CHEMBL233', 'CHEMBL237', 'CHEMBL236', 'CHEMBL2014']
+OR_uniprot_ids = ['P35372', 'P41145', 'P41143', 'P41146']
 OR_names = ['mor', 'kor', 'dor', 'nor']
 
 Effects=['bind', 'agon', 'antag', 'None'] # bind: binding affinity, agon: agonism, antag: antagonism
