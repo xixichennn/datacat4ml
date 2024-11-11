@@ -2,7 +2,8 @@ import os
 import pandas as pd
 
 from datacat4ml.utils import get_df_name, mkdirs
-from datacat4ml.const import FETCH_DATA_DIR, Targets, ASSAY_CHEMBL_IDS, ASSAY_DESC_DIR, CAT_DATASETS_DIR
+from datacat4ml.const import FETCH_DATA_DIR, ASSAY_CHEMBL_IDS, ASSAY_DESC_DIR, CAT_DATASETS_DIR
+from datacat4ml.const import OR_chembl_ids, OR_names
 
 ############################# Read data #############################
 ki_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'ki_maxcur_8_data.csv'))
@@ -10,26 +11,24 @@ ic50_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'ic50_maxcur_8_data.csv'
 ec50_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'ec50_maxcur_8_data.csv'))
 
 # Filter data for each target
-targets = ['CHEMBL233', 'CHEMBL237', 'CHEMBL236', 'CHEMBL2014']
-target_names = ['mor', 'kor', 'dor', 'nor']
-target_dfs = {}
+OR_dfs = {}
 
-for target, name in zip(targets, target_names):
-    ki_df = ki_gpcr_df[ki_gpcr_df['target_chembl_id'] == target]
-    ic50_df = ic50_gpcr_df[ic50_gpcr_df['target_chembl_id'] == target]
-    ec50_df = ec50_gpcr_df[ec50_gpcr_df['target_chembl_id'] == target]
+for target_chembl_id, name in zip(OR_chembl_ids, OR_names):
+    ki_df = ki_gpcr_df[ki_gpcr_df['target_chembl_id'] == target_chembl_id]
+    ic50_df = ic50_gpcr_df[ic50_gpcr_df['target_chembl_id'] == target_chembl_id]
+    ec50_df = ec50_gpcr_df[ec50_gpcr_df['target_chembl_id'] == target_chembl_id]
     
     act_df = pd.concat([ki_df, ic50_df, ec50_df], ignore_index=True)
-    target_dfs[name] = act_df
+    OR_dfs[name] = act_df
     
     print(f'The shape of {name}_df is \n ki: {ki_df.shape}, ic50: {ic50_df.shape}, ec50: {ec50_df.shape}')
 
 # Global variables for target dataframes
-target_dfs = {name: pd.concat([ki_gpcr_df[ki_gpcr_df['target_chembl_id'] == target],
+OR_dfs = {name: pd.concat([ki_gpcr_df[ki_gpcr_df['target_chembl_id'] == target],
                                ic50_gpcr_df[ic50_gpcr_df['target_chembl_id'] == target],
                                ec50_gpcr_df[ec50_gpcr_df['target_chembl_id'] == target]], 
                               ignore_index=True) 
-              for target, name in zip(targets, target_names)}
+              for target, name in zip(OR_chembl_ids, OR_names)}
 
 ###################### Functions ######################
 def print_df_info(df: pd.DataFrame) -> None:
@@ -44,6 +43,27 @@ def print_df_info(df: pd.DataFrame) -> None:
 class DataCategoizer:
     """ 
     a class to analyze the data for each target, effect, assay, and standard_type
+
+    Attributes
+    ----------
+    target: string
+        target name, e.g. mor, kor, dor, nor
+    effect: string
+        tested pharmacological effect, e.g. binding affinity, agonism, antagonism, etc.
+    assay: string
+        assay type, e.g. RBA etc.
+    std_type: string
+        'standard_type', e.g. Ki, IC50, etc.
+    pattern: string
+        pattern to match
+    pattern_ex: string
+        pattern to exclude
+    
+    Methods
+    -------
+    generate_type_df()
+        obtain the dataframe for each 'standard_type', e.g. Ki, IC50, etc.
+    
     """
     def __init__(self, target='mor', effect='bind', assay='RBA', std_type='Ki', 
                  pattern:str="", pattern_ex: str= ""):
@@ -59,7 +79,7 @@ class DataCategoizer:
         obtain the dataframe for each 'standard_type', e.g. Ki, IC50, etc.
         """
 
-        act_df = target_dfs[self.target]
+        act_df = OR_dfs[self.target]
         type_df = act_df[act_df['standard_type'] == self.std_type]
 
         return type_df
@@ -214,7 +234,7 @@ def data_categorize(effect='bind', assay='RBA', std_types=['Ki', 'IC50'],
       final_out_dfs = {}
       len_dfs = {}
 
-      for target in Targets:
+      for target in OR_names:
             print(f"Target: {target}\n")
             target_dir = os.path.join(CAT_DATASETS_DIR, target)
             mkdirs(target_dir)
