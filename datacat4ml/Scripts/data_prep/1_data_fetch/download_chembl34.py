@@ -2,9 +2,7 @@ import os
 import requests
 import tarfile
 
-# inner module import
 import sys
-sys.path.append("/storage/homefs/yc24j783/datacat4ml/datacat4ml")
 from const import DATA_DIR
 
 def download_chembl(download_url, download_dir, download_file):

@@ -22,7 +22,6 @@ import requests
 
 # inner module import
 import sys
-sys.path.append("/storage/homefs/yc24j783/datacat4ml/datacat4ml")
 from const import DATA_DIR
 
 
