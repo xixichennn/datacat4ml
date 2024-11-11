@@ -28,7 +28,7 @@ FEATURIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "2_data_featurize")
 
 CATEGORIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
 ASSAY_DESC_DIR = os.path.join(CATEGORIZE_DATA_DIR, "assay_desc")
-DATASETS_DIR = os.path.join(CATEGORIZE_DATA_DIR, "datasets")
+CAT_DATASETS_DIR = os.path.join(CATEGORIZE_DATA_DIR, "cat_datasets")
 
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
@@ -37,7 +37,8 @@ AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml
 # Figures directories
 FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
 FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "1_data_fetch")
-FEATURIZE_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "2_data_featurize")
+FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "2_data_featurize")
+CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
 
 RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
 
@@ -113,15 +114,13 @@ Std_types=['Ki', 'IC50', 'EC50', 'Ke', 'Kb']
 
 
 Tasks = ['cls','reg']
-File_paths = [DATASETS_DIR, FETCH_DATA_DIR]
+File_paths = [CAT_DATASETS_DIR, FETCH_DATA_DIR]
 Confidence_scores = [8, 9]
 Thr_classes=[6, 7]
 Use_clusterings = [True, False]
 Use_smotes = [True, False]
 
-
-
-CHEMBL_IDS = {
+ASSAY_CHEMBL_IDS = {
       'mor': {
             'bind': {
                 'RBA': {
