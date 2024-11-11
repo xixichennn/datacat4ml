@@ -26,9 +26,10 @@ DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
 FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "1_data_fetch")
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "2_data_featurize")
 
-CATEGORIZE_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
-ASSAY_DESC_DIR = os.path.join(CATEGORIZE_DATA_DIR, "assay_desc")
-CAT_DATASETS_DIR = os.path.join(CATEGORIZE_DATA_DIR, "cat_datasets")
+CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
+ASSAY_DESC_DIR = os.path.join(CAT_DATA_DIR, "assay_desc")
+CAT_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "cat_datasets")
+HET_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "het_datasets")
 
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
