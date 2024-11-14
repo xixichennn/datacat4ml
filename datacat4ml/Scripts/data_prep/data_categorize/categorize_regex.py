@@ -6,9 +6,9 @@ from datacat4ml.const import FETCH_DATA_DIR, ASSAY_CHEMBL_IDS, ASSAY_DESC_DIR, C
 from datacat4ml.const import OR_chembl_ids, OR_names
 
 ############################# Read data #############################
-ki_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'ki_maxcur_8_data.csv'))
-ic50_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'ic50_maxcur_8_data.csv'))
-ec50_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'ec50_maxcur_8_data.csv'))
+ki_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'Ki_gpcr_maxcur_8_data.csv'))
+ic50_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'IC50_gpcr_maxcur_8_data.csv'))
+ec50_gpcr_df = pd.read_csv(os.path.join(FETCH_DATA_DIR, 'EC50_gpcr_maxcur_8_data.csv'))
 
 # Filter data for each target
 OR_dfs = {}
@@ -23,12 +23,6 @@ for target_chembl_id, name in zip(OR_chembl_ids, OR_names):
     
     print(f'The shape of {name}_df is \n ki: {ki_df.shape}, ic50: {ic50_df.shape}, ec50: {ec50_df.shape}')
 
-# Global variables for target dataframes
-OR_dfs = {name: pd.concat([ki_gpcr_df[ki_gpcr_df['target_chembl_id'] == target],
-                               ic50_gpcr_df[ic50_gpcr_df['target_chembl_id'] == target],
-                               ec50_gpcr_df[ec50_gpcr_df['target_chembl_id'] == target]], 
-                              ignore_index=True) 
-              for target, name in zip(OR_chembl_ids, OR_names)}
 
 ###################### Functions ######################
 def print_df_info(df: pd.DataFrame) -> None:

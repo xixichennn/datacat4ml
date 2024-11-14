@@ -27,9 +27,15 @@ FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
+HET_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "het_datasets")
+HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcr_datasets")
 ASSAY_DESC_DIR = os.path.join(CAT_DATA_DIR, "assay_desc")
 CAT_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "cat_datasets")
-HET_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "het_datasets")
+
+CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
+CURA_GPCR_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "gpcr_datasets")
+CURA_HET_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "het_datasets")
+CURA_CAT_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "cat_datasets")
 
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
@@ -114,10 +120,10 @@ Assays = ['RBA',
           'G_GTP', 'G_cAMP', 'G_Ca', # G: G protein activation
           'B_arrest',
           'None'] # B: beta arrestin recruitment
-Std_types=['Ki', 'IC50', 'EC50', 'Ke', 'Kb']
+Std_types=['Ki', 'IC50', 'EC50']
 
 
-Tasks = ['cls','reg']
+Tasks = ['cls', 'reg']
 File_paths = [CAT_DATASETS_DIR, FETCH_DATA_DIR]
 Confidence_scores = [8, 9]
 Thr_classes=[6, 7]
