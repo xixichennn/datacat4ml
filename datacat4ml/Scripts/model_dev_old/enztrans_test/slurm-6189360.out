@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/storage/homefs/yc24j783/OpenNMT-py/translate.py", line 8, in <module>
+    main()
+  File "/storage/homefs/yc24j783/OpenNMT-py/onmt/bin/translate.py", line 48, in main
+    translate(opt)
+  File "/storage/homefs/yc24j783/OpenNMT-py/onmt/bin/translate.py", line 25, in translate
+    translator.translate(
+  File "/storage/homefs/yc24j783/OpenNMT-py/onmt/translate/translator.py", line 373, in translate
+    translations = xlation_builder.from_batch(batch_data)
+  File "/storage/homefs/yc24j783/OpenNMT-py/onmt/translate/translation.py", line 102, in from_batch
+    pred_sents = [self._build_target_tokens(
+  File "/storage/homefs/yc24j783/OpenNMT-py/onmt/translate/translation.py", line 105, in <listcomp>
+    preds[b][n],
+IndexError: list index out of range
