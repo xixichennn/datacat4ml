@@ -136,3 +136,6 @@ datacat4ml/Scripts/model_dev/cache_dir
 # clamp models
 datacat4ml/Scripts/benchmark/data 
 datacat4ml/Scripts/benchmark/twinbooster
+
+# model_dev_old
+datacat4ml/Scripts/model_dev_old/enztrans_test/data
