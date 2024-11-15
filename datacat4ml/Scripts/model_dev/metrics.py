@@ -1,5 +1,7 @@
-# The functions containing the activity cliffs are adapted from MoleculeACE
-# https://github.com/molML/MoleculeACE.git
+"""
+The functions containing the activity cliffs are adapted from MoleculeACE
+ https://github.com/molML/MoleculeACE.git
+"""
 
 from typing import List, Union
 import sys
@@ -13,7 +15,7 @@ from rdkit.ML.Scoring.Scoring import CalcBEDROC
 
 
 # inner modules
-from OpioML.Scripts.data_prep.data_split.cliff import ActivityCliffs
+from datacat4ml.Scripts.data_prep.data_split.split_utils.cliff import ActivityCliffs
 
 #=================== For classification ===================
 # calculate the accuracy
