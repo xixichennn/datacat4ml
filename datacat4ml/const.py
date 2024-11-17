@@ -46,6 +46,11 @@ SPLIT_HET_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "het_datasets")
 SPLIT_GPCR_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "gpcr_datasets")
 SPLIT_CAT_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "cat_datasets")
 
+# benchmark
+BM_DIR = os.path.join(DATA_DIR, "benchmark")
+BM_CAT_DIR = os.path.join(BM_DIR, "cat_datasets")
+
+
 
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
