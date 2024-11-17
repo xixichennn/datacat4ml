@@ -23,19 +23,29 @@ SCRIPTS_DIR = os.path.join(DATACAT4ML_DIR, "Scripts")
 
 # Data directories
 DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
+# "data_fetch"
 FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 
+# data_categorize
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
 HET_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "het_datasets")
 HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcr_datasets")
 ASSAY_DESC_DIR = os.path.join(CAT_DATA_DIR, "assay_desc")
 CAT_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "cat_datasets")
 
+# data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
 CURA_GPCR_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "gpcr_datasets")
 CURA_HET_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "het_datasets")
 CURA_CAT_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "cat_datasets")
+
+# data_split
+SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
+SPLIT_HET_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "het_datasets")
+SPLIT_GPCR_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "gpcr_datasets")
+SPLIT_CAT_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "cat_datasets")
+
 
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')

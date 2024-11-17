@@ -107,23 +107,25 @@ def molecule_similarity(smiles: List[str], similarity: float = 0.9):
     return (m_tani + m_scaff + m_leve).astype(int)
 
 #===================2. Molecular activity cliff  ====================
+#def find_fc(a: float, b: float):
+#    """Get the fold change of to bioactivities (deconvert from log10 if needed)"""
+#
+#    return max([a, b]) / min([a, b])
+
 def find_fc(a: float, b: float):
-    """Get the fold change of to bioactivities (deconvert from log10 if needed)"""
+    """Get the fold change of to bioactivities, where a and b are the pStandard_value of two compounds"""
 
-    return max([a, b]) / min([a, b])
+    return max([a, b]) - min([a, b])
 
-def get_fc(bioactivity: List[float], in_log10: bool = True):
+def get_fc(pStandard_value: List[float]):
     """ Calculates the pairwise fold difference in compound activity given a list of activities"""
 
-    # deconvert from log10
-    bioactivity = 10 ** abs(np.array(bioactivity)) if in_log10 else bioactivity
-
-    act_len = len(bioactivity)
+    act_len = len(pStandard_value)
     matrix = np.zeros((act_len, act_len))
     # calcultate the upper triangle of the matrix
     for i in tqdm(range(act_len)):
         for j in range(i, act_len):
-            matrix[i,j] = find_fc(bioactivity[i], bioactivity[j])
+            matrix[i,j] = find_fc(pStandard_value[i], pStandard_value[j])
     # fill in the lower triangle without having to loop (saves ~50% of time)
     matrix = matrix + matrix.T - np.diag(np.diag(matrix))
     # fill the diagonal whth 0'set
@@ -133,25 +135,24 @@ def get_fc(bioactivity: List[float], in_log10: bool = True):
 
 class ActivityCliffs:
     """ Activity cliff class that computes cliff compounds and returns a list of SMILES strings that are activity cliffs """
-    def __init__(self, smiles: List[str], bioactivity: Union[List[float], np.array]):
+    def __init__(self, smiles: List[str], pStandard_value: Union[List[float], np.array]):
         self.smiles = smiles
-        self.bioactivity = bioactivity if isinstance(bioactivity, list) else list(bioactivity)
+        self.pStandard_value = pStandard_value if isinstance(pStandard_value, list) else list(pStandard_value)
         self.cliffs = None
 
-    def find_cliffs(self, similarity: float = 0.9, potency_fold: float = 10, in_log10: bool = True):
+    def find_cliffs(self, similarity: float = 0.9, potency_fold: float = 1):
         """ Compute activity cliffs
 
                 :param similarity: (float) threshold value to determine structural similarity
                 :param potency_fold: (float) threshold value to determine difference in bioactivity
-                :param in_log10: (bool) is you bioactivty in log10 nM?
         """
 
         sim = molecule_similarity(self.smiles, similarity)
 
-        # get a matrix indicating which pairs of compounds have a difference in bioactivity greater than the specified fold change
-        fc = (get_fc(self.bioactivity, in_log10=in_log10) > potency_fold).astype(int)
+        # get a matrix indicating which pairs of compounds have a difference in pStandard_value greater than the specified fold change
+        fc = (get_fc(self.pStandard_value) > potency_fold).astype(int)
 
-        # computes the activity cliffy by taking the logical AND of the structurral similarity and bioactivity difference matrices
+        # computes the activity cliffy by taking the logical AND of the structurral similarity and pStandard_value difference matrices
         self.cliffs = np.logical_and(sim == 1, fc == 1).astype(int)
 
         return self.cliffs
