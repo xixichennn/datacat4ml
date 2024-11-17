@@ -50,9 +50,6 @@ SPLIT_CAT_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "cat_datasets")
 BM_DIR = os.path.join(DATA_DIR, "benchmark")
 BM_CAT_DIR = os.path.join(BM_DIR, "cat_datasets")
 
-
-
-
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
 AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml')
 
