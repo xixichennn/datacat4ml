@@ -61,9 +61,9 @@ def write_results(result_file, data,
             f.write('file_path,task,use_clustering,use_smote,'
                     'target,effect,assay,std_type,descriptor,algo,'
                     'n_compounds,n_cliff_compounds,n_compounds_train,n_cliff_compounds_train,n_compounds_test,n_cliff_compounds_test,'
-                    'threshold,n_actives, n_inactives,active_ratio, n_active_train, n_inactive_train, active_ratio_train, n_active_test, n_inactive_test, active_ratio_test,' 
-                    'accuracy, precision, recall, mcc, bedroc_dec5, bedroc_2, bedroc_8,'
-                    'rmse, cliff_rmse, r2, cliff_r2\n')
+                    'threshold,n_actives,n_inactives,active_ratio,n_active_train,n_inactive_train,active_ratio_train,n_active_test,n_inactive_test,active_ratio_test,' 
+                    'accuracy,precision,recall,mcc,bedroc_dec5,bedroc_2,bedroc_8,'
+                    'rmse,cliff_rmse,r2,cliff_r2\n')
             
     with open(result_path, 'a') as f:
         f.write(f'{file_path_name},{task},{use_clustering},{use_smote},'
