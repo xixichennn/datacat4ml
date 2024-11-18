@@ -28,4 +28,4 @@ descriptor="${descriptors[($SLURM_ARRAY_TASK_ID / (${#filepaths[@]} * ${#tasks[@
 python3 bmk_cat.py --result_file "$result_file" --file_path "$filepath" --task "$task" --use_clustering "$use_clustering" --use_smote "$use_smote" --descriptor "$descriptor"
 
 # run the blow command in terminal to submit the job
-# sbatch --array=0-8 bmk_cat_slurm.sh # num_jobs = 1 * 2 * 2 * 2 * 1 = 8
+# sbatch --array=0-7 bmk_cat_slurm.sh # num_jobs = 1 * 2 * 2 * 2 * 1 = 8

@@ -27,5 +27,5 @@ descriptor="${descriptors[($SLURM_ARRAY_TASK_ID / (${#filepaths[@]} * ${#tasks[@
 python3 tune_cat.py --file_path "$filepath" --task "$task" --use_clustering "$use_clustering" --use_smote "$use_smote" --descriptor "$descriptor"
 
 # run the blow command in terminal to submit the job
-# sbatch --array=0-8 tune_cat_slurm.sh # Replace <num_jobs> with the total number of combinations you want to process. 
+# sbatch --array=0-7 tune_cat_slurm.sh # Replace <num_jobs> with (the total number of combinations you want to process minus 1). 
 # Here <num_jobs> = 1 * 2 * 2 * 2 * 1 = 8 
