@@ -77,7 +77,7 @@ def cross_validate(model, x, y, n_folds: int = 5, early_stopping: int = 10, task
     splits = [{'train_idx': i, 'val_idx': j} for i, j in ss.split(labels, labels)]
 
     rmse_scores = []
-    bedroc_scores = []
+    accuracy_scores = []
     epochs = []
     for split in tqdm(splits):
 
@@ -113,7 +113,7 @@ def cross_validate(model, x, y, n_folds: int = 5, early_stopping: int = 10, task
             if task == 'reg':
                 rmse_scores.append(calc_rmse(pred, y_val_fold))
             elif task == 'cls':
-                bedroc_scores.append(calc_bedroc(y_pred_proba=pred_proba, y_true=y_val_fold, alpha=20.0))
+                accuracy_scores.append(calc_accuracy(pred, y_val_fold))
 
             if f.epoch is not None:
                 if 'epochs' in hyperparameters:
@@ -136,7 +136,7 @@ def cross_validate(model, x, y, n_folds: int = 5, early_stopping: int = 10, task
     if task == 'reg':
         return sum(rmse_scores)/len(rmse_scores), epochs
     elif task == 'cls':
-        return sum(bedroc_scores)/len(bedroc_scores), epochs
+        return sum(accuracy_scores)/len(accuracy_scores), epochs
     
 #======================== main function ========================#
 class BayesianOptimization4reg:
@@ -246,14 +246,14 @@ class BayesianOptimization4cls:
         """ Init the class with a trainable model. The model class should contain a train(), test(), predict() function
         and be initialized with its hyperparameters """
         self.task = task
-        self.best_bedroc= -2 # Initial the best bedroc score to a very low value, thus the first bedroc score will always be better
+        self.best_accuracy= -2 # Initial the best accuracy score to a very low value, thus the first accuracy score will always be better
         self.history = []
         self.model = model
         self.results = None
 
     def best_param(self):
         """
-        returns the hyperparameters corresponding to the best bedroc score(the max is the the best)
+        returns the hyperparameters corresponding to the best accuracy score(the max is the the best)
         """
         if len(self.history) is not None:
             return self.history[[i[0] for i in self.history].index(max([i[0] for i in self.history]))][1]
@@ -285,30 +285,31 @@ class BayesianOptimization4cls:
                 print(f"Current hyperparameters: {hyperparameters}")
                 if n_folds > 0:
                     print(">>  Cross-validating with {} folds".format(n_folds))
-                    bedroc, epochs = cross_validate(self.model, x, y, n_folds=n_folds, early_stopping=early_stopping,task=self.task,
+                    accuracy, epochs = cross_validate(self.model, x, y, n_folds=n_folds, early_stopping=early_stopping,task=self.task,
                                                   **hyperparameters)
-                    print(f"Done {n_folds}-fold cross-validation. BEDROC: {bedroc}")
+                    print(f"Done {n_folds}-fold cross-validation. accuracy: {accuracy}")
                 else:
                     f = self.model(**hyperparameters)
                     f.train(x, y, x_val, y_val)
                     epochs = f.epoch
+                    pred = f.predict(x_val)
                     pred_proba = f.predict_proba(x_val)
-                    bedroc = calc_bedroc(y_pred_proba=pred_proba, y_true=y_val, alpha=20.0)
+                    accuracy = calc_accuracy(pred, y_val)
 
             except:  
                 print(">>  Failed")
-                # If this combination of hyperparameters fails, we use a dummy bedroc that is worse than the best
-                bedroc = self.best_bedroc - 1
+                # If this combination of hyperparameters fails, we use a dummy accuracy that is worse than the best
+                accuracy = self.best_accuracy - 1
 
-            if bedroc > self.best_bedroc:
-                self.best_bedroc = bedroc
+            if accuracy > self.best_accuracy:
+                self.best_accuracy = accuracy
 
             if epochs is not None:
                 hyperparameters['epochs'] = epochs
 
-            self.history.append((bedroc, hyperparameters))
+            self.history.append((accuracy, hyperparameters))
 
-            return bedroc
+            return accuracy
 
         # Perform Bayesian hyperparameter optimization with 5-fold cross-validation
         self.results = gp_minimize(func=objective,
@@ -320,23 +321,23 @@ class BayesianOptimization4cls:
 
     def plot_progress(self, filename: str):
         import matplotlib.pyplot as plt
-        bedroc_values = [i[0] for i in self.history] # bedroc value for each attempt
-        max_bedroc = sorted([i[0] for i in self.history]) # the maximal bedroc value among all attempts
+        accuracy_values = [i[0] for i in self.history] # accuracy value for each attempt
+        max_accuracy = sorted([i[0] for i in self.history]) # the maximal accuracy value among all attempts
         tries = list(range(len(self.history)))
 
         plt.figure()
-        plt.plot(tries, bedroc_values, label='history')
+        plt.plot(tries, accuracy_values, label='history')
         # plot the best y value but ignore the x value
-        plt.plot(tries, max_bedroc, label='best')
+        plt.plot(tries, max_accuracy, label='best')
         plt.xlabel("Optimization attempts")
-        plt.ylabel("BEDROC")
+        plt.ylabel("accuracy")
         plt.legend(loc="upper right")
         plt.savefig(f"{filename}")
 
     def history_to_csv(self, filename: str):
         results = []
         for i in self.history:
-            d = {'bedroc': i[0]}
+            d = {'accuracy': i[0]}
             d.update(i[1])
             results.append(d)
 

@@ -47,8 +47,8 @@ SPLIT_GPCR_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "gpcr_datasets")
 SPLIT_CAT_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "cat_datasets")
 
 # benchmark
-BM_DIR = os.path.join(DATA_DIR, "benchmark")
-BM_CAT_DIR = os.path.join(BM_DIR, "cat_datasets")
+BMK_DIR = os.path.join(DATA_DIR, "benchmark")
+BMK_CAT_DIR = os.path.join(BMK_DIR, "cat_datasets")
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
 AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml')
@@ -62,41 +62,30 @@ CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
 RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
 
 # best config
-# inner testset
-BEST_CONFIG_INNER_DIR = os.path.join(DATA_DIR, 'model_dev', 'best_config', 'inner_testset') # both cls and reg, and the cls is with low alpha
-BEST_CONFIG_INNER_MCC_DIR = os.path.join(BEST_CONFIG_INNER_DIR, 'mcc')
-BEST_CONFIG_INNER_ALPHA_MED_DIR = os.path.join(BEST_CONFIG_INNER_DIR, 'alpha80.5')
-BEST_CONFIG_INNER_ALPHA_HIGH_DIR = os.path.join(BEST_CONFIG_INNER_DIR, 'alpha321.9')
-## augmented data for categorized data
-BEST_CONFIG_INNER_AUG_DIR = os.path.join(BEST_CONFIG_INNER_DIR, 'augmented')
-BEST_CONFIG_INNER_AUG_MCC_DIR = os.path.join(BEST_CONFIG_INNER_AUG_DIR, 'mcc')
-BEST_CONFIG_INNER_AUG_ALPHA_MED_DIR = os.path.join(BEST_CONFIG_INNER_AUG_DIR, 'alpha80.5')
-BEST_CONFIG_INNER_AUG_ALPHA_HIGH_DIR = os.path.join(BEST_CONFIG_INNER_AUG_DIR, 'alpha321.9')
-
-# assaywise testset
-BEST_CONFIG_ASSAYWISE_DIR = os.path.join(DATA_DIR, 'model_dev', 'best_config', 'assaywise_testset') # both cls and reg, and the cls is with low alpha
-BEST_CONFIG_ASSAYWISE_MCC_DIR = os.path.join(BEST_CONFIG_ASSAYWISE_DIR, 'mcc')
-BEST_CONFIG_ASSAYWISE_ALPHA_MED_DIR = os.path.join(BEST_CONFIG_ASSAYWISE_DIR, 'alpha80.5')
-BEST_CONFIG_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(BEST_CONFIG_ASSAYWISE_DIR, 'alpha321.9')
-
+BEST_CONFIG_DIR = os.path.join(DATA_DIR, 'model_dev', 'best_config')
+BEST_CONFIG_CAT_DIR = os.path.join(BEST_CONFIG_DIR, 'cat_datasets')
+BEST_CONFIG_HET_DIR = os.path.join(BEST_CONFIG_DIR, 'het_datasets')
 
 # models
 # inner testset
-MODELS_INNER_DIR = os.path.join(DATA_DIR, 'model_dev', 'models', 'inner_testset')
-MODELS_INNER_MCC_DIR = os.path.join(MODELS_INNER_DIR, 'mcc')
-MODELS_INNER_ALPHA_MED_DIR = os.path.join(MODELS_INNER_DIR, 'alpha80.5')
-MODELS_INNER_ALPHA_HIGH_DIR = os.path.join(MODELS_INNER_DIR, 'alpha321.9')
-# augmented data for categorized data
-MODELS_INNER_AUG_DIR = os.path.join(MODELS_INNER_DIR, 'augmented')
-MODELS_INNER_AUG_MCC_DIR = os.path.join(MODELS_INNER_AUG_DIR, 'mcc')
-MODELS_INNER_AUG_ALPHA_MED_DIR = os.path.join(MODELS_INNER_AUG_DIR, 'alpha80.5')
-MODELS_INNER_AUG_ALPHA_HIGH_DIR = os.path.join(MODELS_INNER_AUG_DIR, 'alpha321.9')
-
-# assaywise testset
-MODELS_ASSAYWISE_DIR = os.path.join(DATA_DIR, 'model_dev', 'models', 'assaywise_testset')
-MODELS_ASSAYWISE_MCC_DIR = os.path.join(MODELS_ASSAYWISE_DIR, 'mcc')
-MODELS_ASSAYWISE_ALPHA_MED_DIR = os.path.join(MODELS_ASSAYWISE_DIR, 'alpha80.5')
-MODELS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(MODELS_ASSAYWISE_DIR, 'alpha321.9')
+MODELS_DIR = os.path.join(DATA_DIR, 'model_dev', 'models')
+MODELS_CAT_DIR = os.path.join(MODELS_DIR, 'cat_datasets')
+MODELS_HET_DIR = os.path.join(MODELS_DIR, 'het_datasets')
+#MODELS_INNER_DIR = os.path.join(DATA_DIR, 'model_dev', 'models', 'inner_testset')
+#MODELS_INNER_MCC_DIR = os.path.join(MODELS_INNER_DIR, 'mcc')
+#MODELS_INNER_ALPHA_MED_DIR = os.path.join(MODELS_INNER_DIR, 'alpha80.5')
+#MODELS_INNER_ALPHA_HIGH_DIR = os.path.join(MODELS_INNER_DIR, 'alpha321.9')
+## augmented data for categorized data
+#MODELS_INNER_AUG_DIR = os.path.join(MODELS_INNER_DIR, 'augmented')
+#MODELS_INNER_AUG_MCC_DIR = os.path.join(MODELS_INNER_AUG_DIR, 'mcc')
+#MODELS_INNER_AUG_ALPHA_MED_DIR = os.path.join(MODELS_INNER_AUG_DIR, 'alpha80.5')
+#MODELS_INNER_AUG_ALPHA_HIGH_DIR = os.path.join(MODELS_INNER_AUG_DIR, 'alpha321.9')
+#
+## assaywise testset
+#MODELS_ASSAYWISE_DIR = os.path.join(DATA_DIR, 'model_dev', 'models', 'assaywise_testset')
+#MODELS_ASSAYWISE_MCC_DIR = os.path.join(MODELS_ASSAYWISE_DIR, 'mcc')
+#MODELS_ASSAYWISE_ALPHA_MED_DIR = os.path.join(MODELS_ASSAYWISE_DIR, 'alpha80.5')
+#MODELS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(MODELS_ASSAYWISE_DIR, 'alpha321.9')
 
 
 # results
