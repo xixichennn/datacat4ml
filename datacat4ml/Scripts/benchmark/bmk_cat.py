@@ -23,7 +23,7 @@ algo4reg = [RFR]
 algo4cls = [RFC]
 
 def write_results(result_file, data, 
-                  threshold=5, 
+                  threshold:float, n_actives:int, n_inactives:int, active_ratio:float, n_active_train:int, n_inactive_train:int, active_ratio_train:float, n_active_test:int, n_inactive_test:int, active_ratio_test:float,
                   accuracy="None", precision="None",recall="None", mcc="None", bedroc_dec5="None", bedroc_2="None", bedroc_8="None", 
                   rmse="None", cliff_rmse="None", r2="None", cliff_r2="None",
                   file_path = SPLIT_CAT_DATASETS_DIR, task: str='cls', use_clustering: bool=True, use_smote: bool=True, 
@@ -55,22 +55,22 @@ def write_results(result_file, data,
         n_cliff_compounds_train = sum(data.cliff_mols_train)
         n_cliff_compounds_test = sum(data.cliff_mols_test)
 
-
- 
     # Create output file if it doesn't exist already
     if not os.path.isfile(result_path):
         with open(result_path, 'w') as f:
             f.write('file_path,task,use_clustering,use_smote,'
                     'target,effect,assay,std_type,descriptor,algo,'
                     'n_compounds,n_cliff_compounds,n_compounds_train,n_cliff_compounds_train,n_compounds_test,n_cliff_compounds_test,'
-                    'threshold, accuracy, precision, recall, mcc, bedroc_dec5, bedroc_2, bedroc_8,'
+                    'threshold,n_actives, n_inactives,active_ratio, n_active_train, n_inactive_train, active_ratio_train, n_active_test, n_inactive_test, active_ratio_test,' 
+                    'accuracy, precision, recall, mcc, bedroc_dec5, bedroc_2, bedroc_8,'
                     'rmse, cliff_rmse, r2, cliff_r2\n')
             
     with open(result_path, 'a') as f:
         f.write(f'{file_path_name},{task},{use_clustering},{use_smote},'
                 f'{data.target},{data.effect},{data.assay},{data.std_type},{descriptor},{algoname},'
                 f'{n_compounds},{n_cliff_compounds},{n_compounds_train},{n_cliff_compounds_train},{n_compounds_test},{n_cliff_compounds_test},'
-                f'{threshold},{accuracy},{precision},{recall},{mcc},{bedroc_dec5},{bedroc_2},{bedroc_8},'
+                f'{threshold},{n_actives},{n_inactives},{active_ratio},{n_active_train},{n_inactive_train},{active_ratio_train},{n_active_test},{n_inactive_test},{active_ratio_test},'
+                f'{accuracy},{precision},{recall},{mcc},{bedroc_dec5},{bedroc_2},{bedroc_8},'
                 f'{rmse},{cliff_rmse},{r2},{cliff_r2} \n')
         
 
@@ -92,7 +92,17 @@ def benchmark_result(result_file: str = "results_ml.csv", file_path=SPLIT_CAT_DA
     for filename in tqdm(filenames):
         print(f"file: {filename}\n")
         df = pd.read_csv(os.path.join(file_folder, filename))
+
         threshold = df['threshold'].iloc[0]
+        n_actives = df['activity'].sum()
+        n_inactives = len(df) - n_actives
+        active_ratio = n_actives / len(df)
+        n_active_train = df[df['split'] == 'train']['activity'].sum()
+        n_inactive_train = len(df[df['split'] == 'train']) - n_active_train
+        active_ratio_train = n_active_train / len(df[df['split'] == 'train'])
+        n_active_test = df[df['split'] == 'test']['activity'].sum()
+        n_inactive_test = len(df[df['split'] == 'test']) - n_active_test
+        active_ratio_test = n_active_test / len(df[df['split'] == 'test'])
         
         print(f"use_smote: {use_smote}\n")
         if task == 'reg':
@@ -178,12 +188,12 @@ def benchmark_result(result_file: str = "results_ml.csv", file_path=SPLIT_CAT_DA
                     
                     # Write the results to a csv file
                     print(f"write results ...")
-                    write_results(result_file=result_file, data=data, 
-                                  threshold=threshold, 
-                                  accuracy=accuracy, precision=precision,recall=recall,mcc=mcc, bedroc_dec5=bedroc_dec5, bedroc_2=bedroc_2,bedroc_8=bedroc_8, 
-                                  rmse=rmse, cliff_rmse=cliff_rmse, r2=r2, cliff_r2=cliff_r2,
-                                  file_path=file_path, task=task, use_clustering=use_clustering, use_smote=use_smote, 
-                                  descriptor=descriptor, algoname=algo.__name__)
+                    write_results(result_file, data, 
+                                  threshold, n_actives, n_inactives, active_ratio, n_active_train, n_inactive_train, active_ratio_train, n_active_test, n_inactive_test, active_ratio_test,
+                                  accuracy, precision,recall,mcc, bedroc_dec5, bedroc_2,bedroc_8, 
+                                  rmse, cliff_rmse, r2, cliff_r2,
+                                  file_path, task, use_clustering, use_smote, 
+                                  descriptor, algo.__name__)
                     
                     print("Done")
                     # check the results by loading it as a pandas dataframe
