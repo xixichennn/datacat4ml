@@ -31,8 +31,9 @@ FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
 HET_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "het_datasets")
 HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcr_datasets")
-ASSAY_DESC_DIR = os.path.join(CAT_DATA_DIR, "assay_desc")
 CAT_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "cat_datasets")
+CAT_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_gpcr_datasets")
+
 
 # data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
@@ -111,10 +112,11 @@ RESULTS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha321
 
 #======================data categorize ======================#
 # data categorize
-
-OR_chembl_ids = ['CHEMBL233', 'CHEMBL237', 'CHEMBL236', 'CHEMBL2014']
 OR_uniprot_ids = ['P35372', 'P41145', 'P41143', 'P41146']
+OR_chemblids = ['CHEMBL233', 'CHEMBL237', 'CHEMBL236', 'CHEMBL2014']
 OR_names = ['mor', 'kor', 'dor', 'nor']
+OR_name_chemblids = {'mor': 'CHEMBL233', 'kor': 'CHEMBL237', 'dor': 'CHEMBL236', 'nor': 'CHEMBL2014'}
+
 
 Effects=['bind', 'agon', 'antag', 'None'] # bind: binding affinity, agon: agonism, antag: antagonism
 Assays = ['RBA', 

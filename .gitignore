@@ -146,3 +146,4 @@ datacat4ml/Scripts/model_dev_old/enztrans_test/data
 
 # benchmark
 datacat4ml/Scripts/benchmark/slurm*.out
+*mlruns*
