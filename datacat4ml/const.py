@@ -29,23 +29,26 @@ FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 
 # data_categorize
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
-HET_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "het_datasets")
-HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcr_datasets")
-CAT_DATASETS_DIR = os.path.join(CAT_DATA_DIR, "cat_datasets")
-CAT_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_gpcr_datasets")
+HET_OR_DIR = os.path.join(CAT_DATA_DIR, "het_ors")
+HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcrs")
+CAT_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_ors")
+CAT_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_gpcrs")
 
 
 # data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
-CURA_GPCR_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "gpcr_datasets")
-CURA_HET_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "het_datasets")
-CURA_CAT_DATASETS_DIR = os.path.join(CURA_DATA_DIR, "cat_datasets")
+CURA_HET_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_gpcrs")
+CURA_HET_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_ors")
+CURA_CAT_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_ors")
+CURA_CAT_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_gpcrs")
+
 
 # data_split
 SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
-SPLIT_HET_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "het_datasets")
-SPLIT_GPCR_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "gpcr_datasets")
-SPLIT_CAT_DATASETS_DIR = os.path.join(SPLIT_DATA_DIR, "cat_datasets")
+SPLIT_HET_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_ors")
+SPLIT_HET_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_gpcrs")
+SPLIT_CAT_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_ors")
+SPLIT_CAT_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_gpcrs")
 
 # benchmark
 BMK_DIR = os.path.join(DATA_DIR, "benchmark")
@@ -127,13 +130,13 @@ Std_types=['Ki', 'IC50', 'EC50']
 
 
 Tasks = ['cls', 'reg']
-File_paths = [CAT_DATASETS_DIR, FETCH_DATA_DIR]
+File_paths = [CAT_OR_DIR, FETCH_DATA_DIR]
 Confidence_scores = [8, 9]
 Thr_classes=[6, 7]
 Use_clusterings = [True, False]
 Use_smotes = [True, False]
 
-ASSAY_CHEMBL_IDS = {
+EFFECT_TYPE_LOOKUP = {
       'mor': {
             'bind': {
                 'RBA': {

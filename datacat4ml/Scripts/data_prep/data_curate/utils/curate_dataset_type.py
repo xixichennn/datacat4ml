@@ -20,12 +20,13 @@ DEFAULT_CLEANING = {
 
 
 def curate_dataset(df: pd.DataFrame, task='reg', target='mor', effect=None, assay=None, std_type='Ki', 
-                   output_path=CURA_CAT_DATASETS_DIR) -> pd.DataFrame:
+                   output_path=CURA_CAT_OR_DIR) -> pd.DataFrame:
     """
     apply the curation pipeline to a dataframe
 
     param:
     -----
+    target: str, could be target_name 'mor' or 'target_chembl_id' 'CHEMB233'
     output_path: str: The path to save the curated dataset
 
     return:
@@ -112,6 +113,14 @@ def check_dataset_aval(dataset_type, target, effect, assay, std_type, input_path
     Check if the dataframe exists, or if it is empty.
     
     param: 
+    ----------
+    dataset_type: str: The categorization method. It could be either 'het' or 'cat'
+    target: str: The target name (e.g. 'mor') or target_chembl_id (e.g. 'CHEMBL233')
+    effect: str: The effect of the dataset. e.g. 'bind', 'antag'
+    assay: str: The assay of the dataset. e.g. 'RBA'
+    std_type: str: The standard type of the dataset. e.g. 'Ki', 'IC50'
+    input_path: str: The path to the input datasets (should be like `CAT_OR_DIR`, `HET_DATASETS_DIR`) 
+
     
     input_path: str: The path to the input datasets that are to be curated
 
@@ -139,7 +148,7 @@ def check_dataset_aval(dataset_type, target, effect, assay, std_type, input_path
         return df
 
 def curate_datasets_and_get_stats(dataset_type='het', task='cls', target_list: List[str]= OR_names, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
-                                  input_path=CAT_DATASETS_DIR, output_path= CURA_CAT_DATASETS_DIR):
+                                  input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR):
         """
         curate a series of datasets and get the stats for each dataset
 
@@ -197,3 +206,4 @@ def curate_datasets_and_get_stats(dataset_type='het', task='cls', target_list: L
                                                 
                                                 f.write(f'{task}, {target}, {effect}, {assay}, {std_type}, {raw_size}, {curated_sized}, {curated_size_delta}, {threshold}, {num_active}, {curated_sized -num_active}, {percent_a}\n')
                 print(f'====================\n')         
+

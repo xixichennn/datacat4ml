@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 from datacat4ml.utils import get_df_name, mkdirs
-from datacat4ml.const import FETCH_DATA_DIR, ASSAY_CHEMBL_IDS, CAT_DATASETS_DIR, CAT_GPCR_DIR
+from datacat4ml.const import FETCH_DATA_DIR, EFFECT_TYPE_LOOKUP, CAT_OR_DIR, CAT_GPCR_DIR
 from datacat4ml.const import OR_chemblids, OR_names, OR_name_chemblids
 
 ############################# Read data #############################
@@ -124,7 +124,7 @@ class DataCategoizer:
         assay_out_df = assay_out_df[assay_out_df['_merge'] == 'left_only'].drop(columns='_merge')
         
         if self.targets == 'ORs':
-            file_path = os.path.join(CAT_DATASETS_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
+            file_path = os.path.join(CAT_OR_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
         elif self.targets == 'GPCRs':
             file_path = os.path.join(CAT_GPCR_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
             
@@ -221,8 +221,8 @@ class DataCategoizer:
 
         effect_type_df = self.match_effect_type()
 
-        plus_df = self.generate_plus_df(plus_chembl_id=ASSAY_CHEMBL_IDS[self.target][self.effect][self.assay][self.std_type]['plus'])
-        exclude_df = self.generate_exclude_df(exclude_chembl_id=ASSAY_CHEMBL_IDS[self.target][self.effect][self.assay][self.std_type]['exclude'])
+        plus_df = self.generate_plus_df(plus_chembl_id=EFFECT_TYPE_LOOKUP[self.target][self.effect][self.assay][self.std_type]['plus'])
+        exclude_df = self.generate_exclude_df(exclude_chembl_id=EFFECT_TYPE_LOOKUP[self.target][self.effect][self.assay][self.std_type]['exclude'])
         
         # Add plus_df to original_df
         combined_df = pd.concat([effect_type_df, plus_df], ignore_index=True)
@@ -293,7 +293,7 @@ def categorize_GPCRs(targets='GPCRs', effect='bind', assay='RBA', std_types=['Ki
             # Generate type_df: e.g. mor_Ki_df, mor_IC50_df
             type_df_name = f"{target_chembl_id}_{std_type}_df"
             type_df =categorizer.generate_type_df()
-            type_df.to_csv(os.path.join(std_type_dir, f"{type_df_name}.csv"))
+            #type_df.to_csv(os.path.join(std_type_dir, f"{type_df_name}.csv"))
             print(f"The shape of type_df is {type_df.shape}\n")
             type_dfs[type_df_name] = type_df
 
@@ -337,7 +337,7 @@ def categorize_ORs(targets='ORs', effect='bind', assay='RBA', std_types=['Ki', '
             print(f'target_chembl_id: {target_chembl_id}\n')
 
             print(f"Target: {target_chembl_id}\n")
-            target_dir = os.path.join(CAT_DATASETS_DIR, target_chembl_id)
+            target_dir = os.path.join(CAT_OR_DIR, target_chembl_id)
             mkdirs(target_dir)
             
             print(f"Effect: {effect}\n")
@@ -355,8 +355,8 @@ def categorize_ORs(targets='ORs', effect='bind', assay='RBA', std_types=['Ki', '
                 std_type_dir = os.path.join(assay_dir, std_type)
                 mkdirs(std_type_dir)
 
-                plus_chembl_id = ASSAY_CHEMBL_IDS[target][effect][assay][std_type]['plus']
-                exclude_chembl_id = ASSAY_CHEMBL_IDS[target][effect][assay][std_type]['exclude']
+                plus_chembl_id = EFFECT_TYPE_LOOKUP[target][effect][assay][std_type]['plus']
+                exclude_chembl_id = EFFECT_TYPE_LOOKUP[target][effect][assay][std_type]['exclude']
                 
 
                 categorizer = DataCategoizer(targets=targets, target=target, target_chembl_id= target_chembl_id, 
@@ -364,36 +364,36 @@ def categorize_ORs(targets='ORs', effect='bind', assay='RBA', std_types=['Ki', '
                                              pattern=pattern, pattern_ex=pattern_ex)
 
                 # Generate type_df: e.g. mor_Ki_df, mor_IC50_df
-                type_df_name = f"{target}_{std_type}_df"
+                type_df_name = f"{target_chembl_id}_{std_type}_df"
                 type_df =categorizer.generate_type_df()
-                type_df.to_csv(os.path.join(std_type_dir, f"{type_df_name}.csv"))
+                #type_df.to_csv(os.path.join(std_type_dir, f"{type_df_name}.csv"))
                 print(f"The shape of type_df is {type_df.shape}\n")
                 type_dfs[type_df_name] = type_df
 
                 # Generate effect_type_df: e.g. mor_bind_Ki_df, mor_bind_IC50_df
-                effect_type_df_name = f"{target}_{effect}_{assay}_{std_type}_df"
+                effect_type_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_df"
                 effect_type_df =categorizer.match_effect_type()
-                effect_type_df.to_csv(os.path.join(std_type_dir, f"{effect_type_df_name}.csv"))
+                #effect_type_df.to_csv(os.path.join(std_type_dir, f"{effect_type_df_name}.csv"))
                 print_df_info(effect_type_df)
                 effect_type_dfs[effect_type_df_name] = effect_type_df
 
                 # Generate plus_df: e.g. mor_bind_KiPlus_df, mor_bind_IC50Plus_df
-                plus_df_name = f"{target}_{effect}_{assay}_{std_type}Plus_df"
+                plus_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}Plus_df"
                 plus_df =categorizer.generate_plus_df(plus_chembl_id=plus_chembl_id)
-                plus_df.to_csv(os.path.join(std_type_dir, f"{plus_df_name}.csv"))
+                #plus_df.to_csv(os.path.join(std_type_dir, f"{plus_df_name}.csv"))
                 print(f"The shape of plus_df is {plus_df.shape}\n")
                 plus_dfs[plus_df_name] = plus_df  
 
                 # Generate exclude_df: e.g. mor_bind_KiExclude_df, mor_bind_IC50Exclude_df
-                exclude_df_name = f"{target}_{effect}_{assay}_{std_type}Exclude_df"
+                exclude_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}Exclude_df"
                 exclude_df =categorizer.generate_exclude_df(exclude_chembl_id=exclude_chembl_id)
-                exclude_df.to_csv(os.path.join(std_type_dir, f"{exclude_df_name}.csv"))
+                #exclude_df.to_csv(os.path.join(std_type_dir, f"{exclude_df_name}.csv"))
                 print(f"The shape of exclude_df is {exclude_df.shape}\n")
                 exclude_dfs[exclude_df_name] = exclude_df
 
                 # Generate final_df: e.g. mor_bind_KiFinal_df, mor_bind_IC50Final_df
-                final_df_name = f"{target}_{effect}_{assay}_{std_type}Final_df"
-                final_out_df_name = f"{target}_{effect}_{assay}_{std_type}FinalOut_df"
+                final_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}Final_df"
+                final_out_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}FinalOut_df"
                 final_df, final_out_df =categorizer.generate_final_df()
                 final_df.to_csv(os.path.join(std_type_dir, f"{final_df_name}.csv"))
                 print(f"The shape of final_df is {final_df.shape}\n")
@@ -409,8 +409,8 @@ def categorize_ORs(targets='ORs', effect='bind', assay='RBA', std_types=['Ki', '
                 len_final_out_df = len(final_out_df)
 
                 # make a pandas dataframe that contains length of each dataframe as a row
-                len_df_name = f"{target}_{effect}_{assay}_{std_type}_len_df"
-                len_df = pd.DataFrame({'target': target, 'effect': effect, 'assay': assay, 'std_type': std_type,
+                len_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_len_df"
+                len_df = pd.DataFrame({'target': target_chembl_id, 'effect': effect, 'assay': assay, 'std_type': std_type,
                                         'type_df': len_type_df, 'effect_type_df': len_effect_type_df,
                                         'plus_df': len_plus_df, 'exclude_df': len_exclude_df,
                                         'final_df': len_final_df, 'final_out_df': len_final_out_df}, index=[0])
