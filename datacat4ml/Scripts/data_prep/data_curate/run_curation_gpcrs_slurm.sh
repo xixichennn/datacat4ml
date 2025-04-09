@@ -27,4 +27,4 @@ python3 run_curation_gpcrs.py \
     --total_jobs "$chunks_per_task"
 
 # run the command below in the terminal to submit the job
-# sbatch run_curation_GPCRs_slurm.sh  
+# sbatch run_curation_gpcrs_slurm.sh  
