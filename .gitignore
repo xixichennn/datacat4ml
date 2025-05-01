@@ -142,7 +142,7 @@ datacat4ml/Scripts/benchmark/twinbooster
 datacat4ml/Scripts/model_dev/slurm*.out
 
 # model_dev_old
-datacat4ml/Scripts/model_dev_old/enztrans_test/data
+datacat4ml/Scripts/model_dev_old1/enztrans_test/data
 
 # benchmark
 datacat4ml/Scripts/benchmark/slurm*.out
