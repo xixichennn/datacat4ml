@@ -23,6 +23,7 @@ SCRIPTS_DIR = os.path.join(DATACAT4ML_DIR, "Scripts")
 
 # Data directories
 DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
+PREP_DATA_DIR = os.path.join(DATA_DIR, "data_prep")
 # "data_fetch"
 FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
