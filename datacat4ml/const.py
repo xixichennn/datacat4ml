@@ -63,6 +63,7 @@ FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
 FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_fetch")
 FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_featurize")
 CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
+SPLIT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_split")
 
 RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
 
