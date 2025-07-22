@@ -150,3 +150,6 @@ datacat4ml/Scripts/benchmark/slurm*.out
 *mlruns*
 *slurm*.out
 *wandb*
+
+# third-party libraries
+deepcoy

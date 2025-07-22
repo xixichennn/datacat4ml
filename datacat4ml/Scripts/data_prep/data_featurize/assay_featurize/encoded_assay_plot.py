@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 from datacat4ml.const import SPLIT_DATA_DIR
 
 # load the .npy file
-npy_path_folder = os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assay')
+npy_path_folder = os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assays')
 
 text_short = np.load(os.path.join(npy_path_folder, 'assay_features_text_columns_short.npy'))
 text_middle = np.load(os.path.join(npy_path_folder, 'assay_features_text_columns_middle.npy'))
@@ -52,7 +52,7 @@ def text_features_plot(text_feature=text_short):
     plt.tight_layout()
 
     # Save the figure
-    plt.savefig(os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assay', f"{text_feature_name}_length_histogram.png"))
+    plt.savefig(os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assays', f"{text_feature_name}_length_histogram.png"))
 
 # ================= clip or lsa features =================
 def clip_lsa_features_plot(feature=clip_short):
@@ -84,7 +84,7 @@ def clip_lsa_features_plot(feature=clip_short):
     plt.xlabel("PC1")
     plt.ylabel("PC2")
     plt.tight_layout()
-    plt.savefig(os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assay',f"{feature_name}_pca.png"))
+    plt.savefig(os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assays',f"{feature_name}_pca.png"))
 
 # ================= Main function =================
 if __name__ == "__main__":

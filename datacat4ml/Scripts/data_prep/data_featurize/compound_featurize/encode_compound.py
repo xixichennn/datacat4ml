@@ -81,7 +81,7 @@ def getFingerprint(smiles, fp_size=4096, which='morgan', radius=2, sanitize=True
         return np.zeros(fp_size).astype(np.bool) #?Yu: remove this line if can't figure out its usage
     
     if sanitize:
-        faild_op = Chem.SanitizeMol(mol, catchErrors=True)
+        failed_op = Chem.SanitizeMol(mol, catchErrors=True)
         FastFindRings(mol) # Providing ring info
 
     mol.UpdatePropertyCache(strict=False) # Correcting valence info # important operation
@@ -256,5 +256,6 @@ if __name__ == '__main__':
     x = encoder.encode(list_of_smiles)
 
     p= os.path.join(path, f'compound_features_{args.fp_type}.npy')
+
     logger.info(f'Save compound features with shape {x.shape} to {p}')
-    np.save(p, x) if args.fp_type!='sprsFP' else sparse.save_npz(p, x)
+    np.save(p, x) if args.fp_type!='sprsFP' else sparse.save_npz(p[:-4], x)

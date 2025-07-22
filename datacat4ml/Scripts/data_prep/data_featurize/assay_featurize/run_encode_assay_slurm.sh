@@ -10,10 +10,10 @@
 # valid GRES specifications: rtx3090, rtx4090, a100, h100
 parquet_path=/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/fsmol_alike/MHDsFold
 
-columns_lists=("columns_short" "columns_middle" "columns_long" "columns_full")
+columns_lists=("columns_short" "columns_middle" "columns_long" "columns_full" "assay_desc_only")
 encodings=("text" "lsa" "clip")
 
-lsa_path=${parquet_path}/encoded_assay/lsa_models
+lsa_path=${parquet_path}/encoded_assays/lsa_models
 train_set_size=1 #Yu? chatgpt: is it okay to set this to 1?
 gpu=0
 batch_size=2048
@@ -38,5 +38,5 @@ python3 encode_assay.py \
     --batch_size ${batch_size} \
     --n_components ${n_components} 
 # run the command below in the terminal to submit the job
-# sbatch --array=0-11 run_encode_assay_slurm.sh 
-# Here <num_jobs> = 4 * 3 = 12
+# sbatch --array=0-2 run_encode_assay_slurm.sh 
+# Here <num_jobs> = 1 * 3 = 3

@@ -156,12 +156,14 @@ if __name__ == '__main__':
 
     df = pd.read_parquet(args.assay_parquet_path)
     # make a folder 'encoded_assay' in `args.assay_parquet_path` if not exists
-    path = os.path.join(os.path.dirname(args.assay_parquet_path), 'encoded_assay')
+    path = os.path.join(os.path.dirname(args.assay_parquet_path), 'encoded_assays')
     os.makedirs(path, exist_ok=True)
 
     print(f'================= columns_list: {args.columns_list} =================')
 
-    if args.columns_list=='columns_short':
+    if args.columns_list == 'assay_desc_only':
+        columns = ['assay_description']
+    elif args.columns_list=='columns_short':
         columns = ["assay_idx", "assay_chembl_id", "assay_description"]
     elif args.columns_list=='columns_middle':
         columns = ["assay_idx", "assay_id", "assay_chembl_id", "assay_description", "assay_type", "assay_type_description", "assay_category", "assay_organism", "assay_tax_id", "assay_strain", "assay_tissue", "assay_cell_type", "assay_subcellular_fraction", "bao_format", "bao_label", "variant_id", "assay_test_type", "cell_id", "tissue_id", "relationship_type_description", "aidx", "confidence_score_description", "tid"]
