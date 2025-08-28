@@ -35,7 +35,7 @@ source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
 # Run with chunk parameters
-python3 train_utils.py \
+python3 cl_train_utils.py \
     --dataset ${dataset} \
     --assay_mode ${assay_mode} \
     --assay_columns_list ${assay_columns_list} \
@@ -48,4 +48,4 @@ python3 train_utils.py \
 
 # run the command below in the terminal to submit the job
 # Here <num_jobs> = 2 * 2 * 5 = 20
-# sbatch --array=0-19 run_clamp_slurm.sh
+# sbatch --array=0-19 run_cl_slurm.sh

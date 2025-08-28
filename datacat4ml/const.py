@@ -456,19 +456,6 @@ EFFECT_TYPE_LOOKUP = {
       }
 
 #======================data featurize ======================#
-#class Descriptors():
-#      # fingerprints
-#      FP = ['ECFP4', 'ECFP6', 'MACCS', 'RDKIT_FP', 'PHARM2D', 'ERG']
-#      # physicochemical properties
-#      PHYSICOCHEM = ['PHYSICOCHEM']
-#      # 3D descriptors
-#      THREE_D = ['SHAPE3D', 'AUTOCORR3D', 'RDF', 'MORSE', 'WHIM', 'GETAWAY']
-#      # ChemBERTa tokenization
-#      TOKENS = ['TOKENS']
-#      # One-hot encoding
-#      ONEHOT = ['ONEHOT']
-#      # Graph convolutional featurization
-#      GRAPH = ['GRAPH']
 
 Descriptors = {
       # fingerprints
