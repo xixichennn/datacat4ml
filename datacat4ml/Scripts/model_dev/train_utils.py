@@ -28,7 +28,7 @@ from datacat4ml.Scripts.model_dev.model_def import DotProduct
 import datacat4ml.Scripts.model_dev.model_def as model_def
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import MultiplicativeLR
+from torch.optim.lr_scheduler import MultiplicativeLR, LambdaLR
 from torch.utils.data import Subset, RandomSampler, SequentialSampler, BatchSampler
 from scipy.special import expit as sigmoid
 
@@ -808,25 +808,26 @@ NAME2FORMATTER = {
     'embedding_size': int,
     'optimizer': str,
     'lr_ini': float,
-    'l2': float, #?Yu: L2 regularization?
+    'l2': float, # L2 regularization, i.e weight decay.
     'dropout_input': float,
     'dropout_hidden': float,
     'loss_fun': str,
+    'label_smoothing': float,
     'lr_factor': float,
     'batch_size': int,
-    'assay_mode': str,
     'warmup_epochs': int,
-    'multitask_temperature': float, #?Yu: if not used later, remove
     'epoch_max': int, 
+    'train_balanced': int,
+    'train_subsample': float, # subsample the training data to this fraction for faster training.
+    'beta': float,
+    'assay_mode': str,
+    'multitask_temperature': float, #?Yu: if not used later, remove
     'nonlinearity': str,
     'pooling_mode': str,
     'attempts': int, # not used in public version #?Yu: don't understand, remove?
     'tokenizer': str,
     'transformer': str,
-    'train_balanced': int,
-    'beta': float,
     'norm': bool,
-    'label_smoothing': float,
     'checkpoint': str,
     'hyperparams': str,
     'format': str,
@@ -839,7 +840,6 @@ NAME2FORMATTER = {
     'split': str,
     'wandb': str,
     'compound_mode': str,
-    'train_subsample': float, #?Yu:?
 }
 
 EVERY = 50000 # The frequency of printing a message (logging) during training to reduce verbosity.
@@ -929,9 +929,8 @@ def get_mlflow_log_paths(run_info: mlflow.entities.RunInfo):
 
 class EarlyStopper:
     # adapted from https://stackoverflow.com/questions/71998978/early-stopping-in-pytorch
-    # Early stopping is a regularization technique to prevent overfitting. 
     # During training, it monitors the validation loss and stops training when the validation loss does not improve for a specified number of epochs (patience).
-    # This helps the model to generalize better rather than just memorizing the training data.
+    # The logic here: the lower the validation loss, the better the model performance.
     def __init__(self, patience=1, min_delta=0):
         self.patience = patience # number of epochs with no improvement after which training will be stopped
         self.min_delta = min_delta # minimum change to consider it an improvement
@@ -1023,18 +1022,243 @@ def init_optimizer(model, hp, verbose=False):
     
     return optimizer(params=model.parameters(), **filtered_dict) # optimize all the model's parameters by using the filtered hyperparameters of the optimizer.
 
+def run_stage(
+    stage: str, # could be 'train', 'valid', or 'test'.
+    stage_batcher: Iterable, # a batcher that yields batches of data indices.
+    stage_idx: np.ndarray, # could be `train_idx`, `valid_idx`, or `test_idx`.
+    InMemory: InMemoryClamp, #Yu: rename it based on my project.
+    device: str, # device to run the model on, e.g., 'cuda:0' or 'cpu'.
+    hparams: dict,
+    model: DotProduct,
+    criterion: torch.nn.Module, # loss function
+    epoch: int, # current epoch number.
+    verbose: bool,
+    optimizer: torch.optim.Optimizer = None, # optimizer, could be None if stage is  'validation' or 'testing'.
+    scheduler: torch.optim.lr_scheduler._LRScheduler = None # learning rate scheduler, could be None if stage is 'validation' or 'testing'.
+):
+    """
+    """
+
+    print(f'============================\n Starting {stage} \n============================')
+
+    loss_sum = 0. # accumulate the total loss (float) for the epoch
+    preactivations_l = [] #store model outputs for each batch
+    topk_pos_l, arocc_pos_l = [], [] 
+    topk_neg_l, arocc_neg_l = [], []
+    activity_idx_l = [] # track the indices of activities processed in the batches.
+    for batch_num, batch_indices in enumerate(stage_batcher):
+
+         # get and unpack batch data
+        batch_data = Subset(InMemory, indices=stage_idx)[batch_indices]
+        activity_idx, compound_features, assay_features, activity = batch_data #?Yu: what is no assay_onehot?
+        
+        # move data to device
+        if isinstance(compound_features, torch.Tensor):
+            compound_features = compound_features.to(device)
+        assay_features = assay_features.to(device) if not isinstance(assay_features[0], str) else assay_features
+        #assay_onehot = assay_onehot.to(device).float() if not isinstance(assay_onehot[0], str) else assay_onehot #?Yu
+        activity = activity.to(device)
+        
+        # forward
+        #?YU: the 'multitask' related code is put off. 
+        if hparams.get('loss_fun') in ('CE', 'Con'): # why in the two cases, `forward_dense` is used?
+            preactivations = model.forward_dense(compound_features, #?Yu: go to check the difference between 'forward' and 'forward_dense'
+                                                 assay_features) #?Yu: consider whether to remove 'assay_onehot' #?Yu: 'assay_onehot' is not defined in the loop.
+        else:
+            preactivations = model(compound_features, assay_features) #?Yu: why not `assay_onehot`?
+        
+        # loss
+        beta = hparams.get('beta', 1) 
+        if beta is None: beta = 1
+        preactivations = preactivations*1/beta 
+        loss = criterion(preactivations, activity) # if 'loss_fun' in ('CE', 'Con'), the 'preactivations' are the output of 'forward_dense', containing All Compound * Assays combination. 
+        
+        # zero gradients, backpropagation, update
+        if stage == 'train':
+
+            # ===================== For warmup_step =====================
+            num_steps_per_epoch = len(stage_idx)/hparams['batch_size']
+            # Warmup learning rate scheduler.
+            class Linwarmup():
+                def __init__(self, steps=10000): # i.e. warmup_steps = 10000.
+                    self.step = 0
+                    self.max_step = steps
+                    self.step_size = 1/steps
+                def get_lr(self, lr): #`lr` is required by `lambdaLR`, thus must be present for compatibility, even if not used in this function.
+                    if self.step>self.max_step:
+                        return 1
+                    new_lr = self.step * self.step_size
+                    self.step += 1
+                    return new_lr
+
+            #Todo Bug when set to 0
+            if hparams.get('warmup_step'): 
+                scheduler2 = LambdaLR(optimizer,lr_lambda=Linwarmup(steps=num_steps_per_epoch*hparams.get('warmup_epochs', 0)).get_lr)
+            else:
+                scheduler2 = None
+
+            # ===================== zero gradients, backpropagation, update =====================
+            optimizer.zero_grad() #set gradients from previous batch to zero.
+            loss.backward()
+            if hparams.get('optimizer') == 'SAM': 
+                def closure():
+                    """SAM (Sharpness-Aware Minimization) optimizer requires a closure function"""
+                    preactivations = model(compound_features, assay_features) 
+                    loss = criterion(preactivations, activity)
+                    loss.backward()
+                    return loss
+                optimizer.step(closure)
+            else:
+                optimizer.step() # update model weights using the gradients.
+                scheduler.step() # Yu: if 'optimizer' is 'SAM', is there no need to call `scheduler.step()`?
+                if scheduler2: scheduler2.step() #?Yu
+
+        # accumulate loss 
+        loss_sum += loss.item()
+
+        # top_k highest score accuracy.
+        if hparams.get('loss_fun') in ('CE', 'Con'): 
+            # check whether the diagnnal items (matched compoundi and assay i) is within the top-k highest scores for each row. 
+            ks = [1, 5, 10, 50] 
+
+            # Ground-truth matches = diagonal indices
+            y_true = torch.arange(0, len(preactivations), device=preactivations.device)
+
+            # --- positives only ---
+            pos_mask = activity == 1
+            #print(f'The length of pos_mask is {len(pos_mask)}')
+            #print(f'The length of y_true[pos_mask] is {len(y_true[pos_mask])}')
+            #print(f'y_true[pos_mask] is {y_true[pos_mask]}')
+            #print(f'preactivations[pos_mask] is {preactivations[pos_mask]}')
+            if pos_mask.any(): # Check if there are any True values, i.e., this batch of activities contains at least one '1'.
+                tkaccs_pos, arocc_pos = top_k_accuracy(y_true[pos_mask],preactivations[pos_mask], k=ks, ret_arocc=True)
+            
+            topk_pos_l.append(tkaccs_pos)
+            arocc_pos_l.append(arocc_pos)
+
+            # --- negatives only ---
+            neg_mask = activity == 0
+            #print(f'The length of neg_mask is {len(neg_mask)}')
+            #print(f'The length of y_true[neg_mask] is {len(y_true[neg_mask])}')
+            #print(f'y_true[neg_mask] is {y_true[neg_mask]}')
+            if neg_mask.any():
+                tkaccs_neg, arocc_neg = top_k_accuracy(y_true[neg_mask],preactivations[neg_mask], k=ks, ret_arocc=True)
+        
+            topk_neg_l.append(tkaccs_neg)
+            arocc_neg_l.append(arocc_neg)
+
+            #tkaccs, arocc = top_k_accuracy(torch.arange(0, len(preactivations)), preactivations, k=ks, ret_arocc=True)
+            #topk_l.append(tkaccs)
+            #arocc_l.append(arocc)
+        
+        # preactivations
+        if hparams.get('loss_fun') in ('CE', 'Con'): #?Yu: combine this condition with the one above? and similarily, how to calc preactivations if `loss_fun` is neither 'CE' nor 'Con'?
+            #preactivations = preactivations.sum(axis=1) #?Yu: why keep it here?
+            preactivations =torch.diag(preactivations) # get only diag elements. This preactivations only contain the matched compound and assay pairs, e.g. C1A1, C2A2. 
+
+        # accumulate preactivations
+        preactivations_l.append(preactivations.detach().cpu())
+
+        # accumulate_indices to track order in which the dataset is visited
+        activity_idx_l.append(activity_idx) # activity_idx is a np.array, not a torch.tensor
+
+        if batch_num % EVERY == 0 and verbose: 
+            logger.info(f'Epoch{epoch}: Training batch {batch_num} out of {len(stage_batcher) - 1}.')
+
+    # log mean loss over all minibatches
+    stage_loss = loss_sum / len(stage_batcher)
+    mlflow.log_metric(f'{stage}_loss', stage_loss, step=epoch)
+    if wandb.run:
+        if stage == 'train':
+            wandb.log({
+                'train/loss': stage_loss, # the mean training loss per batch for the epoch.
+                'lr': scheduler2.get_last_lr()[0] if scheduler2 else scheduler.get_last_lr()[0]
+            }, step=epoch)
+        else:
+            wandb.log({f'{stage}/loss': stage_loss}, step=epoch)
+
+
+    # compute metrics for each assay (on the cpu) #?Yu: modify here to calc metrics on OR datasets.
+    # md, metrics dictionary.
+    preactivations = torch.cat(preactivations_l, dim=0)
+    #print(f'During {stage}, preactivations.shape: {preactivations.shape}; \n preactivations: {preactivations[:5]}')
+    probabilities = torch.sigmoid(preactivations).detach().cpu().numpy().astype(np.float32)
+    #print(f'During {stage}, probabilities.shape: {probabilities.shape}; \n probabilities: {probabilities[:5]}')
+
+    activity_idx = np.concatenate(activity_idx_l, axis=0)
+    #print(f'During {stage}, The length of activity_idx {len(activity_idx)}, including {activity_idx}')
+
+    targets = sparse.csc_matrix(
+        (
+            InMemory.activity.data[activity_idx],
+            (
+                InMemory.activity.row[activity_idx],
+                InMemory.activity.col[activity_idx]
+            )
+        ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.bool_
+    )
+    #print(f'During {stage}, targets.shape: {targets.shape}; \ntargets.toarray().shape:{targets.toarray().shape}; \ntargets: {targets[:5, :5].toarray()}')
+
+    scores = sparse.csc_matrix(
+        (
+            probabilities,
+            (
+                InMemory.activity.row[activity_idx],
+                InMemory.activity.col[activity_idx]
+            )
+        ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.float32
+    )
+    #print(f'During {stage}, scores.shape: {scores.shape}; \nscores.toarray().shape:{scores.toarray().shape}; \n scores: {scores[:5, :5].toarray()}')
+
+    #?Yu: `metrics` should be changed according to my implementation.
+    #md = metrics.swipe_threshold_sparse(targets=targets, scores=scores,verbose=verbose>=2, ret_dict=True) # returns dict for with metric per assay in the form of {metric: {assay_nr: value}}
+    bedroc_alpha = hparams.get('bedroc_alpha')
+    md = swipe_threshold_sparse(targets=targets, scores=scores, bedroc_alpha=bedroc_alpha, verbose=verbose, ret_dict=True)
+    for k, v in md.items():
+        print(f"Metric '{k}': {v}")
+        print(f'the length of v is {len(v)}')
+
+    if hparams.get('loss_fun') in ('CE', 'Con'):
+        #for i, k in enumerate(ks):
+        #    md[f'top_{k}_acc'] = {0:np.vstack(topk_l)[:-1, i].mean()} # drop last (might be not full) #?Yu why
+        #md['arocc'] = {0:np.hstack(arocc_l)[:-1].mean()} # drop last (might be not full) #?Yu why
+        
+        #Yu's first try
+        #for i, k in enumerate(ks):
+        #    md[f'top_{k}_acc_pos'] = {0:np.vstack(topk_pos_l)[:-1, i].mean()} if len(topk_pos_l)>0 and topk_pos_l[0] is not None else {0:np.nan}
+        #    print(f"During {stage}, the top_{k}_acc_pos is {md[f'top_{k}_acc_pos']}")
+        #    md[f'top_{k}_acc_neg'] = {0:np.vstack(topk_neg_l)[:-1, i].mean()} if len(topk_neg_l)>0 and topk_neg_l[0] is not None else {0:np.nan}
+        #md['arocc_pos'] = {0:np.hstack(arocc_pos_l)[:-1].mean()} if len(arocc_pos_l)>0 and arocc_pos_l[0] is not None else {0:np.nan}
+        #md['arocc_neg'] = {0:np.hstack(arocc_neg_l)[:-1].mean()} if len(arocc_neg_l)>0 and arocc_neg_l[0] is not None else {0:np.nan}
+
+        for i, k in enumerate(ks):
+            md[f'top_{k}_acc_pos'] = {0:np.vstack(topk_pos_l)[:-1, i].mean()}
+            md[f'top_{k}_acc_neg'] = {0:np.vstack(topk_neg_l)[:-1, i].mean()}
+
+        md['arocc_pos'] = {0:np.hstack(arocc_pos_l)[:-1].mean()}
+        md['arocc_neg'] = {0:np.hstack(arocc_neg_l)[:-1].mean()}
+
+    # log metrics mean over assays #?Yu: modify here to calc metrics on OR datasets.
+    logdic = {f'{stage}_mean_{k}': np.nanmean(list(v.values())) for k,v in md.items() if v}
+    logdic[f'{stage}_loss'] = stage_loss
+    mlflow.log_metrics(logdic, step=epoch)
+    if wandb.run: wandb.log({k.replace('_', '/'):v for k, v in logdic.items()}, step=epoch)
+
+    return stage_loss, md, logdic
+        
+
 def train_and_test(
-        InMemory: InMemoryClamp, #Yu: rename it based on my project.
-        train_idx: np.ndarray,
-        valid_idx: np.ndarray,
-        test_idx: np.ndarray,
-        hparams: dict,
-        run_info: mlflow.entities.RunInfo,
-        checkpoint_file: Optional[Path] = None,
-        keep: bool = True,
-        device: str = 'cpu',
-        bf16: bool = False, #?Yu: when to set bf16=True?
-        verbose: bool = True
+    InMemory: InMemoryClamp, #Yu: rename it based on my project.
+    train_idx: np.ndarray,
+    valid_idx: np.ndarray,
+    test_idx: np.ndarray,
+    hparams: dict,
+    run_info: mlflow.entities.RunInfo,
+    checkpoint_file: Optional[Path] = None,
+    keep: bool = True,
+    device: str = 'cpu',
+    bf16: bool = False, #?Yu: when to set bf16=True?
+    verbose: bool = True
 ) -> None:
     """
     Train a model on `InMemory[train_idx]` while validating on `InMemory[valid_idx]`.
@@ -1079,39 +1303,37 @@ def train_and_test(
     checkpoint = init_checkpoint(checkpoint_file, device)
     # get paths to the artifacts directory and the model weights.
     artifacts_dir, checkpoint_file_path, metrics_file_path = get_mlflow_log_paths(run_info)
+
     early_stopping = EarlyStopper(patience=hparams['patience'], min_delta=0.0001)
-    print(f'Function signature and parameters:\n early_stopping={early_stopping}')
-    # metrics
-    bedroc_alpha = hparams.get('bedroc_alpha')
 
     # ================================= Model initialization =================================
     print(hparams)
     
     #?Yu: Regard different assays or targets as different tasks. Keep the below `Multitask` related code if used later, otherwise remove it.
     #?Yu: why `setup_assay_onehot` is used here?`
-    if 'Multitask' in hparams.get('model'):
-
-        _, train_assays = InMemory.get_unique_names(train_idx)
-        InMemory.setup_assay_onehot(size=train_assays.index.max() + 1)
-        train_assay_features = InMemory.assay_features[:train_assays.index.max() + 1] #?Yu: no `assay_features` defined neither in the primary code or 'InMemoryClamp` before.
-        train_assay_features_norm = F.normalize(torch.from_numpy(train_assay_features), #?Yu: why set this here but use it quite later?
-            p=2, dim=1 #Yu: p=2: the exponent value in the norm formulation; dim=1: the dimension to reduce.
-        ).to(device)
-
-        model = init_dp_model(
-            compound_features_size=InMemory.compound_features_size,
-            assay_features_size=InMemory.assay_onehot.size, #?Yu: `assay_onehot` has not been defined in the `InMemoryClamp` class before.
-            hp=hparams,
-            verbose=verbose
-        )
-    
-    else:
-        model = init_dp_model(
-            compound_features_size=InMemory.compound_features_size,
-            assay_features_size=InMemory.assay_features_size,
-            hp=hparams,
-            verbose=verbose
-        )
+    #if 'Multitask' in hparams.get('model'):
+#
+    #    _, train_assays = InMemory.get_unique_names(train_idx)
+    #    InMemory.setup_assay_onehot(size=train_assays.index.max() + 1)
+    #    train_assay_features = InMemory.assay_features[:train_assays.index.max() + 1] #?Yu: no `assay_features` defined neither in the primary code or 'InMemoryClamp` before.
+    #    train_assay_features_norm = F.normalize(torch.from_numpy(train_assay_features), #?Yu: why set this here but use it quite later?
+    #        p=2, dim=1 #Yu: p=2: the exponent value in the norm formulation; dim=1: the dimension to reduce.
+    #    ).to(device)
+#
+    #    model = init_dp_model(
+    #        compound_features_size=InMemory.compound_features_size,
+    #        assay_features_size=InMemory.assay_onehot.size, #?Yu: `assay_onehot` has not been defined in the `InMemoryClamp` class before.
+    #        hp=hparams,
+    #        verbose=verbose
+    #    )
+    # 
+    #else:
+    model = init_dp_model(
+        compound_features_size=InMemory.compound_features_size,
+        assay_features_size=InMemory.assay_features_size,
+        hp=hparams,
+        verbose=verbose
+    )
     
     if 'model_state_dict' in checkpoint:
         if verbose:
@@ -1120,6 +1342,7 @@ def train_and_test(
         model.train() # `train` is a method of `nn.Module` that sets the module in training mode.
     
     model = model.to(device)
+
     # ================================= Optimizer initialization =================================
     # moving a model to the GPU should be done before the creation of its optimizer.
     # initialize optimizer
@@ -1127,17 +1350,33 @@ def train_and_test(
 
     if 'optimizer_state_dict' in checkpoint:
         if verbose:
-            logger.infp('Load optimizer_state_dict from checkpoint into optimizer.')
+            logger.info('Load optimizer_state_dict from checkpoint into optimizer.')
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    
+
+    # ================================= Learning rate Scheduler =================================
+    # Constant learning rate scheduler.
+    # `MultiplicativeLR` requires a function (lr_lambda). Here, lambda _: defines an anonymous function and the `_` is throwaway argument. Therefore, it is a constant function that always returns a constant `lr_factor`.
+    lr_factor = hparams.get('lr_factor', 1) # if 'lr_factor' exists in `hparams`, use it, otherwise set it to 1.
+    if lr_factor is None: lr_factor = 1
+    scheduler = MultiplicativeLR(optimizer, lr_lambda=lambda _: lr_factor) 
+
+    if lr_factor !=1:
+        logger.info(f'Scheduler enabled with lr_factor={hparams["lr_factor"]}. Note that this makes different runs difficult to compare.')
+    else:
+        logger.info('Scheduler enabled with lr_factor=1. This keeps the interface but results in no reduction.')
+
     # ================================= Loss function initialization =================================
     # initialize loss function #Yu: the core of clamp.
+
+    # Binary cross-entropy loss
     criterion = nn.BCEWithLogitsLoss() # default, allowing `loss_fun` to be optional.
     if 'loss_fun' in hparams:
-        class CustomCE(nn.CrossEntropyLoss):
-            """Cross entropy loss #?Yu"""
+        class CustomCE(nn.CrossEntropyLoss): 
+            """Cross entropy loss"""
             def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
                 """
+                One-direction cross entropy loss (compounds -> assays)
+
                 param
                 -------
                 input: predicted unnormalized logits. This is the raw output (logits, i.e. preactivations, no softmax/sigmoid) from the model, typically of shape [batch_size, batch_size] in contrastive/self-supervised settings.
@@ -1146,36 +1385,35 @@ def train_and_test(
                 return
                 -------
                 for `F.cross_entropy`:
-                weight: a manual rescaling weight given to each class.
                 """
-                beta = 1/(input.shape[0]**(1/2)) # scaling factor, normalizes the logits so that their magnitude is independent of batch size, which can help stabilize training.
-                input = input * (target*2-1) * beta # 
-                target = torch.arange(0, len(input)).to(input.device)
+                beta = 1/(input.shape[0]**(0.5)) # scaling factor, normalizes the logits so that their magnitude is independent of batch size, which can help stabilize training.
+                input = input * (target*2-1) * beta # target from [0, 1] to [-1, 1]
+                target = torch.arange(0, len(input)).to(input.device) # 'target' here is the ground truth class indices. However, the 'target' in last line is the 'true or false' labels?
 
                 return F.cross_entropy(input, target, weight=self.weight, ignore_index=self.ignore_index, reduction=self.reduction)
-            
+
         class ConLoss(nn.CrossEntropyLoss):
-            """Contrastive Loss"""
+            """
+            Contrastive Loss
+            
+            Two-direction cross entropy (compounds <-> assays)
+            """
             def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+
                 sigma = 1 # scaling factor. set to 1 here, so it does not affect the result.
-                bs = target.shape[0] #?Yu
-                #Yu: remove the below code if not used
-                #only modify diag that is a negative
-                # eg makes this from a target of [0, 1, 0]
-                # tensor([[-1., 1., 1.],
-                #         [1., 1., 1.],
-                #         [1., 1., -1.]])
+                bs = target.shape[0] 
                 modif = (1-torch.eye(bs)).to(target.device) + (torch.eye(bs).to(target.device)*(target*2-1)) # `torch.eye`: returns a 2-D tensor with ones on the diagonal and zeros elsewhere.`bs` is the number of rows.
                 input = input*modif/sigma
-                diag_idx = torch.arange(0, len(input)).to(input.device)
+                target = torch.arange(0, len(input)).to(input.device)
 
                 label_smoothing = hparams.get('label_smoothing', 0.0)
                 if label_smoothing is None:
                     label_smoothing = 0.0
-                
-                mol2txt = F.cross_entropy(input, diag_idx, weight=self.weight, ignore_index=self.ignore_index, reduction=self.reduction, label_smoothing=label_smoothing)
-                text2mol = F.cross_entropy(input.T, diag_idx, weight=self.weight, ignore_index=self.ignore_index, reduction=self.reduction, label_smoothing=label_smoothing)
 
+                mol2txt = F.cross_entropy(input, target, weight=self.weight, ignore_index=self.ignore_index, reduction=self.reduction, label_smoothing=label_smoothing)
+                #print(f'In ConLoss, mol2txt: {mol2txt}')
+                text2mol = F.cross_entropy(input.T, target, weight=self.weight, ignore_index=self.ignore_index, reduction=self.reduction, label_smoothing=label_smoothing)
+                #print(f'In ConLoss, text2mol: {text2mol}')
                 return mol2txt + text2mol
             
         str2loss_fun = {
@@ -1187,339 +1425,76 @@ def train_and_test(
         criterion = str2loss_fun[hparams['loss_fun']]
 
     criterion = criterion.to(device)
-        
-    # ================================= Learning rate Scheduler =================================
-    # lambda function below returns `lr_factor` whatever the input to lambda is.
-    if 'lr_factor' in hparams:
-        lr_factor = hparams['lr_factor']
-    else:
-        lr_factor = 1 #?Yu: why
-    scheduler = MultiplicativeLR(optimizer, lr_lambda=lambda _: lr_factor)
 
-    #lot_lr_scheduler(torch.optim.lr_scheduler.CosineAnnealingLR, T_max=1000, eta_min=0)
-    num_steps_per_epoch = len(train_idx)/hparams['batch_size']
-    class Linwarmup():
-        def __init__(self, steps=10000):
-            self.step = 0
-            self.max_step = steps
-            self.step_size = 1/steps
-        def get_lr(self, lr):
-            if self.step>self.max_step:
-                return 1
-            new_lr = self.step * self.step_size
-            self.step += 1
-            return new_lr
-        
-    #Todo Bug when set to 0
-    if hparams.get('warmup_step'): #?Yu: why not `if hparams['warmup_step']`?
-        scheduler2 = torch.optim.lr_scheduler.LambdaLR(optimizer,
-                                                       lr_lambda=Linwarmup(steps=num_steps_per_epoch + hparams.get('warmup_epochs', 0)).get_lr)
-    else:
-        scheduler2 = None
-    
-    if lr_factor !=1:
-        logger.info(f'Scheduler enabled with lr_factor={hparams["lr_factor"]}. Note that this makes different runs difficult to compare.')
-    else:
-        logger.info('Scheduler enabled with lr_factor=1. This keeps the interface but results in no reduction.')
     # ================================= Batch sampler =================================
-    # The acutual dataset slicing is actually done manually.
-    train_sampler = RandomSampler(data_source=train_idx) #?Yu: why not implement train_batcher like 'valid_batcher' and 'test_batcher'?
+    # shuffle the training indices at each epoch for stochastic gradient descent.
+    train_sampler = RandomSampler(data_source=train_idx) 
 
+    # no shuffling (i.e. sequential sampling) the validation/test indices for reproducibility during evaluation.
     valid_sampler = SequentialSampler(data_source=valid_idx)
     valid_batcher = BatchSampler(sampler=valid_sampler, batch_size=hparams['batch_size'], drop_last=False)
 
     test_sampler = SequentialSampler(data_source=test_idx)
     test_batcher = BatchSampler(sampler=test_sampler, batch_size=hparams['batch_size'], drop_last=False)
 
-    epoch = checkpoint.get('epoch', 0) #?Yu: why 0
-    new_train_idx = None #?Yu: why
+    epoch = checkpoint.get('epoch', 0) # resume from checkpoint if exists, otherwise start from 0.
+    new_train_idx = None
+    best_epoch = None 
     while epoch < checkpoint.get('epoch', 0) + hparams['epoch_max']:
-        if hparams.get('train_balanced', False):
+        #Yu: remove the two options below if not used later
+        # Optionally balance training data by downsampling negatives to match positives.
+        if hparams.get('train_balanced', False): # if `train_balanced` is set to True, balance the training data. Otherwise, skip this step.
             logger.info('sampling balanced')
-            num_pos = InMemory.activity.data[train_idx].sum() #Yu: why .sum()
-            #?Yu: remove the below comment later
-            # too large with WeightedRandomSampler
-            # num_neg = (len(train_idx))-num_pos
-            remove_those = train_idx[((InMemory.activity.data[train_idx]) == 0)]
-            remove_those = np.random.choice(remove_those, size=int(len(remove_those)-num_pos)) #?Yu
-            idx = np.in1d(train_idx, remove_those) #?Yu
-            new_train_idx = train_idx[~idx] #?Yu
-            if isinstance(hparams['train_balanced'], int):
+            num_pos = InMemory.activity.data[train_idx].sum() #  the number of positives
+            remove_those = train_idx[((InMemory.activity.data[train_idx]) == 0)] # indices of the negatives
+            remove_those = np.random.choice(remove_those, size=int(len(remove_those)-num_pos)) # randomly select negatives to remove.
+            idx = np.in1d(train_idx, remove_those) # create a boolean mask where True indicates the indices to be removed.
+            new_train_idx = train_idx[~idx] # use the boolean mask to filter out the indices to be removed.
+            if isinstance(hparams['train_balanced'], int): # e.g. `train_balanced=1000`
                 max_samples_per_epoch = hparams['train_balanced']
                 if max_samples_per_epoch > 1:
                     logger.info(f'using only {max_samples_per_epoch} for one epoch')
                     new_train_idx = np.random.choice(new_train_idx, size=max_samples_per_epoch)
             train_sampler = RandomSampler(data_source=new_train_idx)
-        if hparams.get('train_subsample', 0) > 0: #?Yu: why not `elif`
-            if hparams['train_subsample']<1:
+        # Optionally subsample training data to a fraction, which can be used for quick experiments by controlling training set size.
+        if hparams.get('train_subsample', 0) > 0: 
+            if hparams['train_subsample']<1: # e.g. `train_subsample=0.1`
                 logger.info(f'subsample training set to {hparams["train_subsample"]*100}%')
                 hparams['train_subsample'] = int(hparams['train_subsample']*len(train_idx))
             logger.info(f'subsample training set to {hparams["train_subsample"]}')
-            sub_train_idx = np.random.choice(train_idx if new_train_idx is None else new_train_idx, size=int(hparams['train_subsample']))
+            sub_train_idx = np.random.choice(train_idx if new_train_idx is None else new_train_idx, size=int(hparams['train_subsample'])) # e.g. `train_subsample=1000`
             train_sampler = RandomSampler(data_source=sub_train_idx)
         
         train_batcher = BatchSampler(sampler=train_sampler, batch_size=hparams['batch_size'], drop_last=False)
  
         # ================================= Training loop =================================
-        print(f'============================\n Starting training: epoch {epoch} \n============================')
-        loss_sum = 0.
-        preactivations_l = []
-        topk_l, arocc_l = [], []
-        activity_idx_l = []
-        for batch_num, batch_indices in enumerate(train_batcher):
-
-            # get and unpack batch data
-            batch_data = Subset(InMemory, indices=train_idx)[batch_indices]
-            activity_idx, compound_features, assay_features, activity = batch_data #?Yu: what is no assay_onehot?
-
-            # move data to device
-            #?Yu: remove the below comments if not used
-            # assignment is not necessary for modules but it is for tensors.
-            # https://discuss.pytorch.org/t/what-is-the-difference-between-doing-net-cuda-vs-net-to-device/69278/8
-            if isinstance(compound_features, torch.Tensor):
-                compound_features = compound_features.to(device)
-            assay_features = assay_features.to(device) if not isinstance(assay_features[0], str) else assay_features #?Yu: why not using same method that is used for `compound_features`?
-            #assay_onehot = assay_onehot.to(device).float() if not isinstance(assay_onehot[0], str) else assay_onehot #?Yu
-            activity = activity.to(device)
-
-            # forward
-            #with torch.autocast("cuda", dtype=torch.bfloat16 if bf16 else torch.float32): #?Yu: shall I keep this comment?
-            if hparams.get('loss_fun') in ('CE', 'Con'): # why in the two cases, `forward_dense` is used?
-                preactivations = model.forward_dense(compound_features, #?Yu: go to check the difference between 'forward' and 'forward_dense'
-                                                     assay_features) #?Yu: consider whether to remove 'assay_onehot'
-            else:
-                preactivations = model(compound_features, assay_features)
-            
-            # loss
-            beta = hparams.get('beta', 1)
-            if beta is None: beta = 1
-            preactivations = preactivations*1/beta #?Yu
-            loss = criterion(preactivations, activity)
-
-            # zero gradients, backpropagation, update
-            optimizer.zero_grad()
-            loss.backward()
-            if hparams.get('optimizer') == 'SAM': #?Yu
-                def closure():
-                    preactivations = model(compound_features, assay_features) # why compute preactivation again?
-                    loss = criterion(preactivations, activity)
-                    loss.backward()
-                    return loss 
-                optimizer.step(closure)
-            else:
-                optimizer.step()
-                scheduler.step()
-                if scheduler2: scheduler2.step() #?Yu
-
-            # accumulate loss 
-            loss_sum += loss.item()
-
-            if hparams.get('loss_fun')=='Con':
-                ks = [1, 5, 10, 50] #?Yu
-                tkaccs, arocc = top_k_accuracy(torch.arange(0, len(preactivations)), preactivations, k=[1, 5, 10, 50], ret_arocc=True)
-                topk_l.append(tkaccs)
-                arocc_l.append(arocc)
-            if hparams.get('loss_fun') in ('CE', 'Con'):
-                #preactivations = preactivations.sum(axis=1) #?Yu: why keep it here?
-                preactivations =torch.diag(preactivations) # get only diag elements
-
-            # accumulate preactivations
-            # - need to detach; preactivations.requires_grad = True
-            # - move it to cpu #?Yu
-            preactivations_l.append(preactivations.detach().cpu())
-
-            # accumulate_indices to track order in which the dataset is visited
-            # - activity_idx is a np.array, not a torch.tensor
-            activity_idx_l.append(activity_idx)
-
-            if batch_num % EVERY == 0 and verbose: 
-                logger.info(f'Epoch{epoch}: Training batch {batch_num} out of {len(train_batcher) - 1}.')
-
-        # log mean loss over all minibatches
-        mlflow.log_metric('train_loss', loss_sum / len(train_batcher), step=epoch)
-        if wandb.run:
-            wandb.log({
-                'train/loss': loss_sum / len(train_batcher),
-                'lr': scheduler2.get_last_lr()[0] if scheduler2 else scheduler.get_last_lr()[0]
-            }, step=epoch)
-
-        # compute metrics for each assay (on the cpu)
-        preactivations = torch.cat(preactivations_l, dim=0)
-        print(f'preactivations.shape: {preactivations.shape}; \n preactivations: {preactivations[:5]}')
-        probabilities = torch.sigmoid(preactivations).numpy()
-        print(f'probabilities.shape: {probabilities.shape}; \n probabilities: {probabilities[:5]}') 
-
-        activity_idx = np.concatenate(activity_idx_l, axis=0)
-        print(f'The length of activity_idx for training: {len(activity_idx)}, including {activity_idx}')
-        # assert np.array_equal(np.sort(activity_idx), train_idx)
-        # assert not np.array_equal(activity_idx, train_idx)
-
-        targets = sparse.csc_matrix(
-            (
-                InMemory.activity.data[activity_idx],
-                (
-                    InMemory.activity.row[activity_idx],
-                    InMemory.activity.col[activity_idx]
-                )
-            ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.bool_
+        print(f'============================\n epoch {epoch} \n============================')
+        
+        run_stage(stage='train', stage_batcher=train_batcher, stage_idx=train_idx, InMemory=InMemory,
+            device=device, hparams=hparams, model=model, criterion=criterion,
+            epoch=epoch,verbose=verbose,
+            optimizer=optimizer, scheduler=scheduler
         )
-
-        scores = sparse.csc_matrix(
-            (
-                probabilities, #?Yu: why is probabilities used here?
-                (
-                    InMemory.activity.row[activity_idx],
-                    InMemory.activity.col[activity_idx]
-                )
-            ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.float32
-        )
-
-        #?Yu: `metrics` should be changed according to my implementation.
-        #md = metrics.swipe_threshold_sparse(targets=targets, scores=scores,verbose=verbose>=2, ret_dict=True) # returns dict for with metric per assay in the form of {metric: {assay_nr: value}} #?Yu: isn't `verbose=verbose>=2` syntax error?
-        md = swipe_threshold_sparse(targets=targets, scores=scores, bedroc_alpha=bedroc_alpha, verbose=verbose>=2, ret_dict=True)
-
-        if hparams.get('loss_fun') == 'Con':
-            for ii, k in enumerate(ks):#?Yu: `ks` is not defined in this loop.
-                md[f'top_{k}_acc'] = {0:np.vstack(topk_l)[:-1, ii].mean()} # drop last (might be not full) #?Yu why
-            md['arocc'] = {0:np.hstack(arocc_l)[:-1].mean()} # drop last (might be not full) #?Yu why
-
-        logdic = {f'train_mean_{k}': np.nanmean(list(v.values())) for k,v in md.items() if v}
-        mlflow.log_metrics(logdic, step=epoch) #?Yu: go through the use of mlflow in `train_utils.py``
-        if wandb.run: wandb.log({k.replace('_', '/'):v for k, v in logdic.items()}, step=epoch)
-        # if verbose: logger.info(logdic) #?Yu: why not print the logdic？
 
         # ================================= Validation loop =================================
-        print(f'============================\n Starting validation \n============================')
         with torch.no_grad():
             
             model.eval()
 
-            loss_sum = 0.
-            preactivations_l = [] #?Yu: will this overwrite the ones in the training loop?
-            activity_idx_l = []
-            for batch_num, batch_indices in enumerate(valid_batcher):
-
-                # get and unpack batch data
-                batch_data = Subset(InMemory, indices=valid_idx)[batch_indices]
-                activity_idx, compound_features, assay_features, activity = batch_data #?Yu why isn't here `assay_onehot`?
-
-                # move data to device
-                # assignment is not necessary for modules but it is for tensors.
-                # https://discuss.pytorch.org/t/what-is-the-difference-between-doing-net-cuda-vs-net-to-device/69278/8
-                if isinstance(compound_features, torch.Tensor):
-                    compound_features = compound_features.to(device)
-                assay_features = assay_features.to(device) if not isinstance(assay_features[0], str) else assay_features # why is the conditions different between 'assay_features' and 'compound_features'.
-                activity = activity.to(device)
-
-                # forward #?Yu: why the `Multitask` related code is here but not in the training loop?`
-                if 'Multitask' in hparams['model']:
-                    assay_features_norm = F.normalize(
-                        assay_features, p=2, dim=1
-                    )
-                    sim_to_train = assay_features_norm @ train_assay_features_norm.T #?Yu
-                    sim_to_train_weights = F.softmax(sim_to_train * hparams['multitask_temperature'], dim = 1) #?Yu: what does `F.softmax` do?
-                    preactivations = model(compound_features, sim_to_train_weights)
-                
-                elif hparams.get('loss_fun') in ('CE', 'Con'):
-                    preactivations = model.forward_dense(compound_features, assay_features) #?Yu: 'assay_onehot' is not defined in the validation loop.
-                else:
-                    preactivations = model(compound_features, assay_features)
-
-                # loss
-                preactivations = preactivations * 1 / hparams.get('beta', 1) #?Yu
-                #?Yu Why is the below code block commented out in the primary code.
-                if hparams.get('loss_fun') in ('CE', 'Con'):
-                    loss = F.binary_cross_entropy_with_logits(preactivations, activity)
-                else:
-                    loss = criterion(preactivations, activity)
-                
-                # accumulate loss
-                loss_sum += loss.item()
-
-                if hparams.get('loss_fun') in ('CE', 'Con'): # how to calc the below metrics if `loss_fun` is neither 'CE' nor 'Con'?
-                    ks = [1, 5, 10, 50]
-                    tkaccs, arocc = top_k_accuracy(torch.arange(0, len(preactivations)), preactivations, k=[1, 5, 10, 50], ret_arocc=True)
-                    topk_l.append(tkaccs) # already detached numpy #?Yu
-                    arocc_l.append(arocc)
-                
-                # accumulate preactivations
-                #Yu: remove the below comments if not used
-                # - need to detach; preactivations.requires_grad is True
-                # - move it to cpu
-                if hparams.get('loss_fun') in ('CE', 'Con'): #?Yu: combine this condition with the one above? and similarily, how to calc preactivations if `loss_fun` is neither 'CE' nor 'Con'?
-                    # preactivations = preactivations.sum(axis=1)
-                    preactivations = torch.diag(preactivations) #?Yu: `torch.diag`
-
-                preactivations_l.append(preactivations.detach().cpu())
-
-                # accumulate indices just to double check.
-                # - activity_idx is a np.array, not a torch.tensor
-                activity_idx_l.append(activity_idx)
-
-                if batch_num % EVERY == 0 and verbose:
-                    logger.info(f'Epoch{epoch}: Validation batch {batch_num} out of {len(valid_batcher) -1}.')
-
-            # log mean loss over all minibatches
-            valid_loss = loss_sum / len(valid_batcher)
-            mlflow.log_metric('valid_loss', valid_loss, step=epoch) #?Yu: sort the use of mlflow along the code.
-            if wandb.run: wandb.log({'valid/loss': valid_loss}, step=epoch)
-            
-            # compute test auroc and avgp for each assay (on the cpu)
-            preactivations = torch.cat(preactivations_l, dim=0)
-            print(f'preactivations.shape: {preactivations.shape}') 
-            probabilities = torch.sigmoid(preactivations).numpy()
-
-            activity_idx = np.concatenate(activity_idx_l, axis=0)
-            print(f'The length of activity_idx for validation: {len(activity_idx)}, including {activity_idx}')
-            # assert np.array_equal(activity_idx, valid_idx) #?Yu: why is this line commented out in the primary code?
-
-            targets = sparse.csc_matrix(
-                (
-                    InMemory.activity.data[valid_idx],
-                    (
-                        InMemory.activity.row[valid_idx],
-                        InMemory.activity.col[valid_idx]
-                    )
-                ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.bool_
+            valid_loss, _, logdic = run_stage(stage='valid', stage_batcher=valid_batcher, stage_idx=valid_idx, InMemory=InMemory,
+                device=device, hparams=hparams, model=model, criterion=criterion,
+                epoch=epoch,verbose=verbose
             )
-
-            scores = sparse.csc_matrix(
-                (
-                    probabilities,
-                    (
-                        InMemory.activity.row[valid_idx],
-                        InMemory.activity.col[valid_idx]
-                    )
-                ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.float32
-            )
-
-            #md = metrics.swipe_threshold_sparse(targets=targets, scores=scores, verbose=verbose>=2, ret_dict=True)
-            md = swipe_threshold_sparse(targets=targets, scores=scores, bedroc_alpha=bedroc_alpha, verbose=verbose>=2, ret_dict=True)
-
-            if hparams.get('loss_fun') == 'Con': #?Yu: what if 'loss_fun' is 'Con'
-                #?Yu: how about other metrics?
-                for ii, k in enumerate(ks): #?Yu: `ks` is not defined in this loop.
-                    md[f'top_{k}_acc'] = {0:np.vstack(topk_l)[:-1, ii].mean()} # drop last (might be not full)
-                md['arocc'] = {0:np.hstack(arocc_l)[:-1].mean()} # drop last (might be not full)
-            
-            # log metrics mean over assays #?Yu: modify here to calc metrics on OR datasets.
-
-            logdic = {f'valid_mean_{k}': np.nanmean(list(v.values())) for k,v in md.items() if v} #?Yu: what is logdic?
-            logdic['valid_loss'] =valid_loss
-
-            mlflow.log_metrics(logdic, step=epoch)
-
-            if wandb.run: wandb.log({k.replace('_', '/'):v for k, v in logdic.items()}, step=epoch)
-            # if verbose: logger.info(logdic)
 
             # monitor metric
             evaluation_metric = 'valid_mean_davgp'
+            #evaluation_metric = 'valid_mean_bedroc' #Yu edited
 
             if evaluation_metric not in logdic:
-                logger.info('Using -valid_loss because valid_mean_avgp not in logdic.')
-            log_value = logdic.get(evaluation_metric, -valid_loss) #?Yu: why -valid_loss?
+                logger.info('Using -valid_loss because valid_mean_davgp not in logdic.')
+            log_value = logdic.get(evaluation_metric, -valid_loss) # get `evaluation_metric` first, otherwise, get the second argument '-valid_loss'
             # metric_monitor(logdic['valid_mean_davgp'], epoch)
-            do_early_stop = early_stopping(-log_value) # smaller is better #?Yu: why -log_value?
+            do_early_stop = early_stopping(-log_value) # early_stopper expected the small is better, but `-log_value` reverses the logic
             print(f'Validation loop: \n do_early_stop={do_early_stop}')
 
             # log model checkpoint dir
@@ -1527,148 +1502,52 @@ def train_and_test(
                 wandb.run.config.update({'model_save_dir':checkpoint_file_path})
             
             if early_stopping.improved:
+                best_epoch = epoch
                 logger.info(f'Epoch {epoch}: Save model and optimizer checkpoint with val-davgp: {log_value}.')
                 torch.save({
                     'value': log_value,
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
-                }, checkpoint_file_path)
-            
+                }, checkpoint_file_path) # The model is saved at ./mlruns/runid/artifacts
+                print(f'Checkpoint saved to {checkpoint_file_path}.')
 
-            if do_early_stop: #?Yu is this set by me or during the training loop?
+            if do_early_stop:
                 logger.info(f'Epoch {epoch}: Out of patience. Early stop!')
                 break
 
-            model.train() #?Yu: how this code line connect with the code above.
+            model.train() # set the model back to training model for the next epoch.
         
         epoch +=1
     
     # ================================= Testing loop =================================
-    print(f'============================\n Starting testing: epoch {epoch} \n============================')
-
     # test with best model
     with torch.no_grad():
         
-        epoch -= 1 #?Yu how can this be the best model
-        logger.info(f'Epoch {epoch}: Restore model from checkpoint.')
-        # check if checkpoint exists
-        if not os.path.exists(checkpoint_file_path):
-            logger.warning(f'Checkpoint file {checkpoint_file_path} does not exist. Test with init model.')
+        if best_epoch is None:
+            logger.warning('No best model recorded. Testing with initial model.')
         else:
+            logger.info(f'Testing best model from epoch {best_epoch}.The checkpoint file is {checkpoint_file_path}.')
             checkpoint = torch.load(checkpoint_file_path)
             model.load_state_dict(checkpoint['model_state_dict'])
 
         model.eval()
 
-        loss_sum = 0.
-        preactivations_l = []
-        activity_idx_l = []
-        for batch_num, batch_indices in enumerate(test_batcher):
+        _, md, logdic = run_stage(stage='test', stage_batcher=test_batcher, stage_idx=test_idx, InMemory=InMemory,
+                  device=device, hparams=hparams, model=model, criterion=criterion,
+                  epoch=epoch, verbose=verbose)
+        # ===============================================
 
-            # get and unpack batch data
-            batch_data = Subset(InMemory, indices=test_idx)[batch_indices]
-            activity_idx, compound_features, assay_features, activity = batch_data #?Yu: why isn't here `assay_onehot`?
+        if verbose: logger.info(pd.DataFrame.from_dict([logdic]).T) #?Yu: print a dataframe?
 
-            # move data to device
-            # assignment is not necessary for modules but it is for tensors.
-            # https://discuss.pytorch.org/t/what-is-the-difference-between-doing-net-cuda-vs-net-to-device/69278/8
-            if isinstance(compound_features, torch.Tensor):
-                compound_features = compound_features.to(device)
-            assay_features = assay_features.to(device) if not isinstance(assay_features[0], str) else assay_features
-            activity = activity.to(device)
-
-            # forward
-            if 'Multitask' in hparams['model']:
-                assay_features_norm = F.normalize(assay_features, p=2, dim=1) #
-                sim_to_train = assay_features_norm @ train_assay_features_norm.T
-                sim_to_train_weights = F.softmax(sim_to_train * hparams['multitask_temperature '], dim=1) #?Yu: what is `sim_to_train_weights`?
-                preactivations = model(compound_features, sim_to_train_weights)
-            else:
-                preactivations = model(compound_features, assay_features) #?Yu: why not `assay_onehot`?
-            
-            # loss
-            #?Yu: why the below code block is commented out in the primary code.
-            #if hparams.get('loss_fun') in ('CE', 'Con'):
-            #    loss = F.binary_cross_entropy_with_logits(preactivations, activity)
-            #else:
-            loss = criterion(preactivations, activity)
-
-            # accumulate loss
-            loss_sum += loss.item()
-
-            # accumulate preactivations
-            # - need to detach; preactivations.requires_grad is True
-            # - move it to cpu
-            preactivations_l.append(preactivations)
-
-            # accumulate indices just to double check.
-            # - activity_idx is a np.array, not a torch.tensor
-            activity_idx_l.append(activity_idx) #?Yu: why not this code line closely after the definition of `activity_idx`.
-
-            if batch_num % EVERY == 0 and verbose:
-                logger.info(f'Epoch{epoch}: Test batch {batch_num} out of {len(test_batcher) -1}.')
-        
-        # log mean loss over all minibatches
-        mlflow.log_metric('test_loss', loss_sum / len(test_batcher), step=epoch)
-        if wandb.run: wandb.log({'test/loss': loss_sum / len(test_batcher)})
-
-        # compute test auroc and avgp for each assay (on the cpu) 'WHY??? #?Yu: 'WHY' is in the primary code.
-        preactivations = torch.cat(preactivations_l, dim=0)
-        print(f'preactivations.shape: {preactivations.shape}') 
-        probabilities = torch.sigmoid(preactivations) #?Yu: figure out `sigmoid` function, why use it here.
-
-        activity_idx = np.concatenate(activity_idx_l, axis=0)
-        print(f'The length of activity_idx for testing: {len(activity_idx)}, including {activity_idx}')
-        # assert np.array_equal(activity_idx, test_idx) #Todo WHY??? #?Yu: 'WHY' is in the primary code.
-
-        probabilities = probabilities.detach().cpu().numpy().astype(np.float32)
-
-        targets = sparse.csc_matrix(
-            (
-                InMemory.activity.data[test_idx],
-                (
-                    InMemory.activity.row[test_idx],
-                    InMemory.activity.col[test_idx]
-                )
-            ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.bool_
-        )
-
-        scores = sparse.csc_matrix(
-            (
-                probabilities,
-                (
-                    InMemory.activity.row[test_idx],
-                    InMemory.activity.col[test_idx]
-                )
-            ), shape=(InMemory.num_compounds, InMemory.num_assays), dtype=np.float32
-        )
-        print(f'Scores in test: scores.shape: {scores.shape},\n scores: {scores}')
-
-        #md  = metrics.swipe_threshold_sparse(targets=targets, scores=scores, verbose=verbose>=2, ret_dict=True)
-        md  = swipe_threshold_sparse(targets=targets, scores=scores, bedroc_alpha=bedroc_alpha, verbose=verbose>=2, ret_dict=True)
-
-        if hparams.get('loss_fun') == 'Con':
-            for ii, k in enumerate(ks): # what is `ii`
-                md[f'top_{k}_acc'] = {0:np.vstack(topk_l)[:-1, ii].mean()} # drop last (might be not full)
-            md['arocc'] = {0:np.hstack(arocc_l)[:-1].mean()} # drop last (might be not full)
-
-        # log metrics mean over assays
-
-        logdic = {f'test_mean_{k}': np.nanmean(list(v.values())) for k,v in md.items() if v} #?Yu: why `:` is not in f''
-        mlflow.log_metrics(logdic, step=epoch)
-
-        if wandb.run: wandb.log({k.replace('_','/'):v for k, v in logdic.items()}, step=epoch)
-        if verbose:
-            logger.info(pd.DataFrame.from_dict([logdic]).T) #?Yu: print a dataframe?
-        
+        # Yu: remove the code calculate counts and positives if not used later
         # compute test activity counts and positives
-        counts, positives = {}, {}
-        for idx, col in enumerate(targets.T):
-            if col.nnz == 0:
-                continue
-            counts[idx] = col.nnz
-            positives[idx] = col.sum()
+        #counts, positives = {}, {}
+        #for idx, col in enumerate(targets.T):
+        #    if col.nnz == 0:
+        #        continue
+        #    counts[idx] = col.nnz
+        #    positives[idx] = col.sum()
 
         # 'test_mean_bedroc': 0.6988015835969245, 'test_mean_davgp': 0.16930837444561778, 'test_mean_dneg_avgp': 0.17522445272085613, 
         # 'test/mean/auroc': 0.6709850363704437, 'test/mean/avgp': 0.6411171492554743, 'test/mean/neg/avgp': 0.7034156779109996, 
@@ -1692,7 +1571,7 @@ def train_and_test(
 
         model.train()
     
-    if not keep: #?Yu: what is keep
+    if not keep:
         logger.info('Delete model checkpoint.')
         checkpoint_file_path.unlink() #unlink_ remove file or link.
 
@@ -1820,7 +1699,7 @@ def test(
                 preactivations = model(compound_features, assay_features)   
             
             # loss
-            loss = criterion(preactivations, activity)
+            loss = criterion(preactivations, activity) 
 
             # accumulate loss
             loss_sum += loss.item()

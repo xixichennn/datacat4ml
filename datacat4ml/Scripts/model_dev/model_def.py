@@ -216,20 +216,22 @@ class DotProduct(nn.Module):
         :class:`torch.Tensor`, shape (N, )
             Row-wise dot products of the compound and assay projections.
         """
-        # assert compound_features.shape[0] == assay_features.shape[0] # Dimension mismatch. #?Yu not necessary?
-
         # Yu convert dtypes to Float
         compound_features = compound_features.float()
         assay_features = assay_features.float()   
 
-        compound_embeddings = self.compound_encoder(compound_features) #?Yu what if the compound_features have been encoded somewhere else?
+
+        compound_embeddings = self.compound_encoder(compound_features) 
         assay_embeddings = self.assay_encoder(assay_features)
+        assert compound_embeddings.shape == assay_embeddings.shape, \
+            f"Compound and assay embeddings must have the same shape, got {compound_embeddings.shape} and {assay_embeddings.shape}."
 
         if self.norm:
             compound_embeddings = compound_embeddings / (torch.norm(compound_embeddings, dim=1, keepdim=True) +1e-13) #?Yu 
             assay_embeddings = assay_embeddings / (torch.norm(assay_embeddings, dim=1, keepdim=True) +1e-13)
 
-        preactivations = (compound_embeddings * assay_embeddings).sum(axis=1) # `.sum(axis=1)` sums acrosst the embedding dimension, producing shape [batch_size]
+        # row-wise sum dot products.
+        preactivations = (compound_embeddings * assay_embeddings).sum(axis=1) # `.sum(axis=1)` sums across the embedding dimension, producing shape [batch_size]
 
         return preactivations
     

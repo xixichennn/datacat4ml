@@ -18,8 +18,9 @@ hyperparams=/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/model_dev/hparam
 split=split
 experiment=loss_fun_Con
 #loss_funs=("BCE", "CE", "Con")
-#loss_fun=Con
-loss_fun=CE
+loss_fun=Con
+#loss_fun=CE
+#loss_fun=BCE
 
 # SLURM_ARRAY_TASK_ID is the index of the current job in the array
 assay_mode="${assay_modes[$SLURM_ARRAY_TASK_ID % ${#assay_modes[@]}]}"
