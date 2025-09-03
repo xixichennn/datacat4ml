@@ -49,8 +49,8 @@ def log_standard_values(x: pd.Series) -> float:
         return -1 * math.log10(x["standard_value"] * 10 ** -9) 
     
 # ====================== remove duplicate SMILES with different values ==============================
-def remove_dup_mols(df, compound_id_col='compound_chembl_id', pvalue_col='pStandard_value') -> pd.DataFrame:
-    
+def remove_dup_mols(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pStandard_value') -> pd.DataFrame:
+
     """
     Entries with multiple  annotations were included once with the arithmetic mean when the standard deviation of pstardard_value annotations was within 1 log unit;
     Otherwise, the entry was excluded.
@@ -58,12 +58,12 @@ def remove_dup_mols(df, compound_id_col='compound_chembl_id', pvalue_col='pStand
     param: df: pd.DataFrame: The dataframe to remove duplicates from
     
     """
-    # group by 'molecule_chembl_id' and calculate the mean and standard deviation of 'pstandard_value'
-    df_group = df.groupby(compound_id_col)[pvalue_col].agg(['mean', 'std'])
-    # find where the standard deviation is greater than 1, and drop these rows. Then keep the first row of the rows with the same 'molecule_chembl_id'
-    df = df[~df[compound_id_col].isin(df_group[df_group['std'] > 1].index)].drop_duplicates(subset=compound_id_col, keep='first').copy()
+    # group by 'canonical_smiles_by_Std' and calculate the mean and standard deviation of 'pstandard_value'
+    df_group = df.groupby(std_smiles_col)[pvalue_col].agg(['mean', 'std'])
+    # find where the standard deviation is greater than 1, and drop these rows. Then keep the first row of the rows with the same 'canonical_smiles_by_Std'
+    df = df[~df[std_smiles_col].isin(df_group[df_group['std'] > 1].index)].drop_duplicates(subset=std_smiles_col, keep='first').copy()
     # map the mean of 'pstandard_value' to the 'molecule_chembl_id' in the original dataframe
-    df[pvalue_col] = df[compound_id_col].map(df_group['mean'])
+    df[pvalue_col] = df[std_smiles_col].map(df_group['mean'])
     # reset the index
     df = df.reset_index(drop=True)
 
@@ -79,6 +79,7 @@ def standardize_withvalue(
 
     """
     Second stage cleaning; SMILES standardization.
+    For rows where the column `pStandard_value` is available:
 
     1. desalt, canonicalise tautomers in SMILES
     2. remove > 900 Da molecular weight
@@ -118,7 +119,7 @@ def standardize_withvalue(
     # now drop duplicates if the smiles are the same and the values are outside of a threshold
     # Entries with multiple  annotations were included once when the standard deviation of pstardard_value annotations was within 1 log unit;
     # Otherwise, the entry was excluded
-    df = remove_dup_mols(df,compound_id_col='compound_chembl_id', pvalue_col='pStandard_value')
+    df = remove_dup_mols(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pStandard_value')
     print (f'After removing the mols with multiple values, the shape of the df:{df.shape}')
 
     df["max_num_atoms"] = df.num_atoms.max()
@@ -135,6 +136,7 @@ def standardize_novalue(
 
     """
     Second stage cleaning; SMILES standardization.
+    For rows where the column `pStandard_value` is None:
 
     1. desalt, canonicalise tautomers in SMILES
     2. remove > 900 Da molecular weight
@@ -169,7 +171,6 @@ def standardize_novalue(
     # get log standard values -- need to convert uM first
     df["pStandard_value"] = 'None'
 
-    
     # remove duplicate
     # first need to just keep one of the duplicates if smiles and value are *exactly* the same
     df = df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")

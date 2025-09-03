@@ -22,6 +22,14 @@ def curate_ORs(task='cls'):
     # keep the 'task' in the argument to ensure the stats are generated only once
     print(f'----------->Task is {task}\n')
 
+    ## ==== het data for ORs ====
+    print('Processing heterogeneous data of ORs...')
+    if os.path.exists(os.path.join(CURA_HET_OR_DIR, task)):
+        # remove the directory and its contents
+        shutil.rmtree(os.path.join(CURA_HET_OR_DIR, task))
+        
+    curate_datasets_and_get_stats(dataset_type='het', task=task, target_list=OR_chemblids, effect=None, assay=None, std_types=["Ki", "IC50", 'EC50'],
+                                input_path=HET_OR_DIR, output_path=CURA_HET_OR_DIR)
 
     ## ==== categorized data for ORs ====
     print('Processing categorized datasets of ORs...')
@@ -48,15 +56,6 @@ def curate_ORs(task='cls'):
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
     curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='antag', assay='B_arrest', std_types=["IC50"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
-        
-    ## ==== het data for ORs ====
-    print('Processing heterogeneous data of ORs...')
-    if os.path.exists(os.path.join(CURA_HET_OR_DIR, task)):
-        # remove the directory and its contents
-        shutil.rmtree(os.path.join(CURA_HET_OR_DIR, task))
-        
-    curate_datasets_and_get_stats(dataset_type='het', task=task, target_list=OR_chemblids, effect=None, assay=None, std_types=["Ki", "IC50", 'EC50'],
-                                input_path=HET_OR_DIR, output_path=CURA_HET_OR_DIR)
 
         
 if __name__ == '__main__':

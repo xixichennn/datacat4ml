@@ -18,10 +18,11 @@ def curate_GPCRs(task='cls', job_index=0, total_jobs=30):
 
     """
     # Get sorted list of all targets
-    cat_targets = sorted([id for id in os.listdir(CAT_GPCR_DIR) 
-                        if os.path.isdir(os.path.join(CAT_GPCR_DIR, id))])
     het_targets = sorted([id for id in os.listdir(HET_GPCR_DIR)
                         if os.path.isdir(os.path.join(HET_GPCR_DIR, id))])
+    
+    cat_targets = sorted([id for id in os.listdir(CAT_GPCR_DIR) 
+                        if os.path.isdir(os.path.join(CAT_GPCR_DIR, id))])
 
     # Split into chunks
     def chunk_list(lst, job_idx, total_j):
@@ -30,20 +31,22 @@ def curate_GPCRs(task='cls', job_index=0, total_jobs=30):
         end = (job_idx + 1) * chunk if job_idx != total_j - 1 else len(lst)
         return lst[start:end]
 
-    current_cat = chunk_list(cat_targets, job_index, total_jobs)
     current_het = chunk_list(het_targets, job_index, total_jobs)
+    current_cat = chunk_list(cat_targets, job_index, total_jobs)
 
     print(f"Processing chunk {job_index+1}/{total_jobs} with:")
-    print(f"- {len(current_cat)} cat targets")
     print(f"- {len(current_het)} het targets")
+    print(f"- {len(current_cat)} cat targets")
+    
+    # Process heterogeneous data
+    print('\nProcessing heterogeneous data...')
+    _process_het(current_het, task)
 
     # Process categorized data
     print('\nProcessing categorized datasets...')
     _process_cat(current_cat, task)
     
-    # Process heterogeneous data
-    print('\nProcessing heterogeneous data...')
-    _process_het(current_het, task)
+    
 
 def _process_cat(targets, task):
     """Process categorized GPCR targets"""
