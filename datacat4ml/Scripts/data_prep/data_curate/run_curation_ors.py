@@ -3,7 +3,7 @@ import shutil
 import argparse
 
 from datacat4ml.const import *
-from datacat4ml.Scripts.data_prep.data_curate.utils.curate_dataset_type import curate_datasets_and_get_stats
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.curate_dataset_type import curate_datasets_and_get_stats
 def curate_ORs(task='cls'):
 
     """
