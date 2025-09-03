@@ -26,23 +26,30 @@ DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
 PREP_DATA_DIR = os.path.join(DATA_DIR, "data_prep")
 # "data_fetch"
 FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
-FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 
 # data_categorize
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
-HET_OR_DIR = os.path.join(CAT_DATA_DIR, "het_ors")
 HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcrs")
-CAT_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_ors")
 CAT_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_gpcrs")
 
+HET_OR_DIR = os.path.join(CAT_DATA_DIR, "het_ors")
+CAT_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_ors")
 
 # data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
 CURA_HET_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_gpcrs")
+CURA_CAT_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_gpcrs")
+CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcrs")
+
 CURA_HET_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_ors")
 CURA_CAT_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_ors")
-CURA_CAT_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_gpcrs")
+CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_ors")
 
+# data_featurize
+FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
+FEAT_HET_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_het_ors")
+FEAT_CAT_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_cat_ors")
+FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_ors")
 
 # data_split
 SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
@@ -51,9 +58,13 @@ SPLIT_HET_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_gpcrs")
 SPLIT_CAT_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_ors")
 SPLIT_CAT_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_gpcrs")
 
+# hparams
+HPARAMS_DIR = os.path.join(DATA_DIR, "model_dev")
+
 # benchmark
 BMK_DIR = os.path.join(DATA_DIR, "benchmark")
 BMK_CAT_DIR = os.path.join(BMK_DIR, "cat_datasets")
+
 
 HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
 AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml')
@@ -465,14 +476,15 @@ Descriptors = {
       # 3D descriptors
       'THREE_D': ['SHAPE3D', 'AUTOCORR3D', 'RDF', 'MORSE', 'WHIM', 'GETAWAY'],
       # ChemBERTa tokenization
-      'TOKENS': ['TOKENS'],
-      # One-hot encoding
-      'ONEHOT': ['ONEHOT'],
-      # Graph convolutional featurization
-      'GRAPH': ['GRAPH']
+#      'TOKENS': ['TOKENS'],
+#      # One-hot encoding
+#      'ONEHOT': ['ONEHOT'],
+#      # Graph convolutional featurization
+#      'GRAPH': ['GRAPH']
 }
 
 Descriptor_cats = ['FP', 'PHYSICOCHEM', 'THREE_D', 'TOKENS', 'ONEHOT', 'GRAPH']
-#Algos = [RFR, SVRR, KNNR, GBR,RFC, SVCC, KNNC, GBC]
 #======================data process ======================#
 RANDOM_SEED = 42
+
+#====================== ML models ========================

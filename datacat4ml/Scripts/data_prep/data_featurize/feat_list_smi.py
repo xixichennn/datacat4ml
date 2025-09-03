@@ -6,8 +6,8 @@ import argparse
 import numpy as np
 import pandas as pd
 
-#from OpioML.Scripts.const import FETCH_DATA_DIR, DATASETS_DIR, FEATURIZE_DATA_DIR, Tasks, Confidence_scores, Descriptors, Descriptor_cats
-#from OpioML.Scripts.utils import mkdirs, get_df_name
+from datacat4ml.const import Descriptors
+from datacat4ml.const import CURA_HET_OR_DIR, CURA_CAT_OR_DIR, CURA_LHD_OR_DIR, FEAT_HET_OR_DIR, FEAT_CAT_OR_DIR, FEAT_LHD_OR_DIR, Tasks, Descriptor_cats
 
 #===================== Utility functions =====================#
 def mol_from_smi(smi: str):
@@ -343,53 +343,52 @@ class Featurizer:
 
 
 # ===================== Featurize data =====================#
-def featurize_data(descriptor_cat: str = 'FP', task:str = 'cls', confidence_score:int = 8, 
-                   use_clustering:str = 'True', filepath = DATASETS_DIR):
+Cura_Feat_Dic = {CURA_HET_OR_DIR: FEAT_HET_OR_DIR, 
+                 CURA_CAT_OR_DIR: FEAT_CAT_OR_DIR,
+                 CURA_LHD_OR_DIR: FEAT_LHD_OR_DIR}
 
-    print(f"filepath is: {filepath}\n")
+def featurize_data(in_dir:str = CURA_HET_OR_DIR, task:str = 'cls', descriptor_cat: str = 'FP'):
+
+    print(f"in_path is: {in_dir}\n")
     print(f"task is: {task}\n")
-    print(f"confidence_score is: {confidence_score}\n")
-    print(f"use_clustering is: {use_clustering}\n")
-    print(f"descriptor_class is: {descriptor_cat}\n")
-    
+    # access the curated csv files obtained from data curation
+    files = os.listdir(os.path.join(in_dir, task))
+    curated_files = [file for file in files if file.endswith('_curated.csv')]
+
+    # initiate featurizer
     featurizer = Featurizer()    
     descriptors = Descriptors[descriptor_cat]
 
-    # access the final csv files obtained from data curation
-    folder_path = os.path.join(filepath, 'splited', task, 'confidence_score'+'_'+str(confidence_score), 
-                               'use_clustering'+'_'+str(use_clustering))
-    files = os.listdir(folder_path)
-    final_files = [file for file in files if file.endswith('_final.csv')]
+    print(f"descriptor_class is: {descriptor_cat}\n")
 
-    # make new directory to store the featurized data
-    new_path = os.path.join(filepath, 'featurized', task, 'confidence_score'+'_'+str(confidence_score), 
-                            'use_clustering'+'_'+str(use_clustering), descriptor_cat)
-    mkdirs(new_path)
+    for descriptor in descriptors:
+        print (f"descriptor is: {descriptor}\n")
+        # make new directory to store the featurized data
+        out_dir = os.path.join(Cura_Feat_Dic[in_dir], task, descriptor)
+        print(f"out_dir is: {out_dir}\n")
+        os.makedirs(out_dir, exist_ok=True)
 
+        for f in curated_files:
+            print (f"curated_file is: {f}\n")
 
-    for final_file in final_files:
-        print (f"final_file is: {final_file}\n")
+            df = pd.read_csv(os.path.join(in_dir, task, f))
+            # if df contains column 'Unnamed: 0', drop it
+            df = df.drop(columns=['Unnamed: 0'], errors='ignore')
 
-        df = pd.read_csv(os.path.join(folder_path, final_file))
-        df = df.drop(columns=['Unnamed: 0'])
-    
-        for descriptor in descriptors:
-            print (f"descriptor is: {descriptor}\n")
+            df[descriptor] = df['canonical_smiles_by_Std'].apply(lambda x: featurizer(descriptor, smi=[x])) # smi=[x]: pass a list
 
-            df[descriptor] = df['CuratedSmiles'].apply(lambda x: featurizer(descriptor, smi=x))
-
-        # save the featurized data as a pickle file
-        df.to_pickle(os.path.join(new_path, final_file[:-4]+'.pkl'))
+            # save the featurized data as a pickle file
+            df.to_pickle(os.path.join(out_dir, f[:-12]+'.pkl'))
 
 # ===================== Main =====================#
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Featurize data with different combinations of parameters.")
-    parser.add_argument("--descriptor_cat", choices=Descriptor_cats, required=True, help="Descriptor category (FP or Morgan)")
+    parser.add_argument("--in_dir", required=True, help="Path to datasets directory")
     parser.add_argument("--task", choices=Tasks, required=True, help="Task name")
-    parser.add_argument("--confidence", type=int, choices=Confidence_scores, required=True, help="Confidence score")
-    parser.add_argument("--use_clustering", required=True, help="Whether to use clustering")
-    parser.add_argument("--filepath", required=True, help="Path to datasets directory")
+    parser.add_argument("--descriptor_cat", choices=Descriptor_cats, required=True, help="Descriptor category (FP or Morgan)")
     
     args = parser.parse_args()
 
-    featurize_data(args.descriptor_cat, args.task, args.confidence, args.use_clustering, args.filepath)
+    featurize_data(args.in_dir,
+                   args.task,
+                   args.descriptor_cat)
