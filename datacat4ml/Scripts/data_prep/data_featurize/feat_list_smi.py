@@ -7,7 +7,9 @@ import numpy as np
 import pandas as pd
 
 from datacat4ml.const import Descriptors
-from datacat4ml.const import CURA_HET_OR_DIR, CURA_CAT_OR_DIR, CURA_LHD_OR_DIR, FEAT_HET_OR_DIR, FEAT_CAT_OR_DIR, FEAT_LHD_OR_DIR, Tasks, Descriptor_cats
+from datacat4ml.const import CURA_HET_OR_DIR, CURA_CAT_OR_DIR, CURA_LHD_OR_DIR, CURA_CAT_50_5K_OR_DIR
+from datacat4ml.const import FEAT_HET_OR_DIR, FEAT_CAT_OR_DIR, FEAT_LHD_OR_DIR, FEAT_CAT_50_5K_OR_DIR
+from datacat4ml.const import Tasks, Descriptor_cats
 
 #===================== Utility functions =====================#
 def mol_from_smi(smi: str):
@@ -340,12 +342,11 @@ class Featurizer:
         if descriptor == 'GRAPH':
             return self.graph_conv(**kwargs)
         
-
-
 # ===================== Featurize data =====================#
 Cura_Feat_Dic = {CURA_HET_OR_DIR: FEAT_HET_OR_DIR, 
                  CURA_CAT_OR_DIR: FEAT_CAT_OR_DIR,
-                 CURA_LHD_OR_DIR: FEAT_LHD_OR_DIR}
+                 CURA_LHD_OR_DIR: FEAT_LHD_OR_DIR,
+                 CURA_CAT_50_5K_OR_DIR: FEAT_CAT_50_5K_OR_DIR}
 
 def featurize_data(in_dir:str = CURA_HET_OR_DIR, task:str = 'cls', descriptor_cat: str = 'FP'):
 

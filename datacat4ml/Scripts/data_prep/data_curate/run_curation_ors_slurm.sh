@@ -19,5 +19,5 @@ tasks="${tasks[$SLURM_ARRAY_TASK_ID % ${#tasks[@]}]}"
 python3 run_curation_ors.py --task "$tasks"
 
 # run the command below in the terminal to submit the job
-# sbatch --array=0-1 run_curation_slurm.sh <num_jobs> with (the total number of combinations you want to process minus 1).
+# sbatch --array=0-1 run_curation_ors_slurm.sh <num_jobs> with (the total number of combinations you want to process minus 1).
 # Here <num_jobs> = 1*2 = 2

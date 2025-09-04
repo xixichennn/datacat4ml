@@ -39,10 +39,12 @@ CAT_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_ors")
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
 CURA_HET_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_gpcrs")
 CURA_CAT_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_gpcrs")
+CURA_CAT_50_5k_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_50_5k_gpcrs")
 CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcrs")
 
 CURA_HET_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_ors")
 CURA_CAT_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_ors")
+CURA_CAT_50_5K_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_50_5k_ors")
 CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_ors")
 
 # data_featurize
@@ -50,6 +52,7 @@ FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 FEAT_HET_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_het_ors")
 FEAT_CAT_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_cat_ors")
 FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_ors")
+FEAT_CAT_50_5K_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_cat_50_5k_ors")
 
 # data_split
 SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
@@ -136,8 +139,8 @@ OR_name_chemblids = {'mor': 'CHEMBL233', 'kor': 'CHEMBL237', 'dor': 'CHEMBL236',
 
 Effects=['bind', 'agon', 'antag', 'None'] # bind: binding affinity, agon: agonism, antag: antagonism
 Assays = ['RBA', 
-          'G_GTP', 'G_cAMP', 'G_Ca', # G: G protein activation
-          'B_arrest',
+          'G-GTP', 'G-cAMP', 'G-Ca', # G: G protein activation
+          'B-arrest',
           'None'] # B: beta arrestin recruitment
 Std_types=['Ki', 'IC50', 'EC50']
 
@@ -170,20 +173,20 @@ EFFECT_TYPE_LOOKUP = {
                   },
             
             'agon':{
-                  'G_GTP':{
+                  'G-GTP':{
                       'EC50': {
                               'plus': ['CHEMBL4675312','CHEMBL749730','CHEMBL3271443', 'CHEMBL747703', 'CHEMBL749648', 
                                        'CHEMBL749735', 'CHEMBL3381496','CHEMBL838068','CHEMBL836650', 'CHEMBL870418'],
                               'exclude': ['CHEMBL896951']
                               }
                         },
-                  'G_Ca':{
+                  'G-Ca':{
                         'EC50': {
                               'plus': ['CHEMBL4390961'],
                               'exclude': []
                               }     
                         },
-                  'G_cAMP':{
+                  'G-cAMP':{
                         'IC50': {
                               'plus': ['CHEMBL865906'],
                               'exclude': [] 
@@ -193,7 +196,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude': ['CHEMBL4409279']
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'EC50': {
                               'plus': ['CHEMBL2114792', 'CHEMBL1613888', 'CHEMBL1737996', 'CHEMBL1738329', 'CHEMBL1738393'],
                               'exclude': []
@@ -202,7 +205,7 @@ EFFECT_TYPE_LOOKUP = {
                   },
                   
             'antag':{
-                  'G_GTP':{
+                  'G-GTP':{
                         'IC50': {
                               'plus':[],
                               'exclude':['CHEMBL907187', 'CHEMBL1019888', 'CHEMBL863310', 'CHEMBL919398', 'CHEMBL2353037', 
@@ -221,7 +224,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude':['CHEMBL5127598']
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'IC50': {
                               'plus':['CHEMBL1738030', 'CHEMBL1738425', 'CHEMBL1737856', 'CHEMBL3215256', 'CHEMBL3215164'],
                               'exclude':[]
@@ -251,7 +254,7 @@ EFFECT_TYPE_LOOKUP = {
                   },
             
             'agon':{
-                  'G_GTP':{
+                  'G-GTP':{
                       'EC50': {
                               'plus': ['CHEMBL4675316', 'CHEMBL755511', 'CHEMBL890208', 'CHEMBL754922','CHEMBL3271447',
                                        'CHEMBL884407', 'CHEMBL699591', 'CHEMBL754911', 'CHEMBL3888041', 'CHEMBL4409302', 
@@ -259,13 +262,13 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude': []
                               }
                         },
-                  'G_Ca':{
+                  'G-Ca':{
                         'EC50': {
                               'plus': [],
                               'exclude': []
                               }     
                         },
-                  'G_cAMP':{
+                  'G-cAMP':{
                         'IC50': {
                               'plus': [],
                               'exclude': [] 
@@ -275,7 +278,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude': []
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'EC50': {
                               'plus': ['CHEMBL1738559', 'CHEMBL1614391', 'CHEMBL1738199', 'CHEMBL1738644'],
                               'exclude': []
@@ -284,7 +287,7 @@ EFFECT_TYPE_LOOKUP = {
                   },
                   
             'antag':{
-                  'G_GTP':{
+                  'G-GTP':{
                         'IC50': {
                               'plus':[],
                               'exclude':['CHEMBL907191', 'CHEMBL1019891', 'CHEMBL953425']
@@ -302,7 +305,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude':['CHEMBL5127609', 'CHEMBL5127616']
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'IC50': {
                               'plus':['CHEMBL1614509', 'CHEMBL1738366', 'CHEMBL1738399', 'CHEMBL1738328', 'CHEMBL3214933', 
                                       'CHEMBL1738392', 'CHEMBL3215009'],
@@ -331,20 +334,20 @@ EFFECT_TYPE_LOOKUP = {
                   },
             
             'agon':{
-                  'G_GTP':{
+                  'G-GTP':{
                       'EC50': {
                               'plus': ['CHEMBL4675313', 'CHEMBL4705242', 'CHEMBL751917','CHEMBL3271445', 'CHEMBL666296', 
                                        'CHEMBL870420', 'CHEMBL5049549'],
                               'exclude': []
                               }
                         },
-                  'G_Ca':{
+                  'G-Ca':{
                         'EC50': {
                               'plus': [],
                               'exclude': []
                               }     
                         },
-                  'G_cAMP':{
+                  'G-cAMP':{
                         'IC50': {
                               'plus': [],
                               'exclude': [] 
@@ -354,7 +357,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude': []
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'EC50': {
                               'plus': ['CHEMBL1613999', 'CHEMBL1738034', 'CHEMBL1738507', 'CHEMBL1738434'],
                               'exclude': []
@@ -363,7 +366,7 @@ EFFECT_TYPE_LOOKUP = {
                   },
                   
             'antag':{
-                  'G_GTP':{
+                  'G-GTP':{
                         'IC50': {
                               'plus':['CHEMBL3590952'],
                               'exclude':['CHEMBL907189', 'CHEMBL871133', 'CHEMBL953426']
@@ -381,7 +384,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude':[]
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'IC50': {
                               'plus':['CHEMBL1613846', 'CHEMBL1738198', 'CHEMBL1738674', 'CHEMBL1738484'],
                               'exclude':[]
@@ -406,19 +409,19 @@ EFFECT_TYPE_LOOKUP = {
                   },
             
             'agon':{
-                  'G_GTP':{
+                  'G-GTP':{
                       'EC50': {
                               'plus': ['CHEMBL756270', 'CHEMBL754508'],
                               'exclude': []
                               }
                         },
-                  'G_Ca':{
+                  'G-Ca':{
                         'EC50': {
                               'plus': ['CHEMBL871100'],
                               'exclude': []
                               }     
                         },
-                  'G_cAMP':{
+                  'G-cAMP':{
                         'IC50': {
                               'plus': [],
                               'exclude': [] 
@@ -428,7 +431,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude': []
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'EC50': {
                               'plus': [],
                               'exclude': []
@@ -437,7 +440,7 @@ EFFECT_TYPE_LOOKUP = {
                   },
                   
             'antag':{
-                  'G_GTP':{
+                  'G-GTP':{
                         'IC50': {
                               'plus':[],
                               'exclude':['CHEMBL948531']
@@ -455,7 +458,7 @@ EFFECT_TYPE_LOOKUP = {
                               'exclude':[]
                               }
                         },
-                  'B_arrest':{
+                  'B-arrest':{
                         'IC50': {
                               'plus':[],
                               'exclude':[]

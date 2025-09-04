@@ -42,19 +42,19 @@ def curate_ORs(task='cls'):
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
 
     # Agonism
-    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='G_GTP', std_types=["EC50"], 
+    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='G-GTP', std_types=["EC50"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
-    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='G_Ca', std_types=["EC50"], 
+    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='G-Ca', std_types=["EC50"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
-    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='G_cAMP', std_types=["IC50", "EC50"], 
+    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='G-cAMP', std_types=["IC50", "EC50"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
-    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='B_arrest', std_types=["EC50"], 
+    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='agon', assay='B-arrest', std_types=["EC50"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
         
     ## Antagonism
-    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='antag', assay='G_GTP', std_types=["IC50", "Ki", "Kb", "Ke"], 
+    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='antag', assay='G-GTP', std_types=["IC50", "Ki", "Kb", "Ke"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
-    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='antag', assay='B_arrest', std_types=["IC50"], 
+    curate_datasets_and_get_stats(dataset_type='cat', task=task, target_list=OR_chemblids, effect='antag', assay='B-arrest', std_types=["IC50"], 
                                 input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR)
 
         

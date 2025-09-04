@@ -6,7 +6,7 @@ from multiprocessing import Pool
 from rdkit import Chem
 from rdkit.Chem.Descriptors import MolWt
 
-from datacat4ml.Scripts.data_prep.data_curate.utils.standardizer import Standardizer
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardizer import Standardizer
 
 # ==============================  standardize_smiles ==============================
 

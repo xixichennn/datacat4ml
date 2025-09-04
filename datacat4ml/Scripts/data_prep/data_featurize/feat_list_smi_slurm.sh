@@ -12,7 +12,8 @@ conda activate datacat
 # Create arrays for in_dirs, tasks and descriptor_cats
 in_dirs=("/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_het_ors"\
         "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_cat_ors"\
-        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_lhd_ors")
+        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_lhd_ors"\
+        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_cat_50_5k_ors")
 
 tasks=("cls" "reg")
 #descriptor_cats=("FP" "PHYSICOCHEM" "THREE_D" "TOKENS" "ONEHOT" "GRAPH")
@@ -28,6 +29,6 @@ descriptor_cat="${descriptor_cats[($SLURM_ARRAY_TASK_ID / (${#in_dirs[@]} * ${#t
 python3 feat_list_smi.py --in_dir "$in_dir" --task "$task" --descriptor_cat "$descriptor_cat"
 
 # run the blow command in terminal to submit the job
-# sbatch --array=0-17 feat_list_smi_slurm.sh 
+# sbatch --array=0-23 feat_list_smi_slurm.sh 
 # Replace 35 with the total number of combinations you want to process -1. 
-# Here <num_jobs> = (3 * 2 * 3) -1 = 17
+# Here <num_jobs> = (4 * 2 * 3) -1 = 23

@@ -7,9 +7,9 @@ from multiprocessing import cpu_count, Pool
 
 from datacat4ml.const import *
 from datacat4ml.utils import mkdirs
-from datacat4ml.Scripts.data_prep.data_curate.utils.select_assays import select_assays
-from datacat4ml.Scripts.data_prep.data_curate.utils.standardize_on_dataset import standardize_withvalue, standardize_novalue
-from datacat4ml.Scripts.data_prep.data_curate.utils.apply_thresholds import apply_thresholds
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.select_assays import select_assays
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardize_on_dataset import standardize_withvalue, standardize_novalue
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.apply_thresholds import apply_thresholds
 
 
 DEFAULT_CLEANING = {
@@ -191,7 +191,7 @@ def curate_datasets_and_get_stats(dataset_type='het', task='cls', target_list: L
                                 if not os.path.exists(stats_file): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(stats_file))
                                         with open(stats_file, 'w') as f:
-                                                f.write('task, target, effect, assay, standard_type, raw_size, curated_sized, curated_size_delta, threshold, num_active, num_inactives, %_actives\n')
+                                                f.write('task,target,effect,assay,standard_type,raw_size,curated_sized,curated_size_delta,threshold,num_active,num_inactive,%_active\n')
                                 if len(curated_df) > 0:
                                         with open(stats_file, 'a') as f:
                                                 # Print something for number check
@@ -203,7 +203,7 @@ def curate_datasets_and_get_stats(dataset_type='het', task='cls', target_list: L
                                                         percent_a = 0
                                                 else:
                                                         percent_a = round(num_active / curated_sized * 100, 2)
-                                                
-                                                f.write(f'{task}, {target}, {effect}, {assay}, {std_type}, {raw_size}, {curated_sized}, {curated_size_delta}, {threshold}, {num_active}, {curated_sized -num_active}, {percent_a}\n')
-                print(f'====================\n')         
+
+                                                f.write(f'{task},{target},{effect},{assay},{std_type},{raw_size},{curated_sized},{curated_size_delta},{threshold},{num_active},{curated_sized -num_active},{percent_a}\n')
+                print(f'====================\n')
 
