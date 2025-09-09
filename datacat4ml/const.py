@@ -29,37 +29,38 @@ FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
 
 # data_categorize
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
-HET_GPCR_DIR = os.path.join(CAT_DATA_DIR, "het_gpcrs")
-CAT_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_gpcrs")
+HHD_GPCR_DIR = os.path.join(CAT_DATA_DIR, "hhd_gpcr")
+MHD_GPCR_DIR = os.path.join(CAT_DATA_DIR, "mhd_gpcr")
 
-HET_OR_DIR = os.path.join(CAT_DATA_DIR, "het_ors")
-CAT_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_ors")
+HHD_OR_DIR = os.path.join(CAT_DATA_DIR, "hhd_or")
+MHD_OR_DIR = os.path.join(CAT_DATA_DIR, "mhd_or")
 
 # data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
-CURA_HET_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_gpcrs")
-CURA_CAT_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_gpcrs")
-CURA_CAT_50_5k_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_50_5k_gpcrs")
-CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcrs")
+CURA_HHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_gpcr")
+CURA_MHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_gpcr")
+CURA_MHD_50_5k_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_50_5k_gpcr")
+CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcr")
 
-CURA_HET_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_het_ors")
-CURA_CAT_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_ors")
-CURA_CAT_50_5K_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_cat_50_5k_ors")
-CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_ors")
+CURA_HHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_or")
+CURA_MHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or")
+CURA_MHD_50_5K_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_50_5k_or")
+CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_or")
 
 # data_featurize
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
-FEAT_HET_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_het_ors")
-FEAT_CAT_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_cat_ors")
-FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_ors")
-FEAT_CAT_50_5K_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_cat_50_5k_ors")
+FEAT_HHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_or")
+FEAT_MHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or")
+FEAT_MHD_50_5K_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_50_5k_or")
+FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_or")
+
 
 # data_split
 SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
-SPLIT_HET_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_ors")
-SPLIT_HET_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_gpcrs")
-SPLIT_CAT_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_ors")
-SPLIT_CAT_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_gpcrs")
+SPLIT_HET_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_or")
+SPLIT_HET_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_gpcr")
+SPLIT_CAT_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_or")
+SPLIT_CAT_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_gpcr")
 
 # hparams
 HPARAMS_DIR = os.path.join(DATA_DIR, "model_dev")
@@ -146,14 +147,14 @@ Std_types=['Ki', 'IC50', 'EC50']
 
 
 Tasks = ['cls', 'reg']
-File_paths = [CAT_OR_DIR, FETCH_DATA_DIR]
+#File_paths = [CAT_OR_DIR, FETCH_DATA_DIR]
 Confidence_scores = [8, 9]
 Thr_classes=[6, 7]
 Use_clusterings = [True, False]
 Use_smotes = [True, False]
 
 EFFECT_TYPE_LOOKUP = {
-      'mor': {
+      'CHEMBL233': {
             'bind': {
                 'RBA': {
                         'Ki': {
@@ -234,7 +235,7 @@ EFFECT_TYPE_LOOKUP = {
 
             },
 
-      'kor': {
+      'CHEMBL237': {
             'bind': {
                 'RBA':{
                         'Ki': {
@@ -317,7 +318,7 @@ EFFECT_TYPE_LOOKUP = {
      
             },
 
-      'dor': {
+      'CHEMBL236': {
             'bind': {
                 'RBA':{
                         'Ki': {
@@ -394,7 +395,7 @@ EFFECT_TYPE_LOOKUP = {
 
             },
 
-      'nor': {
+      'CHEMBL2014': {
             'bind': {
                 'RBA':{
                         'Ki': {
