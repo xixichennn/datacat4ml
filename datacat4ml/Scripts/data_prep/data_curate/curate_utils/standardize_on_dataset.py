@@ -70,7 +70,7 @@ def remove_dup_mols(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pS
     return df
 
 # ======================= run standardizing pipeling ==============================
-def standardize_withvalue(
+def standardize(
     x: pd.DataFrame,
     num_workers: int = 6,
     max_mol_weight: float = 900.0,
@@ -115,6 +115,11 @@ def standardize_withvalue(
     df.loc[(df["standard_units"] == "uM"), "standard_value"] *= 1000
     df.loc[(df["standard_units"] == "uM"), "standard_units"] = "nM"
     df["pStandard_value"] = df.apply(log_standard_values, axis=1)
+
+    # remove duplicate
+    # first need to just keep one of the duplicates if smiles and value are *exactly* the same
+    df = df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")
+    print (f'After dropping the duplicate combinations of (smiles, value) , the shape of the df:{df.shape}')
     
     # now drop duplicates if the smiles are the same and the values are outside of a threshold
     # Entries with multiple  annotations were included once when the standard deviation of pstardard_value annotations was within 1 log unit;
@@ -127,56 +132,56 @@ def standardize_withvalue(
 
     return df
 
-def standardize_novalue(
-    x: pd.DataFrame,
-    num_workers: int = 6,
-    max_mol_weight: float = 900.0,
-    **kwargs,
-) -> pd.DataFrame:
-
-    """
-    Second stage cleaning; SMILES standardization.
-    For rows where the column `pStandard_value` is None:
-
-    1. desalt, canonicalise tautomers in SMILES
-    2. remove > 900 Da molecular weight
-    3. get log standard values (e.g. pKI)
-    4. remove any repeats with conflicting measurements
-    (conflicting is standard derivation of pKIs > 1.0)
-
-    parameters:
-    x: pd.DataFrame, the dataframe to clean
-    num_workers: int, number of workers to use in parallel
-    max_mol_weight: float, maximum molecular weight to keep
-
-    returns:
-    pd.DataFrame, cleaned dataframe
-
-    """
-
-    # first clean the SMILES
-    def parallelize_standardization(df):
-        data_splits = np.array_split(df, num_workers)
-        with Pool(num_workers) as p:
-            df = pd.concat(p.map(standardize_smiles, data_splits))
-        return df
-
-    df = parallelize_standardization(x)
-    print (f'After standardizing the SMILES, the shape of the df: {df.shape}')
-
-    # drop anything that the molecular weight is too high
-    df = df.loc[df.molecular_weight <= max_mol_weight]
-    print (f'After dropping the mols with MW > {max_mol_weight} , the shape of the df: {df.shape}')
-
-    # get log standard values -- need to convert uM first
-    df["pStandard_value"] = 'None'
-
-    # remove duplicate
-    # first need to just keep one of the duplicates if smiles and value are *exactly* the same
-    df = df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")
-    print (f'After dropping the duplicate combinations of (smiles, value) , the shape of the df:{df.shape}')
-
-    df["max_num_atoms"] = df.num_atoms.max()
-    df["max_molecular_weight"] = df.molecular_weight.max()
-
-    return df
+#def standardize_novalue(
+#    x: pd.DataFrame,
+#    num_workers: int = 6,
+#    max_mol_weight: float = 900.0,
+#    **kwargs,
+#) -> pd.DataFrame:
+#
+#    """
+#    Second stage cleaning; SMILES standardization.
+#    For rows where the column `pStandard_value` is None:
+#
+#    1. desalt, canonicalise tautomers in SMILES
+#    2. remove > 900 Da molecular weight
+#    3. get log standard values (e.g. pKI)
+#    4. remove any repeats with conflicting measurements
+#    (conflicting is standard derivation of pKIs > 1.0)
+#
+#    parameters:
+#    x: pd.DataFrame, the dataframe to clean
+#    num_workers: int, number of workers to use in parallel
+#    max_mol_weight: float, maximum molecular weight to keep
+#
+#    returns:
+#    pd.DataFrame, cleaned dataframe
+#
+#    """
+#
+#    # first clean the SMILES
+#    def parallelize_standardization(df):
+#        data_splits = np.array_split(df, num_workers)
+#        with Pool(num_workers) as p:
+#            df = pd.concat(p.map(standardize_smiles, data_splits))
+#        return df
+#
+#    df = parallelize_standardization(x)
+#    print (f'After standardizing the SMILES, the shape of the df: {df.shape}')
+#
+#    # drop anything that the molecular weight is too high
+#    df = df.loc[df.molecular_weight <= max_mol_weight]
+#    print (f'After dropping the mols with MW > {max_mol_weight} , the shape of the df: {df.shape}')
+#
+#    # get log standard values -- need to convert uM first
+#    df["pStandard_value"] = 'None'
+#
+#    # remove duplicate
+#    # first need to just keep one of the duplicates if smiles and value are *exactly* the same
+#    df = df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")
+#    print (f'After dropping the duplicate combinations of (smiles, value) , the shape of the df:{df.shape}')
+#
+#    df["max_num_atoms"] = df.num_atoms.max()
+#    df["max_molecular_weight"] = df.molecular_weight.max()
+#
+#    return df

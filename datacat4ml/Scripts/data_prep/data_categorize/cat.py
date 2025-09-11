@@ -326,6 +326,7 @@ if __name__ == "__main__":
     hhd_or_dfs_len, hhd_gpcr_dfs_len = run_hhd(GPCR_dfs, GPCR_chemblids)
     mhd_or_dfs_len, mhd_gpcr_dfs_len, lhd_or_dfs_len, lhd_gpcr_dfs_len = run_mhd_lhd(GPCR_dfs, GPCR_chemblids)
 
+    # save the stats
     hhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'hhd_or_dfs_len.csv'), index=False)
     hhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'hhd_gpcr_dfs_len.csv'), index=False)
     mhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'mhd_or_dfs_len.csv'), index=False)

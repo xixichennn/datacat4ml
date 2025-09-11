@@ -33,31 +33,34 @@ def hhd(targets_list, GPCR_dfs, hhds_dir):
         for std_type in ['Ki', 'IC50', 'EC50']:
 
             type_df = target_df[target_df['standard_type'] == std_type]
-            type_df_name = f"{target_chembl_id}_{std_type}_df"
-            file_path = os.path.join(hhds_dir, target_chembl_id, std_type)
-            mkdirs(file_path)
-            type_df.to_csv(os.path.join(file_path, f'{type_df_name}.csv' ), index=False)
+            if len(type_df) == 0:
+                print(f"No data for {target_chembl_id} with standard_type {std_type}\n")
+            else:
+                type_df_name = f"{target_chembl_id}_{std_type}_hhd_df"
+                file_path = os.path.join(hhds_dir, target_chembl_id, std_type)
+                mkdirs(file_path)
+                type_df.to_csv(os.path.join(file_path, f'{type_df_name}.csv' ), index=False)
 
-            type_dfs[type_df_name] = type_df
+                type_dfs[type_df_name] = type_df
 
-            len_record = {
-                "ds_type": "hhd",
-                "use_lookup": None,
-                "target": target_chembl_id,
-                "effect": None, 
-                "assay": None,
-                "std_type": std_type,
-                "assay_chembl_id": None,
-                "hhd_df": len(type_df),
-                "effect_type_df": None, 
-                "plus_df": None,
-                "exclude_df": None,
-                "mhd_df": None,
-                "lhd_df": None
-            }
+                len_record = {
+                    "df_level": "hhd",
+                    "use_lookup": None,
+                    "target": target_chembl_id,
+                    "effect": None, 
+                    "assay": None,
+                    "std_type": std_type,
+                    "assay_chembl_id": None,
+                    "hhd_df": len(type_df),
+                    "effect_type_df": None, 
+                    "plus_df": None,
+                    "exclude_df": None,
+                    "mhd_df": None,
+                    "lhd_df": None
+                }
 
-            hhd_df_len_name = f"{target_chembl_id}_{std_type}_len_df"
-            hhd_dfs_len[hhd_df_len_name] = pd.DataFrame(len_record, index=[0])
+                hhd_df_len_name = f"{target_chembl_id}_{std_type}_len_df"
+                hhd_dfs_len[hhd_df_len_name] = pd.DataFrame(len_record, index=[0])
 
     return type_dfs, hhd_dfs_len
 
@@ -415,80 +418,87 @@ def mhd_lhd(
 
                         mhd_df, _ = categorizer.generate_mhd_df()
                     
-                    mhd_df.to_csv(os.path.join(std_type_dir, f"{mhd_df_name}.csv"))
-                    mhd_dfs[mhd_df_name] = mhd_df
-                    print(f"The shape of mhd_df is {mhd_df.shape}\n")
-                    
-                    # Track lengths
-                    mhd_len_record = {
-                            "ds_type": "mhd",
-                            "use_lookup": use_lookup,
-                            "target": target_chembl_id,
-                            "effect": effect,
-                            "assay": assay,
-                            "std_type": std_type,
-                            "assay_chembl_id": None,
-                            "hhd_df": len(type_df),
-                            "effect_type_df": len(effect_type_df),
-                            "plus_df": len(plus_df),
-                            "exclude_df": len(exclude_df),
-                            "mhd_df": len(mhd_df),
-                            "lhd_df": None}
-                    
-                    mhd_df_len_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_len_df"
-                    mhd_dfs_len[mhd_df_len_name] = pd.DataFrame(mhd_len_record, index=[0])
-                    # ================================ generate lhd datasets ================================
-                    # Get counts and filter valid IDs
-                    id_counts = mhd_df['assay_chembl_id'].value_counts()
-
-                    # the number of data points in a single assay should,on the one hand, be at least 50 to ensure the model can be trained;
-                    # on the other hand, should not exceed 5000 to avoid high-throughput screens, as these are generally considered noisy
-                    assay_chembl_ids = id_counts[(id_counts >= 50) & (id_counts <= 5000)].index.tolist()
-
-                    if not assay_chembl_ids:
-                        print(f"No valid IDs found for {std_type}. Skipping...")
-                        continue
-
-                    for assay_chembl_id in assay_chembl_ids:
-
-                        print(f"assay_chembl_id: {assay_chembl_id}\n")
+                    if len(mhd_df) == 0:
+                        print(f"No data for {target_chembl_id}_{effect}_{assay}_{std_type} \n")
+                    else:
+                        mhd_df.to_csv(os.path.join(std_type_dir, f"{mhd_df_name}.csv"))
+                        mhd_dfs[mhd_df_name] = mhd_df
+                        print(f"The shape of mhd_df is {mhd_df.shape}\n")
                         
-                        lhd_df = mhd_df[mhd_df['assay_chembl_id'] == assay_chembl_id]
-                        lhd_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_df"
-                        lhd_dir = os.path.join(std_type_dir, 'lhd')
-                        mkdirs(lhd_dir)
-                        lhd_df.to_csv(os.path.join(lhd_dir, f"{lhd_df_name}.csv"))
+                        # Track lengths
+                        mhd_len_record = {
+                                "df_level": "mhd",
+                                "use_lookup": use_lookup,
+                                "target": target_chembl_id,
+                                "effect": effect,
+                                "assay": assay,
+                                "std_type": std_type,
+                                "assay_chembl_id": None,
+                                "hhd_df": len(type_df),
+                                "effect_type_df": len(effect_type_df),
+                                "plus_df": len(plus_df),
+                                "exclude_df": len(exclude_df),
+                                "mhd_df": len(mhd_df),
+                                "lhd_df": None}
+                        
+                        mhd_df_len_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_len_df"
+                        mhd_dfs_len[mhd_df_len_name] = pd.DataFrame(mhd_len_record, index=[0])
+                        # ================================ generate lhd datasets ================================
+                        # Get counts and filter valid IDs
+                        id_counts = mhd_df['assay_chembl_id'].value_counts()
 
-                        lhd_dfs[lhd_df_name] = lhd_df
-                        print(f"The shape of lhd_df is {lhd_df.shape}\n")
+                        # the number of data points in a single assay should,on the one hand, be at least 50 to ensure the model can be trained;
+                        # on the other hand, should not exceed 5000 to avoid high-throughput screens, as these are generally considered noisy
+                        assay_chembl_ids = id_counts[(id_counts >= 50) & (id_counts <= 5000)].index.tolist()
 
-                        lhd_len_record = {
-                            "ds_type": "lhd",
-                            "use_lookup": use_lookup,
-                            "target": target_chembl_id,
-                            "effect": effect,
-                            "assay": assay,
-                            "std_type": std_type,
-                            "assay_chembl_id": assay_chembl_id,
-                            "hhd_df": len(type_df),
-                            "effect_type_df": len(effect_type_df),
-                            "plus_df": len(plus_df),
-                            "exclude_df": len(exclude_df),
-                            "mhd_df": len(mhd_df),
-                            "lhd_df": len(lhd_df)
-                        }
+                        if not assay_chembl_ids:
+                            print(f"No valid IDs found for {std_type}. Skipping...")
+                            continue
 
-                        lhd_df_len_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_{assay_chembl_id}_len_df"
-                        lhd_dfs_len[lhd_df_len_name] = pd.DataFrame(lhd_len_record, index=[0])
+                        for assay_chembl_id in assay_chembl_ids:
 
-                        print('##########################')
+                            print(f"assay_chembl_id: {assay_chembl_id}\n")
+                            
+                            lhd_df = mhd_df[mhd_df['assay_chembl_id'] == assay_chembl_id]
+
+                            if len(lhd_df) == 0:
+                                print(f"No data for {target_chembl_id}_{effect}_{assay}_{std_type}_{assay_chembl_id}\n")
+                            else:
+                                lhd_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_df"
+                                lhd_dir = os.path.join(std_type_dir, 'lhd')
+                                mkdirs(lhd_dir)
+                                lhd_df.to_csv(os.path.join(lhd_dir, f"{lhd_df_name}.csv"))
+
+                                lhd_dfs[lhd_df_name] = lhd_df
+                                print(f"The shape of lhd_df is {lhd_df.shape}\n")
+
+                                lhd_len_record = {
+                                    "df_level": "lhd",
+                                    "use_lookup": use_lookup,
+                                    "target": target_chembl_id,
+                                    "effect": effect,
+                                    "assay": assay,
+                                    "std_type": std_type,
+                                    "assay_chembl_id": assay_chembl_id,
+                                    "hhd_df": len(type_df),
+                                    "effect_type_df": len(effect_type_df),
+                                    "plus_df": len(plus_df),
+                                    "exclude_df": len(exclude_df),
+                                    "mhd_df": len(mhd_df),
+                                    "lhd_df": len(lhd_df)
+                                }
+
+                                lhd_df_len_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_{assay_chembl_id}_len_df"
+                                lhd_dfs_len[lhd_df_len_name] = pd.DataFrame(lhd_len_record, index=[0])
+
+                                print('##########################')
 
 
     print('================================================================')
 
-    if use_lookup == True: # 
+    if use_lookup == True: # ors
         return type_dfs, plus_dfs, exclude_dfs, mhd_dfs, mhd_dfs_len, lhd_dfs, lhd_dfs_len
-    elif use_lookup == False:
+    elif use_lookup == False: # gpcrs
         return type_dfs, mhd_dfs, mhd_dfs_len, lhd_dfs, lhd_dfs_len
 
 

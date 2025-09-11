@@ -8,12 +8,15 @@ relation_set_lessthan = {"<", "<="}
 relation_set_morethan = {">", ">="}
 relation_equals = {"=", "~"}
 
-def activity_threshold(x: float, threshold: float, buffer: float = 0.5) -> str:
+def get_activity_string(x: float, threshold: float, buffer: float = 0.5) -> str:
 
     """
     Apply a threshold to activity measurements.
+    This funcion is different from how it is done in FS-MOL, which doesn't concern return inactive when value > threshold + buffer and relation is > or >=.
 
     For example, IC50/ EC50 measurements.
+    
+
     """
 
     # for now just use the passed median value to threshold
@@ -22,28 +25,17 @@ def activity_threshold(x: float, threshold: float, buffer: float = 0.5) -> str:
     value = x["pStandard_value"]
     relation = x["standard_relation"]
 
-    # note: standard relations apply to standard value not log standard
-    if value >= (threshold + buffer):
-        return "active"
-    elif value > threshold and value < (threshold + buffer) and relation in relation_set_lessthan:
-        return "active"
-    elif (
-        value > threshold
-        and value < (threshold + buffer)
-        and relation in relation_set_morethan.union(relation_equals)
-    ):
-        return "weak active"
-    elif (
-        value > (threshold - buffer)
-        and value <= threshold
-        and relation in relation_set_lessthan.union(relation_equals)
-    ):
-        return "weak inactive"
-    elif value > (threshold - buffer) and value <= threshold and relation in relation_set_morethan:
+    if relation in relation_set_morethan:
         return "inactive"
-    elif value <= (threshold - buffer):
-        return "inactive"
-    
+    elif relation in relation_set_lessthan or relation in relation_equals:
+        if value >= (threshold + buffer):
+            return "active"
+        elif value > threshold and value < (threshold + buffer):
+            return "weak active"
+        elif value > (threshold - buffer) and value <= threshold:
+            return "weak inactive"
+        elif value <= (threshold - buffer):
+            return "inactive"
 
 def autothreshold(x: pd.Series) -> Tuple[pd.DataFrame, float]:
 
@@ -73,13 +65,10 @@ def autothreshold(x: pd.Series) -> Tuple[pd.DataFrame, float]:
         threshold = 5.0
     else:
         threshold = median
-
-    df["activity_string"] = df.apply(
-        activity_threshold, args=(threshold,), buffer=buffer, axis=1
-    )
     
-    return df, threshold
+    df["activity_string"] = df.apply(get_activity_string, args=(threshold,), buffer=buffer, axis=1)
 
+    return df, threshold
 
 def fixedthreshold(x: pd.Series) -> Tuple[pd.DataFrame, float]:
 
@@ -116,6 +105,7 @@ def apply_thresholds(
         else:
             df, threshold = fixedthreshold(x)
 
+
         # convert activity classes to binary labels
         if hard_only:
             df = df[df.activity_string.isin(["active", "inactive"])]
@@ -131,4 +121,5 @@ def apply_thresholds(
         return df
     
     else:
+        df = pd.DataFrame()
         print(f"Empty dataframe after applying thresholds")

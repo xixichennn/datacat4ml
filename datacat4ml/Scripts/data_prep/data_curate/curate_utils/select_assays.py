@@ -3,6 +3,7 @@
 
 
 import pandas as pd
+import numpy as np
 
 standard_unit_set = {"nM", "uM"}
 
@@ -12,7 +13,7 @@ def clean_units(x: pd.Series) -> bool:
 
 def clean_values(x: pd.Series) -> bool:
     """Remove where the standard value is None"""
-    return x["standard_value"] == "None"
+    return np.isnan(x["standard_value"])
 
 def select_assays(x: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """

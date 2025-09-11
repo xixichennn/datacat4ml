@@ -1,3 +1,4 @@
+import os
 import logging
 logger = logging.getLogger(__name__)
 from typing import List
@@ -5,205 +6,280 @@ from typing import List
 import pandas as pd
 from multiprocessing import cpu_count, Pool
 
-from datacat4ml.const import *
+from datacat4ml.const import HHD_OR_DIR, CURA_HHD_OR_DIR, CURA_LHD_OR_DIR, CURA_LHD_GPCR_DIR
+from datacat4ml.const import OR_chemblids
 from datacat4ml.utils import mkdirs
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.select_assays import select_assays
-from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardize_on_dataset import standardize_withvalue, standardize_novalue
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardize_on_dataset import standardize
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.apply_thresholds import apply_thresholds
 
 
 DEFAULT_CLEANING = {
-    "hard_only": False,
+    "hard_only": False, # keep weak actives/inactives.
     "automate_threshold": True,
-    "num_workers": cpu_count()
-}
+    "num_workers": cpu_count()}
 
-
-def curate_dataset(df: pd.DataFrame, task='reg', target='mor', effect=None, assay=None, std_type='Ki', 
-                   output_path=CURA_CAT_OR_DIR) -> pd.DataFrame:
+def curate(df: pd.DataFrame) -> pd.DataFrame:
     """
     apply the curation pipeline to a dataframe
 
     param:
     -----
-    target: str, could be target_name 'mor' or 'target_chembl_id' 'CHEMB233'
-    output_path: str: The path to save the curated dataset
+    target: str, should be 'target_chembl_id' 'CHEMB233'
 
     return:
-    df: pd.DataFrame: The curated dataset
-    and save the dataset to the output_path
+    -----
+    df: pd.DataFrame: The curated dataset and save it to the output_path
     """
 
     # remove index if it was saved with this file (back compatible)
     if "Unnamed: 0" in df.columns:
         df.drop(columns=["Unnamed: 0"], inplace=True)
-    
+
     try:
         print(f"Curating dataset")
-        if task == 'reg':
-            df = select_assays(df, **DEFAULT_CLEANING)
-            df = standardize_withvalue(df, **DEFAULT_CLEANING)
-            df = apply_thresholds(df, **DEFAULT_CLEANING)
-        elif task == 'cls':
-            # separate the dataset into two: one with values and the other with values as 'None'
-            # df_withvalue
-            df_withvalue = df[df['standard_value'] != 'None']
-            df_withvalue = select_assays(df_withvalue, **DEFAULT_CLEANING)
-            print('start standardizing with value')
-            df_withvalue = standardize_withvalue(df_withvalue, **DEFAULT_CLEANING)
-            max_num_atom_df_withvalue = df_withvalue["max_num_atoms"].values[0]
-            max_mw_df_withvalue = df_withvalue["max_molecular_weight"].values[0]
-            print('start applying thresholds')
-            df_withvalue = apply_thresholds(df_withvalue, **DEFAULT_CLEANING)
-            threshold = float(df_withvalue['threshold'][0])
-
-            # df_novalue
-            df_novalue = df[df['standard_value'] == 'None']
-            print(f'The length of df_novalue is {len(df_novalue)}')
-            if len(df_novalue) > 0:
-                df_novalue = standardize_novalue(df_novalue, **DEFAULT_CLEANING)
-                # apply the threshold to the df_novalue
-                max_num_atom_df_novalue = df_novalue['max_num_atoms'].values[0]
-                max_mw_df_novalue = df_novalue['max_molecular_weight'].values[0]
-                # set the activity of the mols in the df_novalue to 'inactive
-                df_novalue['activity_string'] = 'inactive'
-                df_novalue['activity'] = 0.0
-                df_novalue['threshold'] = threshold
-
-                df = pd.concat([df_withvalue, df_novalue])
-                df["max_num_atoms"] = max(max_num_atom_df_withvalue, max_num_atom_df_novalue)
-                df["max_molecular_weight"] = max(max_mw_df_withvalue, max_mw_df_novalue)
-            else:
-                df = df_withvalue
-                df["max_num_atoms"] = max_num_atom_df_withvalue
-                df["max_molecular_weight"] = max_mw_df_withvalue
-        
-        # save the dataset
-        if effect is None or assay is None:
-            dataset_prefix = f'{target}_{std_type}'
-        else:
-            dataset_prefix = f'{target}_{effect}_{assay}_{std_type}'
-        
-        # convert the datatype of effect and assay to string
-        effect = str(effect)
-        assay = str(assay)
-
-        # add columns to the dataframe
-        df['target'] = target
-        df['effect'] = effect
-        df['assay'] = assay
-        df['std_type'] = std_type
-        output_full_path = os.path.join(output_path, task, f'{dataset_prefix}_curated.csv')
-        mkdirs(os.path.dirname(output_full_path))
-        df.to_csv(output_full_path)
+        df = select_assays(df, **DEFAULT_CLEANING)
+        df = standardize(df, **DEFAULT_CLEANING)
+        df = apply_thresholds(df, **DEFAULT_CLEANING)
 
         print(f'Done curation.\n')
 
         return df
-
 
     except Exception as e:
         df = pd.DataFrame()
         logger.warning(f"Failed curating the dataset due to {e}")
 
         return df
+
+#def curate(df: pd.DataFrame, task='cls') -> pd.DataFrame:
+#    """
+#    apply the curation pipeline to a dataframe
+#
+#    param:
+#    -----
+#    target: str, should be 'target_chembl_id' 'CHEMB233'
+#    task: str, should be either 'cls' or 'reg'
+#
+#    return:
+#    df: pd.DataFrame: The curated dataset and save it to the output_path
+#    """
+#
+#    # remove index if it was saved with this file (back compatible)
+#    if "Unnamed: 0" in df.columns:
+#        df.drop(columns=["Unnamed: 0"], inplace=True)
+#    
+#    try:
+#        print(f"Curating dataset")
+#        if task == 'reg':
+#            df = select_assays(df, **DEFAULT_CLEANING)
+#            df = standardize_withvalue(df, **DEFAULT_CLEANING)
+#            df = apply_thresholds(df, **DEFAULT_CLEANING)
+#        elif task == 'cls':
+#            # separate the dataset into two: one with values and the other with values as 'None'
+#            # df_withvalue
+#            df_withvalue = df[df['standard_value'] != 'None']
+#            df_withvalue = select_assays(df_withvalue, **DEFAULT_CLEANING)
+#            print('start standardizing with value')
+#            df_withvalue = standardize_withvalue(df_withvalue, **DEFAULT_CLEANING)
+#            max_num_atom_df_withvalue = df_withvalue["max_num_atoms"].values[0]
+#            max_mw_df_withvalue = df_withvalue["max_molecular_weight"].values[0]
+#            print('start applying thresholds')
+#            df_withvalue = apply_thresholds(df_withvalue, **DEFAULT_CLEANING)
+#            threshold = float(df_withvalue['threshold'][0])
+#
+#            # df_novalue
+#            df_novalue = df[df['standard_value'] == 'None']
+#            print(f'The length of df_novalue is {len(df_novalue)}')
+#            if len(df_novalue) > 0:
+#                df_novalue = standardize_novalue(df_novalue, **DEFAULT_CLEANING)
+#                # apply the threshold to the df_novalue
+#                max_num_atom_df_novalue = df_novalue['max_num_atoms'].values[0]
+#                max_mw_df_novalue = df_novalue['max_molecular_weight'].values[0]
+#                # set the activity of the mols in the df_novalue to 'inactive
+#                df_novalue['activity_string'] = 'inactive'
+#                df_novalue['activity'] = 0.0
+#                df_novalue['threshold'] = threshold
+#
+#                df = pd.concat([df_withvalue, df_novalue])
+#                df["max_num_atoms"] = max(max_num_atom_df_withvalue, max_num_atom_df_novalue)
+#                df["max_molecular_weight"] = max(max_mw_df_withvalue, max_mw_df_novalue)
+#            else:
+#                df = df_withvalue
+#                df["max_num_atoms"] = max_num_atom_df_withvalue
+#                df["max_molecular_weight"] = max_mw_df_withvalue
+#
+#        print(f'Done curation.\n')
+#
+#        return df
+#
+#    except Exception as e:
+#        df = pd.DataFrame()
+#        logger.warning(f"Failed curating the dataset due to {e}")
+#
+#        return df
     
-def check_dataset_aval(dataset_type, target, effect, assay, std_type, input_path):
+
+def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
+                targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
+                ds_type= 'or'):
     """
-    Check if the dataframe exists, or if it is empty.
-    
-    param: 
+    curate a series of datasets and get the stats for each dataset
+
+    param:
     ----------
-    dataset_type: str: The categorization method. It could be either 'het' or 'cat'
-    target: str: The target name (e.g. 'mor') or target_chembl_id (e.g. 'CHEMBL233')
-    effect: str: The effect of the dataset. e.g. 'bind', 'antag'
-    assay: str: The assay of the dataset. e.g. 'RBA'
-    std_type: str: The standard type of the dataset. e.g. 'Ki', 'IC50'
-    input_path: str: The path to the input datasets (should be like `CAT_OR_DIR`, `HET_DATASETS_DIR`) 
-
+    ds_level: str: The categorization level of dataset to curate. It could only be either 'hhd' or 'mhd', cannot be 'lhd'.
+    input_path: str: The path to read the datasets. e.g `HHD_OR_DIR`, `MHD_OR_DIR`
+    output_path: str: The path to save the curated datasets. e.g `CURA_HHD_OR_DIR`, `CURA_MHD_OR_DIR`
+    targets_list: List[str]: The list of targets to process. The element of the list could be target_chembl_id (e.g. 'CHEMBL1824')
+    effect: str: The effect of the dataset. It could be either 'bind' or 'antag'
+    assay: str: The assay of the dataset. It could be either 'RBA'
+    std_types: List[str]: The list of standard types to process. The element of the list could be either 'Ki' or 'IC50'
+    ds_type: str: The type of dataset. It could be either 'or' or 'gpcr'
     
-    input_path: str: The path to the input datasets that are to be curated
 
-    return:
-    df: pd.DataFrame: read the dataframe if it exists, else return None
+    output:
+    ----------
+    write the stats of the curated datasets to a csv file
+    
     """
-    # check if the dataset exists in the input_path
-    if dataset_type == 'het':
-        df_path = os.path.join(input_path, target, std_type, f'{target}_{std_type}.csv')
-        if not os.path.exists(df_path):
-            print(f'No dataset for {target}-{std_type}')
-            return pd.DataFrame()
-    elif dataset_type == 'cat':
-        df_path = os.path.join(input_path, target, effect, assay, std_type, f'{target}_{effect}_{assay}_{std_type}Final_df.csv')
-        if not os.path.exists(df_path):
-            print(f'No dataset for {target}_{effect}_{assay}_{std_type}')
-            return pd.DataFrame()
-    
-    # check if the dataset is empty
-    df = pd.read_csv(df_path)
-    if df.empty:
-        print(f'Empty dataset for {target}-{effect}-{assay}-{std_type}')
-        return pd.DataFrame()
-    else:
-        return df
 
-def curate_datasets_and_get_stats(dataset_type='het', task='cls', target_list: List[str]= OR_names, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
-                                  input_path=CAT_OR_DIR, output_path= CURA_CAT_OR_DIR):
-        """
-        curate a series of datasets and get the stats for each dataset
+    for target in targets_list:
+        print(f'Processing target {target} ...')
+            
+        for std_type in std_types:
+            print(f'Processing {std_type} ...')
 
-        param:
-        ----------
-        dataset_type: str: The type of dataset to curate. It could be either 'het' or 'cat'
-        task: str: The task to perform. It could be either 'cls' or 'reg'
-        target_list: List[str]: The list of targets to process. The element of the list could be either target name (e.g. 'mor') or target_chembl_id (e.g. 'CHEMBL1824')
-        effect: str: The effect of the dataset. It could be either 'bind' or 'antag'
-        assay: str: The assay of the dataset. It could be either 'RBA' or 'FAC'
-        std_types: List[str]: The list of standard types to process. The element of the list could be either 'Ki' or 'IC50'
-        input_path: str: The path to the datasets.
-        output_path: str: The path to save the curated datasets
+            # ================= curate hhd or mhd ================
+            print(f'========================= Curating hhd/mhd dataset===========================')
+            if ds_level == 'hhd':
+                print(f"Processing hhd: {target}_{std_type}...")
+                input_df_path = os.path.join(input_path, target, std_type, f'{target}_{std_type}_hhd_df.csv')
 
-        output:
-        ----------
-        write the stats of the curated datasets to a csv file
-        
-        """
+            elif ds_level == 'mhd':
+                print(f"Processing mhd: {target}_{effect}_{assay}_{std_type}...")
+                input_df_path = os.path.join(input_path, target, effect, assay, std_type, f'{target}_{effect}_{assay}_{std_type}_mhd_df.csv')
 
-        for target in target_list:
-                
-                for std_type in std_types:
+            if os.path.exists(input_df_path):
+                input_df = pd.read_csv(input_df_path)
+                if len(input_df) == 0:
+                    print(f'No data points in the dataset at {input_df_path}')
+                else: 
+                    raw_size = len(input_df)
+                    print(f'The length of the raw dataset is {raw_size}')
+                    # run the curation pipeline
+                    curated_df = curate(input_df)
 
-                        print(f"Processing {target}_{effect}_{assay}_{std_type}...")
+                    if len(curated_df) == 0:
+                        print(f'No data points left after curation for the dataset at {input_df_path}')
+                    elif len(curated_df) > 0:
+                        curated_df['target'] = target
+                        curated_df['effect'] = effect
+                        curated_df['assay'] = assay
+                        curated_df['std_type'] = std_type
 
-                        # Load the data
-                        df = check_dataset_aval(dataset_type, target, effect, assay, std_type, input_path)
+                        if ds_level == 'hhd':
+                            if len(curated_df) < 50:
+                                filename = f'{target}_{std_type}_hhd_curated.csv'
+                            else:
+                                filename = f'{target}_{std_type}_hhd_50_curated.csv'
+                        elif ds_level == 'mhd':
+                            if len(curated_df) < 50:
+                                filename = f'{target}_{effect}_{assay}_{std_type}_mhd_curated.csv'
+                            else:
+                                filename = f'{target}_{effect}_{assay}_{std_type}_mhd_50_curated.csv'
                         
-                        if len(df) > 0:
-                                raw_size = len(df)
-                                print(f'The length of the raw dataset is {raw_size}')
-                        
+                        mkdirs(output_path)
+                        curated_df.to_csv(os.path.join(output_path, filename))
+                        # get the stats and save them in a csv file
+                        stats_file_path = os.path.join(output_path, f'cura_{ds_level}_{ds_type}_stats.csv')
+
+                        if not os.path.exists(stats_file_path): # don't use check_file_exists() and then remove the file if it exists
+                            mkdirs(os.path.dirname(stats_file_path))
+                            with open(stats_file_path, 'w') as f:
+                                f.write('ds_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n')
+                    
+                        with open(stats_file_path, 'a') as f:
+                            # Print something for number check
+                            curated_size = len(curated_df)
+                            removed_size = raw_size - curated_size
+                            threshold = curated_df['threshold'].unique()[0]
+                            num_active = sum(curated_df['activity'])
+                            num_inactive = curated_size - num_active
+                            if curated_size == 0:
+                                    percent_a = 0
+                            else:
+                                    percent_a = round(num_active / curated_size * 100, 2)
+
+                            f.write(f"{ds_level},{target},{effect},{assay},{std_type},{None},{raw_size},{curated_size},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
+
+                    # ================= curate lhd ================
+                    print(f'======= Curating lhd dataset=======')
+                    lhd_path = os.path.join(os.path.dirname(input_df_path), 'lhd')
+
+                    if os.path.exists(lhd_path):
+                        # collect all the assay_chembl_ids in the lhd_path
+                        lhd_files = [f for f in os.listdir(lhd_path)]
+                        lhd_assay_chembl_ids = list(set([f.split('_')[4] for f in lhd_files]))
+
+                        for assay_chembl_id in lhd_assay_chembl_ids:
+                            print(f'Processing lhd: {target}_{effect}_{assay}_{std_type}_{assay_chembl_id}...')
+                            lhd_df_path = os.path.join(lhd_path, f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_df.csv')
+                            lhd_df = pd.read_csv(lhd_df_path)
+                            if len(lhd_df) == 0:
+                                print(f'No data points in the dataset at {lhd_df_path}')
+                            else:
+                                lhd_raw_size = len(lhd_df)
+                                print(f'The length of the raw lhd dataset is {lhd_raw_size}')
                                 # run the curation pipeline
-                                curated_df = curate_dataset(df, task, target, effect, assay, std_type, output_path)
-                        
-                                # get the stats and save them in a csv file
-                                stats_file = os.path.join(output_path, task, f'{task}_stats.csv')
+                                curated_lhd_df = curate(lhd_df)
 
-                                if not os.path.exists(stats_file): # don't use check_file_exists() and then remove the file if it exists
-                                        mkdirs(os.path.dirname(stats_file))
-                                        with open(stats_file, 'w') as f:
-                                                f.write('task,target,effect,assay,standard_type,raw_size,curated_sized,curated_size_delta,threshold,num_active,num_inactive,%_active\n')
-                                if len(curated_df) > 0:
-                                        with open(stats_file, 'a') as f:
-                                                # Print something for number check
-                                                curated_sized = len(curated_df)
-                                                curated_size_delta = raw_size - curated_sized
-                                                threshold = curated_df['threshold'].unique()[0]
-                                                num_active = sum(curated_df['activity'])
-                                                if curated_sized == 0:
-                                                        percent_a = 0
-                                                else:
-                                                        percent_a = round(num_active / curated_sized * 100, 2)
+                                if len(curated_lhd_df) == 0:
+                                    print(f'No data points left after curation for the dataset at {lhd_df_path}')
+                                elif len(curated_lhd_df) > 0:
+                                    curated_lhd_df['target'] = target
+                                    curated_lhd_df['effect'] = effect
+                                    curated_lhd_df['assay'] = assay
+                                    curated_lhd_df['std_type'] = std_type
+                                    if len(curated_lhd_df) < 50:
+                                        filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_curated.csv'
+                                    else:
+                                        filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_50_curated.csv'
+                                    if ds_type == 'gpcr':
+                                        output_lhd_path = CURA_LHD_GPCR_DIR
+                                    elif ds_type == 'or':
+                                        output_lhd_path = CURA_LHD_OR_DIR
+                                    
+                                    mkdirs(output_lhd_path)
+                                    curated_lhd_df.to_csv(os.path.join(output_lhd_path, filename))
 
-                                                f.write(f'{task},{target},{effect},{assay},{std_type},{raw_size},{curated_sized},{curated_size_delta},{threshold},{num_active},{curated_sized -num_active},{percent_a}\n')
-                print(f'====================\n')
+                                    # get the stats and save them in a csv file
+                                    lhd_stats_file_path = os.path.join(output_lhd_path, f'cura_lhd_{ds_type}_stats.csv')
+
+                                    if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
+                                        mkdirs(os.path.dirname(lhd_stats_file_path))
+                                        with open(lhd_stats_file_path, 'w') as f:
+                                            f.write("ds_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n")
+
+                                
+                                    with open(lhd_stats_file_path, 'a') as f:
+                                        # Print something for number check
+                                        curated_sized = len(curated_lhd_df)
+                                        removed_size = lhd_raw_size - curated_sized
+                                        threshold = curated_lhd_df['threshold'].unique()[0]
+                                        num_active = sum(curated_lhd_df['activity'])
+                                        num_inactive = curated_sized - num_active
+                                        if curated_sized == 0:
+                                                percent_a = 0
+                                        else:
+                                                percent_a = round(num_active / curated_sized * 100, 2)
+
+                                        f.write(f"'lhd',{target},{effect},{assay},{std_type},{assay_chembl_id},{raw_size},{curated_sized},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
+                    else:
+                        print(f'No dataset at {lhd_path}')
+
+            else:
+                print(f'No dataset at {input_df_path}')
+
+    print(f'====================\n')
 
