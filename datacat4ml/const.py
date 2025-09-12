@@ -29,29 +29,28 @@ FETCH_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_fetch")
 
 # data_categorize
 CAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_categorize")
-HHD_GPCR_DIR = os.path.join(CAT_DATA_DIR, "hhd_gpcr")
-MHD_GPCR_DIR = os.path.join(CAT_DATA_DIR, "mhd_gpcr")
+CAT_HHD_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_hhd_gpcr")
+CAT_MHD_GPCR_DIR = os.path.join(CAT_DATA_DIR, "cat_mhd_gpcr")
 
-HHD_OR_DIR = os.path.join(CAT_DATA_DIR, "hhd_or")
-MHD_OR_DIR = os.path.join(CAT_DATA_DIR, "mhd_or")
+CAT_HHD_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_hhd_or")
+CAT_MHD_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_mhd_or")
 
 # data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
+
 CURA_HHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_gpcr")
 CURA_MHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_gpcr")
-CURA_MHD_50_5k_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_50_5k_gpcr")
 CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcr")
 
 CURA_HHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_or")
 CURA_MHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or")
-CURA_MHD_50_5K_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_50_5k_or")
 CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_or")
 
 # data_featurize
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
+# To avoid on-fly featurization,  OR datasets will be featurized and saved in advance for later use.
 FEAT_HHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_or")
 FEAT_MHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or")
-FEAT_MHD_50_5K_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_50_5k_or")
 FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_or")
 
 

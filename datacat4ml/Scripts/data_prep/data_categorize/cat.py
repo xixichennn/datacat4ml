@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from datacat4ml.utils import mkdirs
-from datacat4ml.const import FETCH_DATA_DIR, CAT_DATA_DIR, HHD_GPCR_DIR, HHD_OR_DIR, CAT_FIG_DIR
+from datacat4ml.const import FETCH_DATA_DIR, CAT_DATA_DIR, CAT_HHD_GPCR_DIR, CAT_HHD_OR_DIR
 from datacat4ml.const import OR_chemblids
 from datacat4ml.Scripts.data_prep.data_categorize.cat_utils import hhd, mhd_lhd
 
@@ -32,9 +32,9 @@ def read_data():
 # ==========================================================================
 def run_hhd(GPCR_dfs, GPCR_chemblids):
     # generate hhd datasets for ORs
-    or_dfs, or_dfs_len =hhd(OR_chemblids, GPCR_dfs, HHD_OR_DIR)
+    or_dfs, or_dfs_len =hhd(OR_chemblids, GPCR_dfs, CAT_HHD_OR_DIR)
     # generate hhd datasets for GPCRs
-    gpcr_dfs, gpcr_dfs_len = hhd(GPCR_chemblids, GPCR_dfs, HHD_GPCR_DIR)
+    gpcr_dfs, gpcr_dfs_len = hhd(GPCR_chemblids, GPCR_dfs, CAT_HHD_GPCR_DIR)
 
     hhd_or_dfs_len = pd.DataFrame()
     for key, len_df in or_dfs_len.items():
@@ -327,9 +327,9 @@ if __name__ == "__main__":
     mhd_or_dfs_len, mhd_gpcr_dfs_len, lhd_or_dfs_len, lhd_gpcr_dfs_len = run_mhd_lhd(GPCR_dfs, GPCR_chemblids)
 
     # save the stats
-    hhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'hhd_or_dfs_len.csv'), index=False)
-    hhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'hhd_gpcr_dfs_len.csv'), index=False)
-    mhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'mhd_or_dfs_len.csv'), index=False)
-    mhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'mhd_gpcr_dfs_len.csv'), index=False)
-    lhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'lhd_or_dfs_len.csv'), index=False)
-    lhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'lhd_gpcr_dfs_len.csv'), index=False)
+    hhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_hhd_or_dfs_len.csv'), index=False)
+    hhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_hhd_gpcr_dfs_len.csv'), index=False)
+    mhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_mhd_or_dfs_len.csv'), index=False)
+    mhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_mhd_gpcr_dfs_len.csv'), index=False)
+    lhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_lhd_or_dfs_len.csv'), index=False)
+    lhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_lhd_gpcr_dfs_len.csv'), index=False)

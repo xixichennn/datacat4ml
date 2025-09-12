@@ -130,58 +130,8 @@ def standardize(
     df["max_num_atoms"] = df.num_atoms.max()
     df["max_molecular_weight"] = df.molecular_weight.max()
 
-    return df
-
-#def standardize_novalue(
-#    x: pd.DataFrame,
-#    num_workers: int = 6,
-#    max_mol_weight: float = 900.0,
-#    **kwargs,
-#) -> pd.DataFrame:
-#
-#    """
-#    Second stage cleaning; SMILES standardization.
-#    For rows where the column `pStandard_value` is None:
-#
-#    1. desalt, canonicalise tautomers in SMILES
-#    2. remove > 900 Da molecular weight
-#    3. get log standard values (e.g. pKI)
-#    4. remove any repeats with conflicting measurements
-#    (conflicting is standard derivation of pKIs > 1.0)
-#
-#    parameters:
-#    x: pd.DataFrame, the dataframe to clean
-#    num_workers: int, number of workers to use in parallel
-#    max_mol_weight: float, maximum molecular weight to keep
-#
-#    returns:
-#    pd.DataFrame, cleaned dataframe
-#
-#    """
-#
-#    # first clean the SMILES
-#    def parallelize_standardization(df):
-#        data_splits = np.array_split(df, num_workers)
-#        with Pool(num_workers) as p:
-#            df = pd.concat(p.map(standardize_smiles, data_splits))
-#        return df
-#
-#    df = parallelize_standardization(x)
-#    print (f'After standardizing the SMILES, the shape of the df: {df.shape}')
-#
-#    # drop anything that the molecular weight is too high
-#    df = df.loc[df.molecular_weight <= max_mol_weight]
-#    print (f'After dropping the mols with MW > {max_mol_weight} , the shape of the df: {df.shape}')
-#
-#    # get log standard values -- need to convert uM first
-#    df["pStandard_value"] = 'None'
-#
-#    # remove duplicate
-#    # first need to just keep one of the duplicates if smiles and value are *exactly* the same
-#    df = df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")
-#    print (f'After dropping the duplicate combinations of (smiles, value) , the shape of the df:{df.shape}')
-#
-#    df["max_num_atoms"] = df.num_atoms.max()
-#    df["max_molecular_weight"] = df.molecular_weight.max()
-#
-#    return df
+    if len(df) > 0:
+        return df
+    else:
+        print(f"Empty dataframe after standardization")
+        return pd.DataFrame()

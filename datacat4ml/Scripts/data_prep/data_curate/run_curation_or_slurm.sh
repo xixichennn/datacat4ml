@@ -6,11 +6,9 @@
 #SBATCH --mem=28G
 #SBATCH --time=2-00:00:00
 
-
 # Activate the Python environment 
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
-
 
 # Run your Python script with arguments
 python3 run_curation_or.py 

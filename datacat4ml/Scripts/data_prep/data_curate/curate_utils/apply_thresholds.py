@@ -82,7 +82,7 @@ def fixedthreshold(x: pd.Series) -> Tuple[pd.DataFrame, float]:
     df = pd.DataFrame(x)
 
     threshold = 5.0
-    df["activity_string"] = df.apply(activity_threshold, args=(threshold,), axis=1)
+    df["activity_string"] = df.apply(get_activity_string, args=(threshold,), axis=1)
 
     return df, threshold
 
@@ -121,5 +121,5 @@ def apply_thresholds(
         return df
     
     else:
-        df = pd.DataFrame()
         print(f"Empty dataframe after applying thresholds")
+        return pd.DataFrame()

@@ -52,73 +52,6 @@ def curate(df: pd.DataFrame) -> pd.DataFrame:
 
         return df
 
-#def curate(df: pd.DataFrame, task='cls') -> pd.DataFrame:
-#    """
-#    apply the curation pipeline to a dataframe
-#
-#    param:
-#    -----
-#    target: str, should be 'target_chembl_id' 'CHEMB233'
-#    task: str, should be either 'cls' or 'reg'
-#
-#    return:
-#    df: pd.DataFrame: The curated dataset and save it to the output_path
-#    """
-#
-#    # remove index if it was saved with this file (back compatible)
-#    if "Unnamed: 0" in df.columns:
-#        df.drop(columns=["Unnamed: 0"], inplace=True)
-#    
-#    try:
-#        print(f"Curating dataset")
-#        if task == 'reg':
-#            df = select_assays(df, **DEFAULT_CLEANING)
-#            df = standardize_withvalue(df, **DEFAULT_CLEANING)
-#            df = apply_thresholds(df, **DEFAULT_CLEANING)
-#        elif task == 'cls':
-#            # separate the dataset into two: one with values and the other with values as 'None'
-#            # df_withvalue
-#            df_withvalue = df[df['standard_value'] != 'None']
-#            df_withvalue = select_assays(df_withvalue, **DEFAULT_CLEANING)
-#            print('start standardizing with value')
-#            df_withvalue = standardize_withvalue(df_withvalue, **DEFAULT_CLEANING)
-#            max_num_atom_df_withvalue = df_withvalue["max_num_atoms"].values[0]
-#            max_mw_df_withvalue = df_withvalue["max_molecular_weight"].values[0]
-#            print('start applying thresholds')
-#            df_withvalue = apply_thresholds(df_withvalue, **DEFAULT_CLEANING)
-#            threshold = float(df_withvalue['threshold'][0])
-#
-#            # df_novalue
-#            df_novalue = df[df['standard_value'] == 'None']
-#            print(f'The length of df_novalue is {len(df_novalue)}')
-#            if len(df_novalue) > 0:
-#                df_novalue = standardize_novalue(df_novalue, **DEFAULT_CLEANING)
-#                # apply the threshold to the df_novalue
-#                max_num_atom_df_novalue = df_novalue['max_num_atoms'].values[0]
-#                max_mw_df_novalue = df_novalue['max_molecular_weight'].values[0]
-#                # set the activity of the mols in the df_novalue to 'inactive
-#                df_novalue['activity_string'] = 'inactive'
-#                df_novalue['activity'] = 0.0
-#                df_novalue['threshold'] = threshold
-#
-#                df = pd.concat([df_withvalue, df_novalue])
-#                df["max_num_atoms"] = max(max_num_atom_df_withvalue, max_num_atom_df_novalue)
-#                df["max_molecular_weight"] = max(max_mw_df_withvalue, max_mw_df_novalue)
-#            else:
-#                df = df_withvalue
-#                df["max_num_atoms"] = max_num_atom_df_withvalue
-#                df["max_molecular_weight"] = max_mw_df_withvalue
-#
-#        print(f'Done curation.\n')
-#
-#        return df
-#
-#    except Exception as e:
-#        df = pd.DataFrame()
-#        logger.warning(f"Failed curating the dataset due to {e}")
-#
-#        return df
-    
 
 def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
                 targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
@@ -180,14 +113,14 @@ def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR
 
                         if ds_level == 'hhd':
                             if len(curated_df) < 50:
-                                filename = f'{target}_{std_type}_hhd_curated.csv'
+                                filename = f'{target}_{std_type}_hhd_s50_curated.csv'
                             else:
-                                filename = f'{target}_{std_type}_hhd_50_curated.csv'
+                                filename = f'{target}_{std_type}_hhd_b50_curated.csv'
                         elif ds_level == 'mhd':
                             if len(curated_df) < 50:
-                                filename = f'{target}_{effect}_{assay}_{std_type}_mhd_curated.csv'
+                                filename = f'{target}_{effect}_{assay}_{std_type}_mhd_s50_curated.csv'
                             else:
-                                filename = f'{target}_{effect}_{assay}_{std_type}_mhd_50_curated.csv'
+                                filename = f'{target}_{effect}_{assay}_{std_type}_mhd_b50_curated.csv'
                         
                         mkdirs(output_path)
                         curated_df.to_csv(os.path.join(output_path, filename))
@@ -242,9 +175,9 @@ def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR
                                     curated_lhd_df['assay'] = assay
                                     curated_lhd_df['std_type'] = std_type
                                     if len(curated_lhd_df) < 50:
-                                        filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_curated.csv'
+                                        filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_s50_curated.csv'
                                     else:
-                                        filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_50_curated.csv'
+                                        filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_b50_curated.csv'
                                     if ds_type == 'gpcr':
                                         output_lhd_path = CURA_LHD_GPCR_DIR
                                     elif ds_type == 'or':

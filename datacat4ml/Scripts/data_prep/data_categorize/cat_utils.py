@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List
 
 from datacat4ml.utils import get_df_name, mkdirs
-from datacat4ml.const import EFFECT_TYPE_LOOKUP, MHD_OR_DIR, MHD_GPCR_DIR
+from datacat4ml.const import EFFECT_TYPE_LOOKUP, CAT_MHD_OR_DIR, CAT_MHD_GPCR_DIR
 
 
 ###################### hhd ######################
@@ -161,9 +161,9 @@ class DataCategorizer:
             assay_out_df = assay_out_df[assay_out_df['_merge'] == 'left_only'].drop(columns='_merge')
             
             if self.use_lookup == True:
-                file_path = os.path.join(MHD_OR_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
+                file_path = os.path.join(CAT_MHD_OR_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
             elif self.use_lookup == False:
-                file_path = os.path.join(MHD_GPCR_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
+                file_path = os.path.join(CAT_MHD_GPCR_DIR, self.target_chembl_id, self.effect, self.assay, self.std_type)
 
             mkdirs(file_path)
             if saveFile:
@@ -284,7 +284,6 @@ class DataCategorizer:
 
             return mhd_df, mhd_out_df
         
-
 def mhd_lhd(
     dfs: dict, 
     targets_list: List[str],
@@ -327,9 +326,9 @@ def mhd_lhd(
     """
     # Select which targets and base directory to use
     if use_lookup == True:
-        base_dir = MHD_OR_DIR
+        base_dir = CAT_MHD_OR_DIR
     elif use_lookup == False:
-        base_dir = MHD_GPCR_DIR
+        base_dir = CAT_MHD_GPCR_DIR
 
     # Initialize outputs
     type_dfs = {}
