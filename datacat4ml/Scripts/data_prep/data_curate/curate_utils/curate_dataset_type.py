@@ -6,7 +6,7 @@ from typing import List
 import pandas as pd
 from multiprocessing import cpu_count, Pool
 
-from datacat4ml.const import HHD_OR_DIR, CURA_HHD_OR_DIR, CURA_LHD_OR_DIR, CURA_LHD_GPCR_DIR
+from datacat4ml.const import CAT_HHD_OR_DIR, CURA_HHD_OR_DIR, CURA_LHD_OR_DIR, CURA_LHD_GPCR_DIR
 from datacat4ml.const import OR_chemblids
 from datacat4ml.utils import mkdirs
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.select_assays import select_assays
@@ -53,7 +53,7 @@ def curate(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
 
-def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
+def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
                 targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
                 ds_type= 'or'):
     """
@@ -62,7 +62,7 @@ def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR
     param:
     ----------
     ds_level: str: The categorization level of dataset to curate. It could only be either 'hhd' or 'mhd', cannot be 'lhd'.
-    input_path: str: The path to read the datasets. e.g `HHD_OR_DIR`, `MHD_OR_DIR`
+    input_path: str: The path to read the datasets. e.g `CAT_HHD_OR_DIR`, `CAT_MHD_OR_DIR`
     output_path: str: The path to save the curated datasets. e.g `CURA_HHD_OR_DIR`, `CURA_MHD_OR_DIR`
     targets_list: List[str]: The list of targets to process. The element of the list could be target_chembl_id (e.g. 'CHEMBL1824')
     effect: str: The effect of the dataset. It could be either 'bind' or 'antag'
@@ -207,7 +207,7 @@ def run_curation(ds_level='hhd', input_path=HHD_OR_DIR, output_path= CURA_HHD_OR
                                         else:
                                                 percent_a = round(num_active / curated_sized * 100, 2)
 
-                                        f.write(f"'lhd',{target},{effect},{assay},{std_type},{assay_chembl_id},{raw_size},{curated_sized},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
+                                        f.write(f"lhd,{target},{effect},{assay},{std_type},{assay_chembl_id},{raw_size},{curated_sized},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
                     else:
                         print(f'No dataset at {lhd_path}')
 

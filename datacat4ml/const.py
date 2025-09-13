@@ -75,8 +75,9 @@ AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml
 # Figures directories
 FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
 FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_fetch")
-FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_featurize")
 CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
+CURA_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_curate")
+FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_featurize")
 SPLIT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_split")
 
 RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
