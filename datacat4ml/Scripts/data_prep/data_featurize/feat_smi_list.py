@@ -6,19 +6,19 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from datacat4ml.const import Descriptors
-from datacat4ml.const import CURA_HET_OR_DIR, CURA_CAT_OR_DIR, CURA_LHD_OR_DIR, CURA_CAT_50_5K_OR_DIR
-from datacat4ml.const import FEAT_HET_OR_DIR, FEAT_CAT_OR_DIR, FEAT_LHD_OR_DIR, FEAT_CAT_50_5K_OR_DIR
-from datacat4ml.const import Tasks, Descriptor_cats
+#from datacat4ml.const import Descriptors
+from datacat4ml.const import CURA_HHD_OR_DIR, CURA_MHD_OR_DIR, CURA_LHD_OR_DIR, CURA_HHD_GPCR_DIR, CURA_MHD_GPCR_DIR, CURA_LHD_GPCR_DIR
+from datacat4ml.const import FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_HHD_GPCR_DIR, FEAT_MHD_GPCR_DIR, FEAT_LHD_GPCR_DIR
+from datacat4ml.const import Descriptor_cats
 
 #===================== Utility functions =====================#
 def mol_from_smi(smi: str):
     """ Create a list of RDkit mol objects from a list of SMILES strings """
     from rdkit.Chem import MolFromSmiles
-    mol = MolFromSmiles(smi) 
+    mol = MolFromSmiles(smi)
     return mol
 
-def rdkit_numpy_convert(fp):
+def rdkit_numpy_convert(fp: List):
     """ Convert the RDKit fingerprints to a numpy arrays"""
     from rdkit.DataStructs import ConvertToNumpyArray
     output = []
@@ -63,6 +63,7 @@ def embed_mol(smi: str):
     return mh
 
 #===================== Class Featurizer =====================#
+#===================== Class Featurizer =====================#
 class Featurizer:
     def __init__(self):
         pass
@@ -72,7 +73,7 @@ class Featurizer:
     def ecfp4(smi: List[str], radius: int = 2, nbits: int = 1024):
         """ Convert a list of SMILES to ECFP fingerprints """
         from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect
-        mols = [ mol_from_smi(m) for m in smi]
+        mols = [mol_from_smi(m) for m in smi]
         fp = [ GetMorganFingerprintAsBitVect(mol, radius, nBits=nbits) for mol in mols]
         return rdkit_numpy_convert(fp)
 
@@ -121,7 +122,7 @@ class Featurizer:
     def erg(smi: List[str]):
         """ Convert a list of SMILES strings to RDKit extended reduced graph fingerprints"""
         from rdkit.Chem import rdReducedGraphs
-        
+
         mols = [mol_from_smi(m) for m in smi]
         fp = [rdReducedGraphs.GetErGFingerprint(mol) for mol in mols]
 
@@ -162,25 +163,28 @@ class Featurizer:
         """ Calculate 3D descriptors that are related to the shape and size of the molecules"""
 
         from rdkit.Chem import rdMolDescriptors
-        
-        mols = [embed_mol(m) for m in smi]
 
         X = []
-        for mol in mols:
-            x = []
-            x.append(rdMolDescriptors.CalcPBF(mol))
-            x.append(rdMolDescriptors.CalcPMI1(mol))
-            x.append(rdMolDescriptors.CalcPMI2(mol))
-            x.append(rdMolDescriptors.CalcPMI3(mol))
-            x.append(rdMolDescriptors.CalcNPR1(mol))
-            x.append(rdMolDescriptors.CalcNPR2(mol))
-            x.append(rdMolDescriptors.CalcRadiusOfGyration(mol))
-            x.append(rdMolDescriptors.CalcInertialShapeFactor(mol))
-            x.append(rdMolDescriptors.CalcEccentricity(mol))
-            x.append(rdMolDescriptors.CalcAsphericity(mol))
-            x.append(rdMolDescriptors.CalcSpherocityIndex(mol))
-
-            X.append(np.array(x))
+        for i, m in enumerate(smi):
+            try:
+                mol = embed_mol(m)
+                x = [rdMolDescriptors.CalcPBF(mol),
+                    rdMolDescriptors.CalcPMI1(mol),
+                    rdMolDescriptors.CalcPMI2(mol),
+                    rdMolDescriptors.CalcPMI3(mol),
+                    rdMolDescriptors.CalcNPR1(mol),
+                    rdMolDescriptors.CalcNPR2(mol),
+                    rdMolDescriptors.CalcRadiusOfGyration(mol),
+                    rdMolDescriptors.CalcInertialShapeFactor(mol),
+                    rdMolDescriptors.CalcEccentricity(mol),
+                    rdMolDescriptors.CalcAsphericity(mol),
+                    rdMolDescriptors.CalcSpherocityIndex(mol)
+                    ]
+                X.append(np.array(x))
+            
+            except Exception as e:
+                print(f'Could not embed {i}th molecule {m}: {e}')
+                X.append(np.full(11, np.nan))  # 11 NaNs, same length as SHAPE3D descriptor.
 
         return np.array(X)
     
@@ -190,12 +194,16 @@ class Featurizer:
 
         from rdkit.Chem import rdMolDescriptors
         
-        mols = [embed_mol(m) for m in smi]
-
         X = []
-        for mol in mols:
-            x = rdMolDescriptors.CalcAUTOCORR3D(mol)
-            X.append(x)
+        for i, m in enumerate(smi):
+            try:
+                mol = embed_mol(m)
+                x = rdMolDescriptors.CalcAUTOCORR3D(mol)
+                len_x = len(x)
+                X.append(x)
+            except Exception as e:
+                print(f"Could not embed the {i}th molecule {m}: {e}")
+                X.append(np.full(len_x, np.nan))  # Append NaNs for failed embeddings
 
         return np.array(X)
     
@@ -205,12 +213,16 @@ class Featurizer:
 
         from rdkit.Chem import rdMolDescriptors
         
-        mols = [embed_mol(m) for m in smi]
-
         X = []
-        for mol in mols:
-            x= rdMolDescriptors.CalcRDF(mol)
-            X.append(x)
+        for i, m in enumerate(smi):
+            try:
+                mol = embed_mol(m)
+                x = rdMolDescriptors.CalcRDF(mol)
+                len_x = len(x)
+                X.append(x)
+            except Exception as e:
+                print(f"Could not embed the {i}th molecule {m}: {e}")
+                X.append(np.full(len_x, np.nan))  # Append NaNs for failed embeddings
 
         return np.array(X)
 
@@ -220,11 +232,16 @@ class Featurizer:
 
         from rdkit.Chem import rdMolDescriptors
 
-        mols = [embed_mol(m) for m in smi]
         X = []
-        for mol in mols:
-            x = rdMolDescriptors.CalcMORSE(mol)
-            X.append(x)
+        for i, m in enumerate(smi):
+            try:
+                mol = embed_mol(m)
+                x = rdMolDescriptors.CalcMORSE(mol)
+                len_x = len(x)
+                X.append(x)
+            except Exception as e:
+                print(f"Could not embed the {i}th molecule {m}: {e}")
+                X.append(np.full(len_x, np.nan))  # Append NaNs for failed embeddings
 
         return np.array(X)
     
@@ -235,11 +252,16 @@ class Featurizer:
 
         from rdkit.Chem import rdMolDescriptors
 
-        mols = [embed_mol(m)for m in smi]
         X = []
-        for mol in mols:
-            x = rdMolDescriptors.CalcWHIM(mol)
-            X.append(x)
+        for i, m in enumerate(smi):
+            try:
+                mol = embed_mol(m)
+                x = rdMolDescriptors.CalcWHIM(mol)
+                len_x = len(x)
+                X.append(x)
+            except Exception as e:
+                print(f"Could not embed the {i}th molecule {m}: {e}")
+                X.append(np.full(len_x, np.nan))  # Append NaNs for failed embeddings
 
         return np.array(X)
     
@@ -249,11 +271,16 @@ class Featurizer:
 
         from rdkit.Chem import rdMolDescriptors
 
-        mols = [embed_mol(m)for m in smi]
         X = []
-        for mol in mols:
-            x = rdMolDescriptors.CalcGETAWAY(mol)
-            X.append(x)
+        for i, m in enumerate(smi):
+            try:
+                mol = embed_mol(m)
+                x = rdMolDescriptors.CalcGETAWAY(mol)
+                len_x = len(x)
+                X.append(x)
+            except Exception as e:
+                print(f"Could not embed the {i}th molecule {m}: {e}")
+                X.append(np.full(len_x, np.nan))  # Append NaNs for failed embeddings
 
         return np.array(X)
     
@@ -314,7 +341,7 @@ class Featurizer:
             return self.ecfp6(**kwargs)
         if descriptor == 'MACCS':
             return self.maccs(**kwargs)
-        if descriptor == 'RDKIT_FP':
+        if descriptor == 'RDKITFP':
             return self.rdkit_fp(**kwargs)
         if descriptor == 'PHARM2D':
             return self.pharm2d(**kwargs)
@@ -343,53 +370,55 @@ class Featurizer:
             return self.graph_conv(**kwargs)
         
 # ===================== Featurize data =====================#
-Cura_Feat_Dic = {CURA_HET_OR_DIR: FEAT_HET_OR_DIR, 
-                 CURA_CAT_OR_DIR: FEAT_CAT_OR_DIR,
+Cura_Feat_Dic = {CURA_HHD_OR_DIR: FEAT_HHD_OR_DIR, 
+                 CURA_MHD_OR_DIR: FEAT_MHD_OR_DIR,
                  CURA_LHD_OR_DIR: FEAT_LHD_OR_DIR,
-                 CURA_CAT_50_5K_OR_DIR: FEAT_CAT_50_5K_OR_DIR}
+                 CURA_HHD_GPCR_DIR: FEAT_HHD_GPCR_DIR,
+                 CURA_MHD_GPCR_DIR: FEAT_MHD_GPCR_DIR,
+                 CURA_LHD_GPCR_DIR: FEAT_LHD_GPCR_DIR}
 
-def featurize_data(in_dir:str = CURA_HET_OR_DIR, task:str = 'cls', descriptor_cat: str = 'FP'):
-
-    print(f"in_path is: {in_dir}\n")
-    print(f"task is: {task}\n")
-    # access the curated csv files obtained from data curation
-    files = os.listdir(os.path.join(in_dir, task))
-    curated_files = [file for file in files if file.endswith('_curated.csv')]
+def featurize_data(descriptor="ECFP4", in_dir:str = CURA_HHD_OR_DIR):
 
     # initiate featurizer
-    featurizer = Featurizer()    
-    descriptors = Descriptors[descriptor_cat]
+    featurizer = Featurizer()
 
-    print(f"descriptor_class is: {descriptor_cat}\n")
+    print(f"in_path is: {in_dir}\n")
+    # access the curated csv files obtained from data curation
+    files = os.listdir(in_dir)
+    curated_files = [file for file in files if file.endswith('_curated.csv')]
 
-    for descriptor in descriptors:
+      
+    # make new directory to store the featurized data
+    out_dir = Cura_Feat_Dic[in_dir]
+    print(f"out_dir is: {out_dir}\n")
+    os.makedirs(out_dir, exist_ok=True)
+
+    for f in curated_files:
+        print (f"curated_file is: {f}\n")
+
+        df = pd.read_csv(os.path.join(in_dir, f))
+        # if df contains column 'Unnamed: 0', drop it
+        df = df.drop(columns=['Unnamed: 0'], errors='ignore')
+
         print (f"descriptor is: {descriptor}\n")
-        # make new directory to store the featurized data
-        out_dir = os.path.join(Cura_Feat_Dic[in_dir], task, descriptor)
-        print(f"out_dir is: {out_dir}\n")
-        os.makedirs(out_dir, exist_ok=True)
+        smi_list = df['canonical_smiles_by_Std'].to_list()
+        descriptor_array = featurizer(descriptor, smi=smi_list)
+        ## append featurized data of each descriptor as a new column to the dataframe
+        df[descriptor] = [arr for arr in descriptor_array]
 
-        for f in curated_files:
-            print (f"curated_file is: {f}\n")
+        # save the featurized data as a pickle file
+        df.to_pickle(os.path.join(out_dir, f[:-12]+f'_{descriptor}.pkl'))
 
-            df = pd.read_csv(os.path.join(in_dir, task, f))
-            # if df contains column 'Unnamed: 0', drop it
-            df = df.drop(columns=['Unnamed: 0'], errors='ignore')
-
-            df[descriptor] = df['canonical_smiles_by_Std'].apply(lambda x: featurizer(descriptor, smi=[x])) # smi=[x]: pass a list
-
-            # save the featurized data as a pickle file
-            df.to_pickle(os.path.join(out_dir, f[:-12]+'.pkl'))
 
 # ===================== Main =====================#
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Featurize data with different combinations of parameters.")
+    parser = argparse.ArgumentParser(description="Featurize data")
+    parser.add_argument("--descriptor", required=True, help="The descriptor to be calculated, e.g., ECFP4, ECFP6, MACCS, RDKITFP, PHARM2D, ERG, PHYSICOCHEM, SHAPE3D, AUTOCORR3D, RDF, MORSE, WHIM, GETAWAY")
     parser.add_argument("--in_dir", required=True, help="Path to datasets directory")
-    parser.add_argument("--task", choices=Tasks, required=True, help="Task name")
-    parser.add_argument("--descriptor_cat", choices=Descriptor_cats, required=True, help="Descriptor category (FP or Morgan)")
+    
     
     args = parser.parse_args()
 
-    featurize_data(args.in_dir,
-                   args.task,
-                   args.descriptor_cat)
+    featurize_data(
+        args.descriptor,
+        args.in_dir)

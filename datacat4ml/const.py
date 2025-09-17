@@ -53,13 +53,18 @@ FEAT_HHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_or")
 FEAT_MHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or")
 FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_or")
 
+FEAT_HHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_gpcr")
+FEAT_MHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_gpcr")
+FEAT_LHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_gpcr")
+
 
 # data_split
 SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
-SPLIT_HET_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_or")
-SPLIT_HET_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_het_gpcr")
-SPLIT_CAT_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_or")
-SPLIT_CAT_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_cat_gpcr")
+
+SPLIT_HHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_hhd_or")
+SPLIT_HHD_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_hhd_gpcr")
+SPLIT_MHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_or")
+SPLIT_MHD_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_gpcr")
 
 # hparams
 HPARAMS_DIR = os.path.join(DATA_DIR, "model_dev")
@@ -474,7 +479,7 @@ EFFECT_TYPE_LOOKUP = {
 
 Descriptors = {
       # fingerprints
-      'FP': ['ECFP4', 'ECFP6', 'MACCS', 'RDKIT_FP', 'PHARM2D', 'ERG'],
+      'FP': ['ECFP4', 'ECFP6', 'MACCS', 'RDKITFP', 'PHARM2D', 'ERG'],
       # physicochemical properties
       'PHYSICOCHEM': ['PHYSICOCHEM'],
       # 3D descriptors
