@@ -22,30 +22,30 @@ def curate_ORs():
     ## ==== hhd_or ====
     print('Processing hhd_or datasets ...')
 
-    run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path=CURA_HHD_OR_DIR,
+    run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path=CURA_HHD_OR_DIR,
                  targets_list=OR_chemblids, effect=None, assay=None, std_types=["Ki", "IC50", 'EC50'], ds_type='or')
 
     ## ==== mhd_or ====
     print('Processing mhd_or datasets ...')
 
     # Binding affinity
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], ds_type='or')
 
     # Agonism
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='agon', assay='G-GTP', std_types=["EC50"], ds_type='or')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='agon', assay='G-Ca', std_types=["EC50"], ds_type='or')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='agon', assay='G-cAMP', std_types=["IC50", "EC50"], ds_type='or')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='agon', assay='B-arrest', std_types=["EC50"], ds_type='or')
 
     ## Antagonism
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='antag', assay='G-GTP', std_types=["IC50", "Ki", "Kb", "Ke"], ds_type='or')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_OR_DIR, output_path= CURA_MHD_OR_DIR,
                 targets_list=OR_chemblids, effect='antag', assay='B-arrest', std_types=["IC50"], ds_type='or')
 
     

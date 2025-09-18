@@ -53,7 +53,7 @@ def curate(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
 
-def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
+def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
                 targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
                 ds_type= 'or'):
     """
@@ -61,7 +61,7 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
 
     param:
     ----------
-    ds_level: str: The categorization level of dataset to curate. It could only be either 'hhd' or 'mhd', cannot be 'lhd'.
+    ds_cat_level: str: The categorization level of dataset to curate. It could only be either 'hhd' or 'mhd', cannot be 'lhd'.
     input_path: str: The path to read the datasets. e.g `CAT_HHD_OR_DIR`, `CAT_MHD_OR_DIR`
     output_path: str: The path to save the curated datasets. e.g `CURA_HHD_OR_DIR`, `CURA_MHD_OR_DIR`
     targets_list: List[str]: The list of targets to process. The element of the list could be target_chembl_id (e.g. 'CHEMBL1824')
@@ -85,11 +85,11 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
 
             # ================= curate hhd or mhd ================
             print(f'========================= Curating hhd/mhd dataset===========================')
-            if ds_level == 'hhd':
+            if ds_cat_level == 'hhd':
                 print(f"Processing hhd: {target}_{std_type}...")
                 input_df_path = os.path.join(input_path, target, std_type, f'{target}_{std_type}_hhd_df.csv')
 
-            elif ds_level == 'mhd':
+            elif ds_cat_level == 'mhd':
                 print(f"Processing mhd: {target}_{effect}_{assay}_{std_type}...")
                 input_df_path = os.path.join(input_path, target, effect, assay, std_type, f'{target}_{effect}_{assay}_{std_type}_mhd_df.csv')
 
@@ -111,26 +111,30 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
                         curated_df['assay'] = assay
                         curated_df['std_type'] = std_type
 
-                        if ds_level == 'hhd':
+                        if ds_cat_level == 'hhd':
                             if len(curated_df) < 50:
+                                ds_size_level = 's50'
                                 filename = f'{target}_{std_type}_hhd_s50_curated.csv'
                             else:
+                                ds_size_level = 'b50'
                                 filename = f'{target}_{std_type}_hhd_b50_curated.csv'
-                        elif ds_level == 'mhd':
+                        elif ds_cat_level == 'mhd':
                             if len(curated_df) < 50:
+                                ds_size_level = 's50'
                                 filename = f'{target}_{effect}_{assay}_{std_type}_mhd_s50_curated.csv'
                             else:
+                                ds_size_level = 'b50'
                                 filename = f'{target}_{effect}_{assay}_{std_type}_mhd_b50_curated.csv'
                         
                         mkdirs(output_path)
                         curated_df.to_csv(os.path.join(output_path, filename))
                         # get the stats and save them in a csv file
-                        stats_file_path = os.path.join(output_path, f'cura_{ds_level}_{ds_type}_stats.csv')
+                        stats_file_path = os.path.join(output_path, f'cura_{ds_cat_level}_{ds_type}_stats.csv')
 
                         if not os.path.exists(stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                             mkdirs(os.path.dirname(stats_file_path))
                             with open(stats_file_path, 'w') as f:
-                                f.write('ds_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n')
+                                f.write('ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n')
                     
                         with open(stats_file_path, 'a') as f:
                             # Print something for number check
@@ -144,7 +148,7 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
                             else:
                                     percent_a = round(num_active / curated_size * 100, 2)
 
-                            f.write(f"{ds_level},{target},{effect},{assay},{std_type},{None},{raw_size},{curated_size},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
+                            f.write(f"{ds_cat_level},{ds_type},{ds_size_level},{target},{effect},{assay},{std_type},{None},{raw_size},{curated_size},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
 
                     # ================= curate lhd ================
                     print(f'======= Curating lhd dataset=======')
@@ -175,8 +179,10 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
                                     curated_lhd_df['assay'] = assay
                                     curated_lhd_df['std_type'] = std_type
                                     if len(curated_lhd_df) < 50:
+                                        ds_size_level = 's50'
                                         filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_s50_curated.csv'
                                     else:
+                                        ds_size_level = 'b50'
                                         filename = f'{target}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_b50_curated.csv'
                                     if ds_type == 'gpcr':
                                         output_lhd_path = CURA_LHD_GPCR_DIR
@@ -192,7 +198,7 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
                                     if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(lhd_stats_file_path))
                                         with open(lhd_stats_file_path, 'w') as f:
-                                            f.write("ds_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n")
+                                            f.write("ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n")
 
                                 
                                     with open(lhd_stats_file_path, 'a') as f:
@@ -207,7 +213,7 @@ def run_curation(ds_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HH
                                         else:
                                                 percent_a = round(num_active / curated_sized * 100, 2)
 
-                                        f.write(f"lhd,{target},{effect},{assay},{std_type},{assay_chembl_id},{raw_size},{curated_sized},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
+                                        f.write(f"lhd,{ds_type},{ds_size_level},{target},{effect},{assay},{std_type},{assay_chembl_id},{raw_size},{curated_sized},{removed_size},{threshold},{num_active},{num_inactive},{percent_a}\n")
                     else:
                         print(f'No dataset at {lhd_path}')
 

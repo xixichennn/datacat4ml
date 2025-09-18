@@ -4,7 +4,7 @@
 #SBATCH --partition=bdw
 #SBATCH --ntasks=1
 #SBATCH --mem=28G
-#SBATCH --time=2-00:00:00
+#SBATCH --time=5:00:00
 #SBATCH --array=0-29  # 1 tasks * 30 chunks = 30 jobs
 
 

@@ -1,6 +1,5 @@
-#!/bin/bash -l
-
-#SBATCH --job-name=data_categorize
+#!/bin/bash
+#SBATCH --job-name=featurize_job
 #SBATCH --partition=bdw
 #SBATCH --ntasks=1
 #SBATCH --mem=28G
@@ -10,7 +9,7 @@
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
-python3 cat.py
+python3 feat_postproc.py
 
 # run the command below in the terminal to submit the job
-# sbatch run_cat_slurm.sh
+# sbatch run_feat_postproc_slurm.sh

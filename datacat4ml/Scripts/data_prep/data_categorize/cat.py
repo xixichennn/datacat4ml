@@ -32,9 +32,9 @@ def read_data():
 # ==========================================================================
 def run_hhd(GPCR_dfs, GPCR_chemblids):
     # generate hhd datasets for ORs
-    or_dfs, or_dfs_len =hhd(OR_chemblids, GPCR_dfs, CAT_HHD_OR_DIR)
+    or_dfs, or_dfs_len =hhd(OR_chemblids, GPCR_dfs, CAT_HHD_OR_DIR, ds_type='or')
     # generate hhd datasets for GPCRs
-    gpcr_dfs, gpcr_dfs_len = hhd(GPCR_chemblids, GPCR_dfs, CAT_HHD_GPCR_DIR)
+    gpcr_dfs, gpcr_dfs_len = hhd(GPCR_chemblids, GPCR_dfs, CAT_HHD_GPCR_DIR, ds_type='gpcr')
 
     hhd_or_dfs_len = pd.DataFrame()
     for key, len_df in or_dfs_len.items():

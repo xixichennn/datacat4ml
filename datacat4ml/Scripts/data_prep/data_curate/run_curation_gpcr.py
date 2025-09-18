@@ -51,31 +51,31 @@ def curate_GPCRs(job_index=0, total_jobs=30):
 def _process_mhd(targets):
     """Process mhd_gpcr"""
     # Binding affinity
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path=CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path=CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='bind',assay='RBA', std_types=["Ki", 'IC50'], ds_type='gpcr')
 
     # Agonism
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='agon', assay='G-GTP', std_types=["EC50"], ds_type='gpcr')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='agon', assay='G-Ca', std_types=["EC50"], ds_type='gpcr')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='agon', assay='G-cAMP', std_types=["IC50", "EC50"], ds_type='gpcr')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='agon', assay='B-arrest', std_types=["EC50"], ds_type='gpcr')
 
     ## Antagonism
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='antag', assay='G-GTP', std_types=["IC50", "Ki"], ds_type='gpcr')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='antag', assay='G-Ca', std_types=["IC50"], ds_type='gpcr')
-    run_curation(ds_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
+    run_curation(ds_cat_level='mhd', input_path=CAT_MHD_GPCR_DIR, output_path= CURA_MHD_GPCR_DIR,
                  targets_list=targets, effect='antag', assay='B-arrest', std_types=["IC50"], ds_type='gpcr')
 
 def _process_hhd(targets):
     """\nProcess hhhd_gpcr"""
 
-    run_curation(ds_level='hhd', input_path=CAT_HHD_GPCR_DIR, output_path=CURA_HHD_GPCR_DIR,
+    run_curation(ds_cat_level='hhd', input_path=CAT_HHD_GPCR_DIR, output_path=CURA_HHD_GPCR_DIR,
                  targets_list=targets, effect=None, assay=None, std_types=["Ki", "IC50", 'EC50'], ds_type='gpcr')
 
 if __name__ == "__main__":

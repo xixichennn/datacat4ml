@@ -8,7 +8,7 @@ from datacat4ml.const import EFFECT_TYPE_LOOKUP, CAT_MHD_OR_DIR, CAT_MHD_GPCR_DI
 
 
 ###################### hhd ######################
-def hhd(targets_list, GPCR_dfs, hhds_dir):
+def hhd(targets_list, GPCR_dfs, hhds_dir, ds_type='gpcr'):
     """
     
     Generate HHD (highly heterogeneous data) datasets for given targets.
@@ -44,27 +44,26 @@ def hhd(targets_list, GPCR_dfs, hhds_dir):
                 type_dfs[type_df_name] = type_df
 
                 len_record = {
-                    "df_level": "hhd",
-                    "use_lookup": None,
+                    "ds_cat_level": "hhd",
+                    "ds_type": ds_type,
+                    "use_lookup": 'None',
                     "target": target_chembl_id,
-                    "effect": None, 
-                    "assay": None,
-                    "std_type": std_type,
-                    "assay_chembl_id": None,
+                    "effect": 'None',
+                    "assay": 'None',
+                    "standard_type": std_type,
+                    "assay_chembl_id": 'None',
                     "hhd_df": len(type_df),
-                    "effect_type_df": None, 
-                    "plus_df": None,
-                    "exclude_df": None,
-                    "mhd_df": None,
-                    "lhd_df": None
+                    "effect_type_df": 'None',
+                    "plus_df": 'None',
+                    "exclude_df": 'None',
+                    "mhd_df": 'None',
+                    "lhd_df": 'None'
                 }
 
                 hhd_df_len_name = f"{target_chembl_id}_{std_type}_len_df"
                 hhd_dfs_len[hhd_df_len_name] = pd.DataFrame(len_record, index=[0])
 
     return type_dfs, hhd_dfs_len
-
-
 
 ######################## mhd ######################
 def print_df_info(df: pd.DataFrame) -> None:
@@ -292,7 +291,8 @@ def mhd_lhd(
     assay: str = "RBA",
     std_types: list = ["Ki", "IC50"],
     pattern: str = "",
-    pattern_ex: str = ""
+    pattern_ex: str = "",
+    ds_type: str = 'gpcr' # 'or' for ORs, 'gpcr' for GPCRs
 ):
     """
     Generate MHD (median heterogeneous data) by categorizing GPCRs(use_lookup=False) or ORs(use_lookup=True).
@@ -426,19 +426,20 @@ def mhd_lhd(
                         
                         # Track lengths
                         mhd_len_record = {
-                                "df_level": "mhd",
+                                "ds_cat_level": "mhd",
+                                "ds_type": ds_type,
                                 "use_lookup": use_lookup,
                                 "target": target_chembl_id,
                                 "effect": effect,
                                 "assay": assay,
-                                "std_type": std_type,
-                                "assay_chembl_id": None,
+                                "standard_type": std_type,
+                                "assay_chembl_id": 'None',
                                 "hhd_df": len(type_df),
                                 "effect_type_df": len(effect_type_df),
                                 "plus_df": len(plus_df),
                                 "exclude_df": len(exclude_df),
                                 "mhd_df": len(mhd_df),
-                                "lhd_df": None}
+                                "lhd_df": 'None'}
                         
                         mhd_df_len_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_len_df"
                         mhd_dfs_len[mhd_df_len_name] = pd.DataFrame(mhd_len_record, index=[0])
@@ -472,12 +473,13 @@ def mhd_lhd(
                                 print(f"The shape of lhd_df is {lhd_df.shape}\n")
 
                                 lhd_len_record = {
-                                    "df_level": "lhd",
+                                    "ds_cat_level": "lhd",
+                                    "ds_type": ds_type,
                                     "use_lookup": use_lookup,
                                     "target": target_chembl_id,
                                     "effect": effect,
                                     "assay": assay,
-                                    "std_type": std_type,
+                                    "standard_type": std_type,
                                     "assay_chembl_id": assay_chembl_id,
                                     "hhd_df": len(type_df),
                                     "effect_type_df": len(effect_type_df),
