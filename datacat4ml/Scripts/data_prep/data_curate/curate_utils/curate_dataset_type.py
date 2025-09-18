@@ -6,7 +6,7 @@ from typing import List
 import pandas as pd
 from multiprocessing import cpu_count, Pool
 
-from datacat4ml.const import CAT_HHD_OR_DIR, CURA_HHD_OR_DIR, CURA_LHD_OR_DIR, CURA_LHD_GPCR_DIR
+from datacat4ml.const import CURA_DATA_DIR, CAT_HHD_OR_DIR, CURA_HHD_OR_DIR, CURA_LHD_OR_DIR, CURA_LHD_GPCR_DIR
 from datacat4ml.const import OR_chemblids
 from datacat4ml.utils import mkdirs
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.select_assays import select_assays
@@ -129,7 +129,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         mkdirs(output_path)
                         curated_df.to_csv(os.path.join(output_path, filename))
                         # get the stats and save them in a csv file
-                        stats_file_path = os.path.join(output_path, f'cura_{ds_cat_level}_{ds_type}_stats.csv')
+                        stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}_{ds_type}_stats.csv')
 
                         if not os.path.exists(stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                             mkdirs(os.path.dirname(stats_file_path))
@@ -193,7 +193,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     curated_lhd_df.to_csv(os.path.join(output_lhd_path, filename))
 
                                     # get the stats and save them in a csv file
-                                    lhd_stats_file_path = os.path.join(output_lhd_path, f'cura_lhd_{ds_type}_stats.csv')
+                                    lhd_stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_lhd_{ds_type}_stats.csv')
 
                                     if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(lhd_stats_file_path))
