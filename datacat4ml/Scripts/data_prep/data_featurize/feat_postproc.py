@@ -14,6 +14,19 @@ from datacat4ml.Scripts.data_prep.data_featurize.feat_smi_list import Cura_Feat_
 #=============================================================================
 # merge_feat_pkl
 #=============================================================================
+effect_dict = {
+    'bind': 'binding affinity',
+    'agon': 'agonism',
+    'antag': 'antagonism'}
+
+assay_dict = {
+    'RBA': 'Receptor binding assay: radioligand binding assay',
+    'G-GTP': 'G-protein dependent functional assays: GTPγS binding assay',
+    'G-cAMP': 'G-protein dependent functional assays: cAMP accumulation assay',
+    'G-Ca': 'G-protein dependent functional assays: IP3/IP1 and calcium accumulation assays',
+    'B-arrest': 'Arrestin recruitment assay',
+}
+
 def merge_feat_pkls(in_dir):
     """
     After featurization by different descriptors, 
@@ -44,9 +57,9 @@ def merge_feat_pkls(in_dir):
 
     # GET the descriptor column from each pickle file
     for base_name in base_names:
-        original_df = pd.read_csv(os.path.join(in_dir, f"{base_name}_curated.csv"))
+        df = pd.read_csv(os.path.join(in_dir, f"{base_name}_curated.csv"))
         # if df contains column 'Unnamed: 0', drop it
-        original_df = original_df.drop(columns=['Unnamed: 0'], errors='ignore')
+        df = df.drop(columns=['Unnamed: 0'], errors='ignore')
 
         pkl_dir = Cura_Feat_Dic[in_dir]
         for descriptor in descriptors:
@@ -54,13 +67,31 @@ def merge_feat_pkls(in_dir):
             pkl_df = pd.read_pickle(pkl_file)
             pkl_df = pkl_df.drop(columns=['Unnamed: 0'], errors='ignore')
             # append the descriptor column to the original dataframe
-            original_df[descriptor] = pkl_df[descriptor].values
+            df[descriptor] = pkl_df[descriptor].values
         
+        ############################ rename, add, delete columns ############################
+        print(f'=================== \n renaming, adding, deleting columns for {base_name} ...\n=====================')
+        # add the following columns:
+        df['effect_description'] = df['effect'].map(effect_dict)
+        df['assay_keywords_description'] = df['assay'].map(assay_dict)
+
+        # rename the following columns:
+        df.rename(columns={
+            'assay_desc': 'assay_description',
+            'assay_type_desc': 'assay_type_description',
+            'relationship_type_desc': 'relationship_type_description',
+            'confidence_score_desc': 'confidence_score_description'}, 
+            inplace=True)
+        
+        # delete the following columns
+        df.drop(columns=['target', 'std_type', 'max_num_atoms', 'max_molecular_weight'], inplace=True)
+        #####################################################################################
+
         # save the merged dataframe to out_dir
         out_dir = os.path.join(pkl_dir, "all")
         mkdirs(out_dir)
         merged_pkl_file = os.path.join(out_dir, f"{base_name}_featurized.pkl")
-        original_df.to_pickle(merged_pkl_file)
+        df.to_pickle(merged_pkl_file)
 
 #=============================================================================
 # delete_failed_smi
@@ -168,14 +199,18 @@ def get_feat_stats(in_path: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds
 
         df = pd.read_pickle(os.path.join(feat_path, f))
 
+        ################################ write the stats origianlly from CURA ################################
+        max_num_atoms = df['num_atoms'].max()
+        max_mw= df['molecule_weight'].max()
+
         stats_file_path = os.path.join(FEAT_DATA_DIR, f'feat_{ds_cat_level}_{ds_type}_stats.csv')
 
         if not os.path.exists(stats_file_path):
             with open(stats_file_path, 'w') as f:
-                f.write('ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,feated_size\n')
+                f.write('ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,feated_size,max_num_atoms,max_mw\n')
 
         with open(stats_file_path, 'a') as f:
-            f.write(f'{ds_cat_level},{ds_type},{ds_size_level},{target},{effect},{assay},{standard_type},{assay_chembl_id},{len(df)}\n')
+            f.write(f'{ds_cat_level},{ds_type},{ds_size_level},{target},{effect},{assay},{standard_type},{assay_chembl_id},{len(df)},{max_num_atoms},{max_mw}\n')
 
 
 #=============================================================================

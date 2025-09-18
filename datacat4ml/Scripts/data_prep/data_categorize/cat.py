@@ -68,7 +68,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      or_bind_lhd_dfs,
      or_bind_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                             effect='bind', assay='RBA', std_types=['Ki', 'IC50'], 
-                            pattern=p_bind_RBA, pattern_ex=p_bind_RBA_ex)
+                            pattern=p_bind_RBA, pattern_ex=p_bind_RBA_ex,
+                            ds_type='or')
 
     # mhd_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -77,7 +78,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
     gpcr_bind_lhd_dfs,
     gpcr_bind_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                               effect='bind', assay='RBA', std_types=['Ki', 'IC50'], 
-                              pattern=p_bind_RBA, pattern_ex=p_bind_RBA_ex)
+                              pattern=p_bind_RBA, pattern_ex=p_bind_RBA_ex,
+                              ds_type='gpcr')
 
     ########################### G-GTP ##########################
     # ======= Agonism: EC50 =======
@@ -95,7 +97,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
     or_agon_G_GTP_lhd_dfs,
     or_agon_G_GTP_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                                   effect='agon', assay='G-GTP', std_types=['EC50'], 
-                                  pattern=p_agon_G_GTP, pattern_ex=p_agon_G_GTP_ex)
+                                  pattern=p_agon_G_GTP, pattern_ex=p_agon_G_GTP_ex,
+                                  ds_type='or')
 
     # mhd_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -104,7 +107,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_agon_G_GTP_lhd_dfs,
      gpcr_agon_G_GTP_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                     effect='agon', assay='G-GTP', std_types=['EC50'], 
-                                    pattern=p_agon_G_GTP, pattern_ex=p_agon_G_GTP_ex)
+                                    pattern=p_agon_G_GTP, pattern_ex=p_agon_G_GTP_ex,
+                                    ds_type='gpcr')
 
     # ======= Antagonism: IC50, Ki, Ke, Kb =======
     # GTPgammaS binding assay
@@ -120,7 +124,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      or_antag_G_GTP_lhd_dfs,
      or_antag_G_GTP_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                                    effect='antag', assay='G-GTP', std_types=['IC50', 'Ki'], 
-                                   pattern=p_antag_G_GTP, pattern_ex=p_antag_G_GTP_ex)
+                                   pattern=p_antag_G_GTP, pattern_ex=p_antag_G_GTP_ex,
+                                   ds_type='or')
 
     # mhd_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -129,7 +134,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_antag_G_GTP_lhd_dfs,
      gpcr_antag_G_GTP_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                      effect='antag', assay='G-GTP', std_types=['IC50', 'Ki'], 
-                                     pattern=p_antag_G_GTP, pattern_ex=p_antag_G_GTP_ex)
+                                     pattern=p_antag_G_GTP, pattern_ex=p_antag_G_GTP_ex,
+                                     ds_type='gpcr')
 
     ########################### G-cAMP ##########################
     #========= Agonism: IC50, EC50 ==========
@@ -146,7 +152,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      or_agon_G_cAMP_lhd_dfs,
      or_agon_G_cAMP_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                                    effect='agon', assay='G-cAMP', std_types=['IC50', 'EC50'], 
-                                   pattern=p_ago_G_cAMP, pattern_ex=p_ago_G_cAMP_ex)
+                                   pattern=p_ago_G_cAMP, pattern_ex=p_ago_G_cAMP_ex,
+                                   ds_type='or')
 
     # mhd_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -155,7 +162,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_agon_G_cAMP_lhd_dfs,
      gpcr_agon_G_cAMP_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                      effect='agon', assay='G-cAMP', std_types=['IC50', 'EC50'], 
-                                     pattern=p_ago_G_cAMP, pattern_ex=p_ago_G_cAMP_ex)
+                                     pattern=p_ago_G_cAMP, pattern_ex=p_ago_G_cAMP_ex,
+                                     ds_type='gpcr')
 
     #============= ### Antagonism ==========
     # neither IC50 data not EC50 data within G_cAMP assay is related to antagonism
@@ -175,7 +183,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      or_agon_G_Ca_lhd_dfs,
      or_agon_G_Ca_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                                  effect='agon', assay='G-Ca', std_types=['EC50'], 
-                                 pattern=p_agon_G_Ca, pattern_ex=p_agon_G_Ca_ex)
+                                 pattern=p_agon_G_Ca, pattern_ex=p_agon_G_Ca_ex,
+                                 ds_type='or')
 
     # mhd_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -184,7 +193,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_agon_G_Ca_lhd_dfs,
      gpcr_agon_G_Ca_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                    effect='agon', assay='G-Ca', std_types=['EC50'], 
-                                   pattern=p_agon_G_Ca, pattern_ex=p_agon_G_Ca_ex)
+                                   pattern=p_agon_G_Ca, pattern_ex=p_agon_G_Ca_ex,
+                                   ds_type='gpcr')
 
     # ===============  Antagonism: IC50 ==========
     # IP3/IP1 and Ca2+ assay
@@ -201,7 +211,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_antag_G_Ca_lhd_dfs,
      gpcr_antag_G_Ca_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                     effect='antag', assay='G-Ca', std_types=['IC50'], 
-                                    pattern=p_antag_G_Ca, pattern_ex=p_antag_G_Ca_ex)
+                                    pattern=p_antag_G_Ca, pattern_ex=p_antag_G_Ca_ex,
+                                    ds_type='gpcr')
 
     ########################### B-arrest ##########################
     #============  Agonism: EC50 ===========
@@ -219,7 +230,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      or_agon_B_arrest_lhd_dfs,
      or_agon_B_arrest_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                                      effect='agon', assay='B-arrest', std_types=['EC50'], 
-                                     pattern=p_agon_B_arrest, pattern_ex=p_agon_B_arrest_ex)
+                                     pattern=p_agon_B_arrest, pattern_ex=p_agon_B_arrest_ex,
+                                     ds_type='or')
 
     # mhd_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -228,7 +240,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_agon_B_arrest_lhd_dfs,
      gpcr_agon_B_arrest_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                        effect='agon', assay='B-arrest', std_types=['EC50'], 
-                                       pattern=p_agon_B_arrest, pattern_ex=p_agon_B_arrest_ex)
+                                       pattern=p_agon_B_arrest, pattern_ex=p_agon_B_arrest_ex,
+                                       ds_type='gpcr')
 
     #============ Antagonism: IC50 ===========
     # G-protein independent functional assays
@@ -245,7 +258,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      or_antag_B_arrest_lhd_dfs,
      or_antag_B_arrest_lhd_dfs_len)  = mhd_lhd(dfs=GPCR_dfs,targets_list=OR_chemblids, use_lookup=True, 
                                        effect='antag', assay='B-arrest', std_types=['IC50'], 
-                                       pattern=p_antag_B_arrest, pattern_ex=p_antag_B_arrest_ex)
+                                       pattern=p_antag_B_arrest, pattern_ex=p_antag_B_arrest_ex,
+                                       ds_type='or')
 
     # cat_datasets: GPCRs
     (gpcr_type_dfs, 
@@ -254,7 +268,8 @@ def run_mhd_lhd(GPCR_dfs, GPCR_chemblids):
      gpcr_antag_B_arrest_lhd_dfs,
      gpcr_antag_B_arrest_lhd_dfs_len) = mhd_lhd(dfs=GPCR_dfs,targets_list=GPCR_chemblids, use_lookup=False, 
                                         effect='antag', assay='B-arrest', std_types=['IC50'], 
-                                        pattern=p_antag_B_arrest, pattern_ex=p_antag_B_arrest_ex)
+                                        pattern=p_antag_B_arrest, pattern_ex=p_antag_B_arrest_ex,
+                                        ds_type='gpcr')
 
     ############# mhd_or_dfs ###############
     mhd_or_dfs_len_list = [or_bind_mhd_dfs_len, 
