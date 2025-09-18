@@ -327,9 +327,9 @@ if __name__ == "__main__":
     mhd_or_dfs_len, mhd_gpcr_dfs_len, lhd_or_dfs_len, lhd_gpcr_dfs_len = run_mhd_lhd(GPCR_dfs, GPCR_chemblids)
 
     # save the stats
-    hhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_hhd_or_dfs_len.csv'), index=False)
-    hhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_hhd_gpcr_dfs_len.csv'), index=False)
-    mhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_mhd_or_dfs_len.csv'), index=False)
-    mhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_mhd_gpcr_dfs_len.csv'), index=False)
-    lhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_lhd_or_dfs_len.csv'), index=False)
-    lhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_lhd_gpcr_dfs_len.csv'), index=False)
+    hhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_hhd_or_stats.csv'), index=False)
+    hhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_hhd_gpcr_stats.csv'), index=False)
+    mhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_mhd_or_stats.csv'), index=False)
+    mhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_mhd_gpcr_stats.csv'), index=False)
+    lhd_or_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_lhd_or_stats.csv'), index=False)
+    lhd_gpcr_dfs_len.to_csv(os.path.join(CAT_DATA_DIR, 'cat_lhd_gpcr_stats.csv'), index=False)
