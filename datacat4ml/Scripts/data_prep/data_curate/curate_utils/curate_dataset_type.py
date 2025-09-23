@@ -25,7 +25,7 @@ def curate(df: pd.DataFrame) -> pd.DataFrame:
 
     param:
     -----
-    target: str, should be 'target_chembl_id' 'CHEMB233'
+    df: pd.DataFrame: The input dataset to be curated, should be from cat_hhd or cat_mhd
 
     return:
     -----
@@ -134,7 +134,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         if not os.path.exists(stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                             mkdirs(os.path.dirname(stats_file_path))
                             with open(stats_file_path, 'w') as f:
-                                f.write('ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n')
+                                f.write('ds_cat_level,ds_type,ds_size_level,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n')
                     
                         with open(stats_file_path, 'a') as f:
                             # Print something for number check
@@ -198,7 +198,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(lhd_stats_file_path))
                                         with open(lhd_stats_file_path, 'w') as f:
-                                            f.write("ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n")
+                                            f.write("ds_cat_level,ds_type,ds_size_level,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,curated_size,removed_size,threshold,num_active,num_inactive,%_active\n")
 
                                 
                                     with open(lhd_stats_file_path, 'a') as f:

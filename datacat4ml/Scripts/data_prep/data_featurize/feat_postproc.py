@@ -80,11 +80,14 @@ def merge_feat_pkls(in_dir):
             'assay_desc': 'assay_description',
             'assay_type_desc': 'assay_type_description',
             'relationship_type_desc': 'relationship_type_description',
-            'confidence_score_desc': 'confidence_score_description'}, 
+            'confidence_score_desc': 'confidence_score_description',
+            'assay_info_hash': 'assay_metadata_hash',
+            }, 
             inplace=True)
         
         # delete the following columns
-        df.drop(columns=['target', 'std_type', 'max_num_atoms', 'max_molecular_weight'], inplace=True)
+        df.drop(columns=['target', 'std_type', 'max_num_atoms', 'max_molecular_weight',
+                        'relationship_type', 'relationship_type_description'], inplace=True)
         #####################################################################################
 
         # save the merged dataframe to out_dir
@@ -201,13 +204,13 @@ def get_feat_stats(in_path: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds
 
         ################################ write the stats origianlly from CURA ################################
         max_num_atoms = df['num_atoms'].max()
-        max_mw= df['molecule_weight'].max()
+        max_mw= df['molecular_weight'].max()
 
         stats_file_path = os.path.join(FEAT_DATA_DIR, f'feat_{ds_cat_level}_{ds_type}_stats.csv')
 
         if not os.path.exists(stats_file_path):
             with open(stats_file_path, 'w') as f:
-                f.write('ds_cat_level,ds_type,ds_size_level,target,effect,assay,standard_type,assay_chembl_id,feated_size,max_num_atoms,max_mw\n')
+                f.write('ds_cat_level,ds_type,ds_size_level,target_chembl_id,effect,assay,standard_type,assay_chembl_id,feated_size,max_num_atoms,max_mw\n')
 
         with open(stats_file_path, 'a') as f:
             f.write(f'{ds_cat_level},{ds_type},{ds_size_level},{target},{effect},{assay},{standard_type},{assay_chembl_id},{len(df)},{max_num_atoms},{max_mw}\n')

@@ -140,7 +140,7 @@ RESULTS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha321
 OR_uniprot_ids = ['P35372', 'P41145', 'P41143', 'P41146']
 OR_chemblids = ['CHEMBL233', 'CHEMBL237', 'CHEMBL236', 'CHEMBL2014']
 OR_names = ['mor', 'kor', 'dor', 'nor']
-OR_name_chemblids = {'mor': 'CHEMBL233', 'kor': 'CHEMBL237', 'dor': 'CHEMBL236', 'nor': 'CHEMBL2014'}
+OR_chemblids_name = {'CHEMBL233':'mor', 'CHEMBL237':'kor', 'CHEMBL236':'dor', 'CHEMBL2014':'nor'}
 
 
 Effects=['bind', 'agon', 'antag', 'None'] # bind: binding affinity, agon: agonism, antag: antagonism

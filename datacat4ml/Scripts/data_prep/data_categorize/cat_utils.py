@@ -47,7 +47,7 @@ def hhd(targets_list, GPCR_dfs, hhds_dir, ds_type='gpcr'):
                     "ds_cat_level": "hhd",
                     "ds_type": ds_type,
                     "use_lookup": 'None',
-                    "target": target_chembl_id,
+                    "target_chembl_id": target_chembl_id,
                     "effect": 'None',
                     "assay": 'None',
                     "standard_type": std_type,
@@ -134,16 +134,14 @@ class DataCategorizer:
 
         parameters
         ----------
-        type_df: dataframe
-            dataframe for each 'standard_type', e.g. Ki, IC50, etc.
-        effect_type_df: dataframe
-            dataframe for each 'standard_type' and tested pharmacological effect, e.g. Ki_ago
-        target: string
-            target name, e.g. mor, kor, dor, nor
-        type: string
-            'standard_type', e.g. Ki, IC50, etc.
-        effect: string
-            tested pharmacological effect, e.g. binding affinity, agonism, antagonism, etc.
+        assay_df: pd.DataFrame
+            dataframe for entries that match the given pattern
+        file_suffix: str
+            suffix for the saved file name
+        saveFile: bool
+            whether to save the matching records (default: True)
+        saveFileOut: bool
+            whether to save the non-matching records (default: True)
 
         return
         ------
@@ -185,15 +183,6 @@ class DataCategorizer:
         """
         Retrieve activity records for each target, type, and effect.
 
-        Parameters:
-        - pattern: pattern to match
-        - pattern_ex: pattern to exclude
-        - target: target name (default: 'mor')
-        - type: standard_type (default: 'Ki')
-        - effect: tested pharmacological effect (default: 'bind')
-        - save_file: whether to save the matching records (default: True)
-        - save_file_out: whether to save the non-matching records (default: True)
-        
         Returns:
         - effect_type_df: dataframe for a type matching the specified effect for a target
         """
@@ -429,7 +418,7 @@ def mhd_lhd(
                                 "ds_cat_level": "mhd",
                                 "ds_type": ds_type,
                                 "use_lookup": use_lookup,
-                                "target": target_chembl_id,
+                                "target_chembl_id": target_chembl_id,
                                 "effect": effect,
                                 "assay": assay,
                                 "standard_type": std_type,
@@ -476,7 +465,7 @@ def mhd_lhd(
                                     "ds_cat_level": "lhd",
                                     "ds_type": ds_type,
                                     "use_lookup": use_lookup,
-                                    "target": target_chembl_id,
+                                    "target_chembl_id": target_chembl_id,
                                     "effect": effect,
                                     "assay": assay,
                                     "standard_type": std_type,
