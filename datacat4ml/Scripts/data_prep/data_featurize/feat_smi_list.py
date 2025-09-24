@@ -106,17 +106,23 @@ class Featurizer:
     def pharm2d(smi: List[str]):
         """ Convert a list of SMILES strings to RDKit 2D fingerprints"""
         from rdkit.Chem.Pharm2D import Generate, Gobbi_Pharm2D
-        from rdkit.Chem.Pharm2D.Generate import Gen2DFingerprint
         from rdkit.DataStructs import ExplicitBitVect
 
         mols = [mol_from_smi(m) for m in smi]
         fp = [Generate.Gen2DFingerprint(mol, Gobbi_Pharm2D.factory) for mol in mols]
 
         # convert to bit string
-        fp_bit_str = [f.ToBitString() for f in fp]
+        fp_bit_strs = [f.ToBitString() for f in fp]
         # convert to explicit bit vector
-        explicit_bit_vect = [ExplicitBitVect(len(str)) for str in fp_bit_str] 
-        return rdkit_numpy_convert(explicit_bit_vect)
+        vects = []
+        for bit_str in fp_bit_strs:
+            vect = np.array(list(bit_str), dtype=int)
+            vects.append(vect)
+        
+        return np.array(vects)
+    
+        #explicit_bit_vect = [ExplicitBitVect(len(str)) for str in fp_bit_str] 
+        #return rdkit_numpy_convert(explicit_bit_vect)
     
     @staticmethod
     def erg(smi: List[str]):

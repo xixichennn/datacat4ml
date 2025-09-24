@@ -3,7 +3,7 @@
 #SBATCH --partition=bdw
 #SBATCH --ntasks=1
 #SBATCH --mem=28G
-#SBATCH --time=22:00:00
+#SBATCH --time=6:00:00
 
 # Activate the Python environment 
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
@@ -17,10 +17,10 @@ in_dirs=("/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_cur
         "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_mhd_gpcr"\
         "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_lhd_gpcr")
 
-descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
-             'PHYSICOCHEM'\
-             'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
-
+#descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
+#             'PHYSICOCHEM'\
+#             'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
+descriptors=('PHARM2D')
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
 in_dir="${in_dirs[$SLURM_ARRAY_TASK_ID % ${#in_dirs[@]}]}" 
@@ -39,3 +39,6 @@ python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor"
 #### For jobs that need at least 22 hours
 # Those jobs include SMILES failed to be embeded by 3D descriptors: hhd_gprc, mhs_gpcr
 # sbatch --array=45,46,51,52,57,58,63,64,69,70,75,76 run_feat_slurm_T_22h.sh
+
+### Calc Pharm2D only
+# sbatch --array=0-5 run_feat_slurm.sh

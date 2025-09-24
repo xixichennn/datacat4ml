@@ -13,6 +13,7 @@ conda activate datacat
 descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
              'PHYSICOCHEM'\
              'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
+
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
 descriptor="${descriptors[$SLURM_ARRAY_TASK_ID % ${#descriptors[@]}]}" 
 
@@ -20,3 +21,9 @@ python3 tsne.py --descriptor "$descriptor"
 
 # run the blow command in terminal to submit all the job
 # sbatch --array=0-12 run_tsne_slurm.sh
+
+# run for 'PHARM2D' only
+# sbatch --array=4 run_tsne_slurm.sh
+
+# run `tsne_lhd_aid_only.py` for all descriptors
+# sbatch --array=0-12 run_tsne_lhd_aid_only_slurm.sh

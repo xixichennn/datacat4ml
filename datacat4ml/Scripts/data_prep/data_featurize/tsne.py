@@ -180,11 +180,6 @@ def run_tsne_plot(df, x_col="ECFP4", y_col="activity",
                   savepath=None,
                   figname=None,
                 ):
-    # check if there is array of 0s in x_col
-    if (df[x_col].apply(lambda x: np.all(np.array(x) == 0)).any()):
-        print(f"Warning: There are some rows with all-zero {x_col} in the dataframe. Please check and remove them before t-SNE.")
-        df = df[~df[x_col].apply(lambda x: np.all(np.array(x) == 0))]
-        print(f"After removing all-zero {x_col}, the dataframe has {len(df)} rows.")
 
     X = np.vstack(df[x_col].values)   # stack fingerprints into a 2D numpy array
     y = df[y_col].values    # categorical labels for coloring
@@ -236,6 +231,26 @@ def main(descriptor: str = "ECFP4"):
                 draw_legend=False, draw_centers=True, draw_cluster_labels=True,
                 savepath=save_path
                 )
+    
+    #run_tsne_plot(new_lhd_or_df, x_col=descriptor, y_col='assay_chembl_id',
+    #            perplexity=30,
+    #            metric="euclidean", # options: "cosine", "euclidean"
+    #            initialization="pca",  # options: "random", "pca"
+    #            exaggeration=1, # use larger exaggeration for larger datasets
+    #            colors=palette,
+    #            draw_legend=False, draw_centers=True, draw_cluster_labels=False,
+    #            savepath=save_path, figname=f"tsne_lhd_or_{descriptor}_assay_chembl_id_no_labels.pdf"
+    #            )
+    #
+    #run_tsne_plot(new_lhd_or_df, x_col=descriptor, y_col='assay_chembl_id',
+    #            perplexity=30,
+    #            metric="euclidean", # options: "cosine", "euclidean"
+    #            initialization="pca",  # options: "random", "pca"
+    #            exaggeration=1, # use larger exaggeration for larger datasets
+    #            colors=palette,
+    #            draw_legend=True, draw_centers=True, draw_cluster_labels=False,
+    #            savepath=save_path, figname=f"tsne_lhd_or_{descriptor}_assay_chembl_id_with_legend.pdf"
+    #            )
 
     #===================================================
     #  y_col= ..., in_path: FEAT_MHD_OR_DIR
@@ -272,15 +287,15 @@ def main(descriptor: str = "ECFP4"):
             df = pd.read_pickle(os.path.join(in_path, 'all', f))
             save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1])
 
-        run_tsne_plot(df, x_col=descriptor, y_col='activity',
-                perplexity=30,
-                metric="euclidean", # options: "cosine", "euclidean"
-                initialization="pca",  # options: "random", "pca"
-                exaggeration=1, # use larger exaggeration for larger datasets
-                colors=activity_palette,
-                draw_legend=False,
-                savepath=save_path, figname=f"tsne_{f.replace('_featurized.pkl', '')}_{descriptor}_activity.pdf"
-                )
+            run_tsne_plot(df, x_col=descriptor, y_col='activity',
+                    perplexity=30,
+                    metric="euclidean", # options: "cosine", "euclidean"
+                    initialization="pca",  # options: "random", "pca"
+                    exaggeration=1, # use larger exaggeration for larger datasets
+                    colors=activity_palette,
+                    draw_legend=False,
+                    savepath=save_path, figname=f"tsne_{f.replace('_featurized.pkl', '')}_{descriptor}_activity.pdf"
+                    )
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="t-SNE and plot")
