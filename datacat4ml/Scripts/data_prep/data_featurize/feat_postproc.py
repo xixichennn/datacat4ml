@@ -10,6 +10,7 @@ from datacat4ml.const import FEAT_HHD_GPCR_DIR, FEAT_MHD_GPCR_DIR, FEAT_LHD_GPCR
 
 from datacat4ml.utils import mkdirs
 from datacat4ml.Scripts.data_prep.data_featurize.feat_smi_list import Cura_Feat_Dic
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.apply_thresholds import apply_thresholds
 
 #=============================================================================
 # merge_feat_pkl
@@ -215,28 +216,100 @@ def get_feat_stats(in_path: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds
         with open(stats_file_path, 'a') as f:
             f.write(f'{ds_cat_level},{ds_type},{ds_size_level},{target},{effect},{assay},{standard_type},{assay_chembl_id},{len(df)},{max_num_atoms},{max_mw}\n')
 
+#=============================================================================
+# combine mhd_or based on 'effect'
+#=============================================================================
+
+def combine_by_effect(in_path = FEAT_MHD_OR_DIR):
+    """
+    Combine featurized files by target_chemblid and effect.
+    """
+    feat_path = os.path.join(in_path, 'all')
+    feat_files = [f for f in os.listdir(feat_path)]
+
+    save_path = os.path.join(FEAT_DATA_DIR, 'feat_mhd_or_effect', 'all')
+    mkdirs(save_path)
+
+    # collect unique target_chembl_id and effect combinations
+    target_chembl_id_effects = list(
+        {f.split('_')[0] + '_' + f.split('_')[1] for f in feat_files}
+    )
+    # remove duplicates
+    #target_chembl_id_effects = list(set(target_chembl_id_effects))
+
+    stats_file_path = os.path.join(FEAT_DATA_DIR, f'feat_mhd_or_effect_stats.csv')
+    # open stats file and write header
+    with open(stats_file_path, 'w') as f:
+        f.write('ds_cat_level,ds_type,ds_size_level,target_chembl_id,effect,assay,standard_type,assay_chembl_id,feated_size,max_num_atoms,max_mw,threshold,num_active,num_inactive,%_active\n')
+
+        for target_chembl_id_effect in target_chembl_id_effects:
+            ds_cat_level = 'mhd_effect'
+            ds_type = 'or'
+            assay = 'None'
+            standard_type = 'None'
+            assay_chembl_id = 'None'
+
+            target_chembl_id = target_chembl_id_effect.split('_')[0]
+            effect = target_chembl_id_effect.split('_')[1]
+
+            # combine files with the same target_chembl_id and effect
+            concat_df = pd.DataFrame()
+            for file in feat_files:
+                if file.startswith(target_chembl_id_effect):
+                    df = pd.read_pickle(os.path.join(feat_path, file))
+                    df = df.drop(columns=['Unnamed: 0'], errors='ignore')
+                    concat_df = pd.concat([concat_df, df], ignore_index=True)
+                    concat_df.reset_index(drop=True, inplace=True)
+            
+            # re-apply 'thresholds'
+            concat_df.drop(columns=['activity_string','activity', 'threshold'], inplace=True)
+            concat_df = apply_thresholds(x=concat_df, automate_threshold=True, hard_only=False)
+            
+            if len(concat_df) < 50:
+                ds_size_level = 's50'
+            else:
+                ds_size_level = 'b50'
+
+            # save combined df
+            concat_df.to_pickle(os.path.join(save_path, f'{target_chembl_id_effect}_mhd_{ds_size_level}_featurized.pkl'))
+            print(f'The shape of combined df: {concat_df.shape}')
+
+            # save stats
+            feated_size = len(concat_df)
+            max_num_atoms = concat_df['num_atoms'].max()
+            max_mw= concat_df['molecular_weight'].max()
+            threshold = concat_df['threshold'].unique()[0]
+            num_active = sum(concat_df['activity'])
+            num_inactive = feated_size - num_active
+            percent_a = round(num_active / feated_size * 100, 2)
+
+            f.write(f"{ds_cat_level},{ds_type},{ds_size_level},{target_chembl_id},{effect},{assay},{standard_type},{assay_chembl_id},{feated_size},{max_num_atoms},{max_mw},{threshold},{num_active},{num_inactive},{percent_a}\n")
+
 
 #=============================================================================
 # main
 #=============================================================================
 if __name__ == "__main__":
-    #============ merge_feat_pkls =================
-    keys_list = list(Cura_Feat_Dic.keys())
+    ##============ merge_feat_pkls =================
+    #keys_list = list(Cura_Feat_Dic.keys())
+#
+    #for in_dir in keys_list:
+    #    print(f'Processing {in_dir}...')
+    #    merge_feat_pkls(in_dir)
+    #
+    ##============ delete_failed_smi =================
+    #hhd_gpcr_failed_dfs, hhd_gpcr_failed_new_dfs = delete_failed_rows(failed_dict=hhd_gpcr_failed,
+    #                                                               failed_path=FEAT_HHD_GPCR_DIR)
+    #mhd_gpcr_failed_dfs, mhd_gpcr_failed_new_dfs = delete_failed_rows(failed_dict=mhd_gpcr_failed,
+    #                                                               failed_path=FEAT_MHD_GPCR_DIR)
+#
+    ##============ get_feat_stats =================
+    #get_feat_stats(in_path=FEAT_HHD_OR_DIR, ds_cat_level='hhd', ds_type='or')
+    #get_feat_stats(in_path=FEAT_HHD_GPCR_DIR, ds_cat_level='hhd', ds_type='gpcr')
+    #get_feat_stats(in_path=FEAT_MHD_OR_DIR, ds_cat_level='mhd', ds_type='or')
+    #get_feat_stats(in_path=FEAT_MHD_GPCR_DIR, ds_cat_level='mhd', ds_type='gpcr')
+    #get_feat_stats(in_path=FEAT_LHD_OR_DIR, ds_cat_level='lhd', ds_type='or')
+    #get_feat_stats(in_path=FEAT_LHD_GPCR_DIR, ds_cat_level='lhd', ds_type='gpcr')
 
-    for in_dir in keys_list:
-        print(f'Processing {in_dir}...')
-        merge_feat_pkls(in_dir)
-    
-    #============ delete_failed_smi =================
-    hhd_gpcr_failed_dfs, hhd_gpcr_failed_new_dfs = delete_failed_rows(failed_dict=hhd_gpcr_failed,
-                                                                   failed_path=FEAT_HHD_GPCR_DIR)
-    mhd_gpcr_failed_dfs, mhd_gpcr_failed_new_dfs = delete_failed_rows(failed_dict=mhd_gpcr_failed,
-                                                                   failed_path=FEAT_MHD_GPCR_DIR)
-    
-    #============ get_feat_stats =================
-    get_feat_stats(in_path=FEAT_HHD_OR_DIR, ds_cat_level='hhd', ds_type='or')
-    get_feat_stats(in_path=FEAT_HHD_GPCR_DIR, ds_cat_level='hhd', ds_type='gpcr')
-    get_feat_stats(in_path=FEAT_MHD_OR_DIR, ds_cat_level='mhd', ds_type='or')
-    get_feat_stats(in_path=FEAT_MHD_GPCR_DIR, ds_cat_level='mhd', ds_type='gpcr')
-    get_feat_stats(in_path=FEAT_LHD_OR_DIR, ds_cat_level='lhd', ds_type='or')
-    get_feat_stats(in_path=FEAT_LHD_GPCR_DIR, ds_cat_level='lhd', ds_type='gpcr')
+    #============ combine_by_effect =================
+    combine_by_effect(in_path = FEAT_MHD_OR_DIR)

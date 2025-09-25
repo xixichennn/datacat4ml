@@ -5,7 +5,7 @@ import pandas as pd
 import argparse
 
 
-from datacat4ml.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR , FEAT_MHD_OR_DIR , FEAT_LHD_OR_DIR, FEAT_HHD_GPCR_DIR, FEAT_MHD_GPCR_DIR, FEAT_LHD_GPCR_DIR
+from datacat4ml.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR , FEAT_MHD_OR_DIR , FEAT_LHD_OR_DIR, FEAT_MHD_OR_effect_DIR
 from datacat4ml.const import CAT_FIG_DIR, CURA_FIG_DIR, FEAT_FIG_DIR
 from datacat4ml.utils import mkdirs
 
@@ -26,10 +26,10 @@ zero_color = '#538CBA' # i.e. inactive; teal
 activity_palette = {1:one_color, 0:zero_color}
 
 # target_chembl_id
-mor_color = '#8B006B'
-kor_color = '#538CBA'
-dor_color = '#A5C93D'
-nor_color = '#2000D7'
+mor_color = '#F5C45E'
+kor_color = '#7678ed'
+dor_color = '#2ec4b6'
+nor_color = '#03045e'
 target_palette = {
     'CHEMBL233':mor_color,
     'CHEMBL237':kor_color,
@@ -207,30 +207,30 @@ def main(descriptor: str = "ECFP4"):
 
     print(f'Processing descriptor: {descriptor} ...')
 
-    print(f'For concat_df ......\n')
+    #print(f'For concat_df ......\n')
     #===========================================================
     # y_col='assay_chembl_id', only for in_path: FEAT_LHD_OR_DIR
     #===========================================================
-    lhd_or_df = concat_pkl(FEAT_LHD_OR_DIR)
-    save_path = os.path.join(FEAT_FIG_DIR, 'feat_lhd_or')
-    mkdirs(save_path)
-
-    # Get counts and filter valid IDs
-    id_counts = lhd_or_df['assay_chembl_id'].value_counts()
-    assay_chembl_ids = id_counts[id_counts >= 50].index.tolist()
-    palette = set_assay_chembl_id_palette(assay_chembl_ids)
-
-    new_lhd_or_df = lhd_or_df[lhd_or_df['assay_chembl_id'].isin(assay_chembl_ids)]
-
-    run_tsne_plot(new_lhd_or_df, x_col=descriptor, y_col='assay_chembl_id',
-                perplexity=30,
-                metric="euclidean", # options: "cosine", "euclidean"
-                initialization="pca",  # options: "random", "pca"
-                exaggeration=1, # use larger exaggeration for larger datasets
-                colors=palette,
-                draw_legend=False, draw_centers=True, draw_cluster_labels=True,
-                savepath=save_path
-                )
+    #lhd_or_df = concat_pkl(FEAT_LHD_OR_DIR)
+    #save_path = os.path.join(FEAT_FIG_DIR, 'feat_lhd_or', 'desc_assayid', 'concat_ds')
+    #mkdirs(save_path)
+#
+    ## Get counts and filter valid IDs
+    #id_counts = lhd_or_df['assay_chembl_id'].value_counts()
+    #assay_chembl_ids = id_counts[id_counts >= 50].index.tolist()
+    #palette = set_assay_chembl_id_palette(assay_chembl_ids)
+#
+    #new_lhd_or_df = lhd_or_df[lhd_or_df['assay_chembl_id'].isin(assay_chembl_ids)]
+#
+    #run_tsne_plot(new_lhd_or_df, x_col=descriptor, y_col='assay_chembl_id',
+    #            perplexity=30,
+    #            metric="euclidean", # options: "cosine", "euclidean"
+    #            initialization="pca",  # options: "random", "pca"
+    #            exaggeration=1, # use larger exaggeration for larger datasets
+    #            colors=palette,
+    #            draw_legend=False, draw_centers=True, draw_cluster_labels=True,
+    #            savepath=save_path
+    #            )
     
     #run_tsne_plot(new_lhd_or_df, x_col=descriptor, y_col='assay_chembl_id',
     #            perplexity=30,
@@ -252,40 +252,20 @@ def main(descriptor: str = "ECFP4"):
     #            savepath=save_path, figname=f"tsne_lhd_or_{descriptor}_assay_chembl_id_with_legend.pdf"
     #            )
 
-    #===================================================
-    #  y_col= ..., in_path: FEAT_MHD_OR_DIR
-    #===================================================
-    for y_col in ["target_chembl_id",
-                "activity",
-                "effect",
-                ]:
-        print(f'Processing label: {y_col} ...')
-
-        # input datasets
-        mhd_or_df = concat_pkl(FEAT_MHD_OR_DIR)
-        save_path = os.path.join(FEAT_FIG_DIR, 'feat_mhd_or')
-        mkdirs(save_path)
-
-        run_tsne_plot(mhd_or_df, x_col=descriptor, y_col=y_col,
-                    perplexity=30, 
-                    metric="euclidean", # options: "cosine", "euclidean"
-                    initialization="pca",  # options: "random", "pca"
-                    exaggeration=1, # use larger exaggeration for larger datasets
-                    colors=y_palette[y_col],
-                    draw_legend=False,
-                    savepath=save_path
-                    )
-        
     #=======================================================================================
     # y_col='activity' for each single pkl in in_path: FEAT_LHD_OR_DIR and FEAT_MHD_OR_DIR
     #=======================================================================================
     print(f'\nFor each single pkl ......\n')
-    in_paths = [FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR]
+    in_paths = [
+        #FEAT_MHD_OR_DIR, 
+        #FEAT_LHD_OR_DIR, 
+        FEAT_MHD_OR_effect_DIR]
     for in_path in in_paths:
         print(f'Processing in_path: {in_path} ...')
         for f in os.listdir(os.path.join(in_path, 'all')):
             df = pd.read_pickle(os.path.join(in_path, 'all', f))
-            save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1])
+            save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1], 'desc_activity', 'single_ds')
+            mkdirs(save_path)
 
             run_tsne_plot(df, x_col=descriptor, y_col='activity',
                     perplexity=30,
@@ -295,6 +275,33 @@ def main(descriptor: str = "ECFP4"):
                     colors=activity_palette,
                     draw_legend=False,
                     savepath=save_path, figname=f"tsne_{f.replace('_featurized.pkl', '')}_{descriptor}_activity.pdf"
+                    )
+            
+    #===================================================
+    #  y_col= ..., in_path: FEAT_MHD_OR_DIR
+    #===================================================
+    # input datasets
+    mhd_or_df = concat_pkl(FEAT_MHD_OR_DIR)
+    print(f'The size of mhd_or_df: {len(mhd_or_df)}')
+    
+    for y_col in [
+                "target_chembl_id",
+                #"activity",
+                #"effect",
+                ]:
+        print(f'Processing label: {y_col} ...')
+
+        save_path = os.path.join(FEAT_FIG_DIR, 'feat_mhd_or', f'desc_{y_col}', 'concat_ds')
+        mkdirs(save_path)
+    
+        run_tsne_plot(mhd_or_df, x_col=descriptor, y_col=y_col,
+                    perplexity=30, 
+                    metric="euclidean", # options: "cosine", "euclidean"
+                    initialization="pca",  # options: "random", "pca"
+                    exaggeration=1, # use larger exaggeration for larger datasets
+                    colors=y_palette[y_col],
+                    draw_legend=False,
+                    savepath=save_path, figname=f"tsne_mhd_or_{descriptor}_{y_col}.pdf"
                     )
             
 if __name__ == "__main__":
