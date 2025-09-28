@@ -45,6 +45,7 @@ CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcr")
 CURA_HHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_or")
 CURA_MHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or")
 CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_or")
+CURA_MHD_OR_effect_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or_effect")
 
 # data_featurize
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
@@ -52,6 +53,7 @@ FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 FEAT_HHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_or")
 FEAT_MHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or")
 FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_or")
+FEAT_MHD_OR_effect_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or_effect")
 
 FEAT_HHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_gpcr")
 FEAT_MHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_gpcr")

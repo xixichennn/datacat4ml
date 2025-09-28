@@ -5,7 +5,7 @@ import os
 
 from datacat4ml.const import CURA_HHD_OR_DIR, CURA_MHD_OR_DIR #Yu
 from datacat4ml.const import CAT_HHD_OR_DIR, CAT_MHD_OR_DIR, OR_chemblids
-from datacat4ml.Scripts.data_prep.data_curate.curate_utils.curate_dataset_type import run_curation
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.curate_dataset_type import run_curation, group_by_effect
 
 
 def curate_ORs():
@@ -51,4 +51,5 @@ def curate_ORs():
     
 if __name__ == '__main__':
     curate_ORs()
+    group_by_effect(ds_type='or', ds_cat_level='mhd')
 
