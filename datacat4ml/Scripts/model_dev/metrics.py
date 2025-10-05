@@ -7,7 +7,9 @@ from sklearn import metrics
 from rdkit.ML.Scoring.Scoring import CalcBEDROC
 import torch
 
-#====================================================================================================================
+from sklearn.metrics import r2_score
+
+#====================================For CLIP-alike Model =========================================================
 
 def get_sparse_data(m, i):
     """
@@ -25,36 +27,6 @@ def get_sparse_data(m, i):
         A list of non-zero values in the sparse matrix row at index `i`.
     """
     return [m.data[index] for index in range(m.indptr[i], m.indptr[i + 1])]
-
-def calc_bedroc_on_ml(y_true, y_pred_proba, alpha: float = 20.0):
-    """ Calculates the bedroc score unsing rdkit.ML.Scoring.CalcBEDROC.
-    The source code is available at https://github.com/rdkit/rdkit/blob/master/rdkit/ML/Scoring/Scoring.py#L103
-    This function is defined as `def CalcBEDROC(score, col, alpha)`, 
-        where `score` is ordered list with tuples of (pred_proba, true value), with pred_proba being descendingly sorted,
-        'col' is the column index for true values, i.e. 1 for the positive class (1), 
-        and `alpha` is the early recognition parameter.
-
-    
-    Params
-    ------
-    y_pred_proba: (lst/array) a list of predicted probabilities for all compounds, i.e. the value of model.predict_proba(x_test). 
-                   y_pred_proba[:, 1] is the probability of the positive class (1).
-    y_true: (lst/array) a list of true values for all compounds.
-    alpha: (float)  early recognition parameter. 
-            alpha = 80.5, 2% of the top-ranked compounds of the all compounds were calculated; 2% represents the proportion of active compounds in the DUD-E database;
-            alpha = 321.5, 0.5% of the top-ranked compounds of the all compounds  were calculated; 4 times smaller than 2% --> early recognition.
-            alpha = 20.0(default), 8% of the top-ranked compounds of the all compounds were calculated; 4 times larger than 2% --> is interesting for the cases where relatively high-throughput experiments are available.
-
-    returns
-    -------
-    (float) BEDROC score
-    """
-
-    score = list(zip(y_pred_proba[:, 1], y_true))
-    score.sort(key=lambda x: x[0], reverse=True) # sort the list by the first element, i.e. # the predicted probability of the positive class (1), in descending order.
-    bedroc_score = CalcBEDROC(score, 1, alpha) # 1 is the column index for the ground-truth values (y_true)
-
-    return bedroc_score
 
 def calc_bedroc_on_clip(y_true, y_score, alpha: float = 20.0):
     """ Calculates the bedroc score unsing rdkit.ML.Scoring.CalcBEDROC.
@@ -207,3 +179,95 @@ def top_k_accuracy(y_true, y_pred, k=5, ret_arocc=False, ret_mrocc=False, verbos
         return (tkaccs[0], mrocc) if len(tkaccs) == 1 else (tkaccs, mrocc)
     
     return tkaccs[0] if len(tkaccs) == 1 else tkaccs
+
+
+#====================================For ML classifiers =========================================================
+def calc_auroc(y_true, y_pred_prob):
+    """
+    Calculates the Area Under the Receiver Operating Characteristic Curve (ROC AUC) for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred_prob (array-like): Predicted probabilities for the positive class (1).
+
+    Returns:
+        float: The ROC AUC score.
+    """
+    auroc = metrics.roc_auc_score(y_true, y_pred_prob[:, 1])
+    return auroc
+
+def calc_auprc(y_true, y_pred_prob):
+    """
+    Calculates the Area Under the Precision-Recall Curve (AUPRC) for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred_prob (array-like): Predicted probabilities for the positive class (1).
+
+    Returns:
+        float: The AUPRC score.
+    """
+    precision, recall, _ = metrics.precision_recall_curve(y_true, y_pred_prob[:, 1])
+    auprc = metrics.auc(recall, precision)
+    return auprc
+
+def calc_bedroc_on_ml(y_true, y_pred_proba, alpha: float = 20.0):
+    """ Calculates the bedroc score unsing rdkit.ML.Scoring.CalcBEDROC.
+    The source code is available at https://github.com/rdkit/rdkit/blob/master/rdkit/ML/Scoring/Scoring.py#L103
+    This function is defined as `def CalcBEDROC(score, col, alpha)`, 
+        where `score` is ordered list with tuples of (pred_proba, true value), with pred_proba being descendingly sorted,
+        'col' is the column index for true values, i.e. 1 for the positive class (1), 
+        and `alpha` is the early recognition parameter.
+
+    
+    Params
+    ------
+    y_pred_proba: (lst/array) a list of predicted probabilities for all compounds, i.e. the value of model.predict_proba(x_test). 
+                   y_pred_proba[:, 1] is the probability of the positive class (1).
+    y_true: (lst/array) a list of true values for all compounds.
+    alpha: (float)  early recognition parameter. 
+            alpha = 80.5, 2% of the top-ranked compounds of the all compounds were calculated; 2% represents the proportion of active compounds in the DUD-E database;
+            alpha = 321.5, 0.5% of the top-ranked compounds of the all compounds  were calculated; 4 times smaller than 2% --> early recognition.
+            alpha = 20.0(default), 8% of the top-ranked compounds of the all compounds were calculated; 4 times larger than 2% --> is interesting for the cases where relatively high-throughput experiments are available.
+
+    returns
+    -------
+    (float) BEDROC score
+    """
+
+    score = list(zip(y_pred_proba[:, 1], y_true))
+    score.sort(key=lambda x: x[0], reverse=True) # sort the list by the first element, i.e. # the predicted probability of the positive class (1), in descending order.
+    bedroc_score = CalcBEDROC(score, 1, alpha) # 1 is the column index for the ground-truth values (y_true)
+
+    return bedroc_score
+
+#====================================For ML regressor =========================================================
+def calc_rmse(y_true, y_pred):
+    """ Calculates the Root Mean Square Error
+
+    Args:
+        true: (1d array-like shape) true test values (float)
+        pred: (1d array-like shape) predicted test values (float)
+
+    Returns: (float) rmse
+    """
+    # Convert to 1-D numpy array if it's not
+    y_pred = np.array(y_pred) if type(y_pred) is not np.array else y_pred
+    y_true = np.array(y_true) if type(y_true) is not np.array else y_true
+
+    return np.sqrt(np.mean(np.square(y_true - y_pred)))
+
+def calc_r2(y_true, y_pred):
+    """ Calculates the R2 score
+
+    Args:
+        true: (1d array-like shape) true test values (float)
+        pred: (1d array-like shape) predicted test values (float)
+
+    Returns: (float) r2 score
+    """
+    # Convert to 1-D numpy array if it's not
+    y_pred = np.array(y_pred) if type(y_pred) is not np.array else y_pred
+    y_true = np.array(y_true) if type(y_true) is not np.array else y_true
+
+    return r2_score(y_true, y_pred)
