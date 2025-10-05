@@ -231,7 +231,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         curated_df = rename_add_delete_cols(curated_df)
 
                         # save the curated dataset
-                        curated_df.to_csv(os.path.join(output_path, filename))
+                        curated_df.to_csv(os.path.join(output_path, filename), index=False)
         
                         # get the stats and save them in a csv file
                         stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}_{ds_type}_stats.csv')
@@ -307,7 +307,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     # rename, add, delete columns
                                     print(f'=================== \n renaming, adding, deleting columns for {filename} ...\n=====================')
                                     curated_lhd_df = rename_add_delete_cols(curated_lhd_df)
-                                    curated_lhd_df.to_csv(os.path.join(output_lhd_path, filename))
+                                    curated_lhd_df.to_csv(os.path.join(output_lhd_path, filename), index=False)
 
                                     # get the stats and save them in a csv file
                                     lhd_stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_lhd_{ds_type}_stats.csv')
@@ -405,7 +405,7 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd'):
                 ds_size_level = 'b50'
 
             # save combined df
-            concat_df.to_csv(os.path.join(save_path, f'{target_chembl_id_effect}_mhd_{ds_size_level}_curated.csv'))
+            concat_df.to_csv(os.path.join(save_path, f'{target_chembl_id_effect}_mhd_{ds_size_level}_curated.csv'), index=False)
             print(f'The shape of combined df: {concat_df.shape}')
 
             # save stats
