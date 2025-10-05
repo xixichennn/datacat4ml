@@ -47,6 +47,15 @@ CURA_MHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or")
 CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_or")
 CURA_MHD_OR_effect_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or_effect")
 
+# data_split
+SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
+
+SPLIT_HHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_hhd_or")
+SPLIT_MHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_or")
+SPLIT_MHD_OR_effect_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_or_effect")
+SPLIT_LHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_lhd_or")
+
+
 # data_featurize
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 # To avoid on-fly featurization,  OR datasets will be featurized and saved in advance for later use.
@@ -60,16 +69,12 @@ FEAT_MHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_gpcr")
 FEAT_LHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_gpcr")
 
 
-# data_split
-SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
-
-SPLIT_HHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_hhd_or")
-SPLIT_HHD_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_hhd_gpcr")
-SPLIT_MHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_or")
-SPLIT_MHD_GPCR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_gpcr")
-
 # hparams
-HPARAMS_DIR = os.path.join(DATA_DIR, "model_dev")
+MODEL_DIR = os.path.join(DATA_DIR, "model_dev")
+ML_HP_DIR= os.path.join(MODEL_DIR, 'ml_hp')
+CL_HP_DIR = os.path.join(MODEL_DIR, 'cl_hp')
+
+
 
 # benchmark
 BMK_DIR = os.path.join(DATA_DIR, "benchmark")

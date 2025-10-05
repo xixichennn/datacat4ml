@@ -255,28 +255,28 @@ def main(descriptor: str = "ECFP4"):
     #=======================================================================================
     # y_col='activity' for each single pkl in in_path: FEAT_LHD_OR_DIR and FEAT_MHD_OR_DIR
     #=======================================================================================
-    print(f'\nFor each single pkl ......\n')
-    in_paths = [
-        #FEAT_MHD_OR_DIR, 
-        #FEAT_LHD_OR_DIR, 
-        FEAT_MHD_OR_effect_DIR]
-    for in_path in in_paths:
-        print(f'Processing in_path: {in_path} ...')
-        for f in os.listdir(os.path.join(in_path, 'all')):
-            df = pd.read_pickle(os.path.join(in_path, 'all', f))
-            save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1], 'desc_activity', 'single_ds')
-            mkdirs(save_path)
-
-            run_tsne_plot(df, x_col=descriptor, y_col='activity',
-                    perplexity=30,
-                    metric="euclidean", # options: "cosine", "euclidean"
-                    initialization="pca",  # options: "random", "pca"
-                    exaggeration=1, # use larger exaggeration for larger datasets
-                    colors=activity_palette,
-                    draw_legend=False,
-                    savepath=save_path, figname=f"tsne_{f.replace('_featurized.pkl', '')}_{descriptor}_activity.pdf"
-                    )
-            
+    #print(f'\nFor each single pkl ......\n')
+    #in_paths = [
+    #    #FEAT_MHD_OR_DIR, 
+    #    #FEAT_LHD_OR_DIR, 
+    #    FEAT_MHD_OR_effect_DIR]
+    #for in_path in in_paths:
+    #    print(f'Processing in_path: {in_path} ...')
+    #    for f in os.listdir(os.path.join(in_path, 'all')):
+    #        df = pd.read_pickle(os.path.join(in_path, 'all', f))
+    #        save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1], 'desc_activity', 'single_ds')
+    #        mkdirs(save_path)
+#
+    #        run_tsne_plot(df, x_col=descriptor, y_col='activity',
+    #                perplexity=30,
+    #                metric="euclidean", # options: "cosine", "euclidean"
+    #                initialization="pca",  # options: "random", "pca"
+    #                exaggeration=1, # use larger exaggeration for larger datasets
+    #                colors=activity_palette,
+    #                draw_legend=False,
+    #                savepath=save_path, figname=f"tsne_{f.replace('_featurized.pkl', '')}_{descriptor}_activity.pdf"
+    #                )
+    #        
     #===================================================
     #  y_col= ..., in_path: FEAT_MHD_OR_DIR
     #===================================================
@@ -311,3 +311,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args.descriptor)
+
+    # run in terminal:
+    # python tsne.py --descriptor 'PHARM2D'
