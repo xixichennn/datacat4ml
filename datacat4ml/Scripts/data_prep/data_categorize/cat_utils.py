@@ -409,7 +409,7 @@ def mhd_lhd(
                     if len(mhd_df) == 0:
                         print(f"No data for {target_chembl_id}_{effect}_{assay}_{std_type} \n")
                     else:
-                        mhd_df.to_csv(os.path.join(std_type_dir, f"{mhd_df_name}.csv"))
+                        mhd_df.to_csv(os.path.join(std_type_dir, f"{mhd_df_name}.csv"), index=False)
                         mhd_dfs[mhd_df_name] = mhd_df
                         print(f"The shape of mhd_df is {mhd_df.shape}\n")
                         
@@ -456,7 +456,7 @@ def mhd_lhd(
                                 lhd_df_name = f"{target_chembl_id}_{effect}_{assay}_{std_type}_{assay_chembl_id}_lhd_df"
                                 lhd_dir = os.path.join(std_type_dir, 'lhd')
                                 mkdirs(lhd_dir)
-                                lhd_df.to_csv(os.path.join(lhd_dir, f"{lhd_df_name}.csv"))
+                                lhd_df.to_csv(os.path.join(lhd_dir, f"{lhd_df_name}.csv"), index=False)
 
                                 lhd_dfs[lhd_df_name] = lhd_df
                                 print(f"The shape of lhd_df is {lhd_df.shape}\n")
