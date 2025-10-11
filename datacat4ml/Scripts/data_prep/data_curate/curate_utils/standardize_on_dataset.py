@@ -49,29 +49,33 @@ def log_standard_values(x: pd.Series) -> float:
         return -1 * math.log10(x["standard_value"] * 10 ** -9) 
     
 # ====================== remove duplicate SMILES with different values ==============================
-def remove_dup_mols(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pStandard_value') -> pd.DataFrame:
+def remove_dup_mols(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col1='standard_value', pvalue_col2='pStandard_value') -> pd.DataFrame:
 
     """
-    Entries with multiple  annotations were included once with the arithmetic mean when the standard deviation of pstardard_value annotations was within 1 log unit;
+    Entries with multiple  annotations were included once with the arithmetic mean when the standard deviation of pStandard_value annotations was within 1 log unit;
     Otherwise, the entry was excluded.
 
     param: df: pd.DataFrame: The dataframe to remove duplicates from
     
     """
-    # group by 'canonical_smiles_by_Std' and calculate the mean and standard deviation of 'pstandard_value'
-    df_group = df.groupby(std_smiles_col)[pvalue_col].agg(['mean', 'std'])
-    # find where the standard deviation is greater than 1, and drop these rows. Then keep the first row of the rows with the same 'canonical_smiles_by_Std'
+    # first need to just keep one of the duplicates if smiles and value are *exactly* the same
+    df = df.drop_duplicates(subset=[std_smiles_col, pvalue_col1], keep="first")
+    print (f'After dropping the duplicate combinations of (smiles, value) , the shape of the df:{df.shape}')
+
+    # now drop duplicates if the smiles are the same and the values are outside of a threshold
+    # Entries with multiple  annotations were included once when the standard deviation of pStandard_value annotations was within 1 log unit;
+    # Otherwise, the entry was excluded
+    df_group = df.groupby(std_smiles_col)[pvalue_col2].agg(['mean', 'std'])
     df = df[~df[std_smiles_col].isin(df_group[df_group['std'] > 1].index)].drop_duplicates(subset=std_smiles_col, keep='first').copy()
-    # map the mean of 'pstandard_value' to the 'molecule_chembl_id' in the original dataframe
-    df[pvalue_col] = df[std_smiles_col].map(df_group['mean'])
-    # reset the index
-    df = df.reset_index(drop=True)
+    # map the mean of 'pStandard_value' to the 'molecule_chembl_id' in the original dataframe
+    df[pvalue_col2] = df[std_smiles_col].map(df_group['mean']).reset_index(drop=True)
 
     return df
 
 # ======================= run standardizing pipeling ==============================
 def standardize(
     x: pd.DataFrame,
+    rmv_dupMol: int = 1,
     num_workers: int = 6,
     max_mol_weight: float = 900.0,
     **kwargs,
@@ -116,16 +120,10 @@ def standardize(
     df.loc[(df["standard_units"] == "uM"), "standard_units"] = "nM"
     df["pStandard_value"] = df.apply(log_standard_values, axis=1)
 
-    # remove duplicate
-    # first need to just keep one of the duplicates if smiles and value are *exactly* the same
-    df = df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")
-    print (f'After dropping the duplicate combinations of (smiles, value) , the shape of the df:{df.shape}')
-    
-    # now drop duplicates if the smiles are the same and the values are outside of a threshold
-    # Entries with multiple  annotations were included once when the standard deviation of pstardard_value annotations was within 1 log unit;
-    # Otherwise, the entry was excluded
-    df = remove_dup_mols(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pStandard_value')
-    print (f'After removing the mols with multiple values, the shape of the df:{df.shape}')
+    if rmv_dupMol == 1:
+        # remove duplicate
+        df = remove_dup_mols(df)
+        print (f'After removing the mols with multiple values, the shape of the df:{df.shape}')
 
     df["max_num_atoms"] = df.num_atoms.max()
     df["max_molecular_weight"] = df.molecular_weight.max()

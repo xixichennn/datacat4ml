@@ -10,8 +10,13 @@
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
+rmv_dupMols=(0 1)
+
+# SLURM_ARRAY_TASK_ID
+rmv_dupMol="${rmv_dupMols[$SLURM_ARRAY_TASK_ID % ${#rmv_dupMols[@]}]}"
+
 # Run your Python script with arguments
-python3 run_curation_or.py 
+python3 run_curation_or.py --rmv_dupMol="$rmv_dupMol"
 
 # run the command below in the terminal to submit the job
-# sbatch run_curation_or_slurm.sh <num_jobs> with (the total number of combinations you want to process minus 1).
+# sbatch --array=0-1 run_curation_or_slurm.sh
