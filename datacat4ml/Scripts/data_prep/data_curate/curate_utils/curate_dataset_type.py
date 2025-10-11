@@ -278,9 +278,6 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                     # run the curation pipeline
                     curated_df = curate(input_df, rmv_dupMol)
 
-                    # remove rows with wrong activity_ids
-                    curated_df = curated_df[~curated_df['activity_id'].isin(wrong_activity_ids)]
-
                     if len(curated_df) == 0:
                         print(f'No data points left after curation for the dataset at {input_df_path}')
                     elif len(curated_df) > 0:
@@ -293,6 +290,9 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         curated_df['effect'] = effect
                         curated_df['assay'] = assay
                         curated_df['std_type'] = standard_type
+
+                        # remove rows with wrong activity_ids
+                        curated_df = curated_df[~curated_df['activity_id'].isin(wrong_activity_ids)]
                         
                         # rename, add, delete columns
                         curated_df = rename_add_delete_cols(curated_df)
@@ -397,6 +397,9 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     curated_lhd_df['assay'] = assay
                                     curated_lhd_df['std_type'] = standard_type
                                     
+                                    # remove rows with wrong activity_ids
+                                    curated_lhd_df = curated_lhd_df[~curated_lhd_df['activity_id'].isin(wrong_activity_ids)]
+
                                     # rename, add, delete columns
                                     curated_lhd_df = rename_add_delete_cols(curated_lhd_df)
 
@@ -517,8 +520,7 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
 
             # remove duplicate SMILES with different values if rmv_dupMol is 1 or True
             if rmv_dupMol == 1:
-                concat_df = concat_df.drop_duplicates(subset=["canonical_smiles_by_Std", "standard_value"], keep="first")
-                concat_df = remove_dup_mols(concat_df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pStandard_value')
+                concat_df = remove_dup_mols(concat_df)
 
             # curated_size
             curated_size = len(concat_df)
