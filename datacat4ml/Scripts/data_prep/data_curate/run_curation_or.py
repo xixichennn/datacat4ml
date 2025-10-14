@@ -24,13 +24,13 @@ def curate_ORs(rmv_dupMol):
     and get the stats for each dataset type.
 
     """
-    ## ==== hhd_or ====
+    # ==== hhd_or ====
     print('Processing hhd_or datasets ...')
 
     run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path=CURA_HHD_OR_DIR,
                  targets_list=OR_chemblids, effect=None, assay=None, std_types=["Ki", "IC50", 'EC50'], ds_type='or', rmv_dupMol=rmv_dupMol)
 
-    ## ==== mhd_or ====
+    # ==== mhd_or ====
     print('Processing mhd_or datasets ...')
 
     # Binding affinity

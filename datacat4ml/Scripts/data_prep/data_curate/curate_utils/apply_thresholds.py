@@ -36,6 +36,8 @@ def get_activity_comment(x: float, threshold: float, buffer: float = 0.5) -> str
             return "weak inactive"
         elif value <= (threshold - buffer):
             return "inactive"
+        else:
+            return "unknown"
 
 def autothreshold(x: pd.Series, aim:str) -> Tuple[pd.DataFrame, float]:
 
@@ -53,7 +55,7 @@ def autothreshold(x: pd.Series, aim:str) -> Tuple[pd.DataFrame, float]:
     2) Use the median as a threshold if it sits within the required range: 
         vs: 4 <= median(pXC) <= 6 
         lo: 5 <= median(pXC) <= 7
-    If the median is outside the required range, fix to pXC = 5.0 for vs aim, and pXC = 6.3 for lo aim (i.e standard_value 1 uM)
+    If the median is outside the required range, fix to pXC = 5.0 (10 uM) for vs aim, and pXC = 6.3 (500 nM) for lo aim.
     3) Apply the threshold to the data series.
 
     For activity measurements, log standard value is used.
@@ -127,7 +129,7 @@ def apply_thresholds(
         the aim of the model build upon this dataset, e.g. lo(lead optimization), vs(virtual screening)
 
     """
-    print(f"Applying thresholds ")   
+    print(f"==>Applying thresholds... ")   
 
     if len(x) > 0:
         if automate_threshold:
@@ -144,9 +146,11 @@ def apply_thresholds(
         allowed_labels = ["active", "inactive"]
         if not hard_only:
             allowed_labels += ["weak active", "weak inactive"]
+        
+        print(f'available labels in {col}: {df[col].unique().tolist()}')
 
-        # filter labels
-        df = df[df[col].isin(allowed_labels)]
+        ## filter labels: remove rows where 'standard_relation' and 'standard_value' cannot give a label. The 'standard_relation' and 'standard_value' can be NaN or other unexpected values.
+        #df = df[df[col].isin(allowed_labels)]
 
         # map to binary labels
         active_labels = {"active", "weak active"}
@@ -154,6 +158,8 @@ def apply_thresholds(
 
         # store threshold
         df[thr_col] = threshold
+
+        print(f"Threshold applied: {threshold}, the shape of the df after applying thresholds: {df.shape}")
 
         return df
     

@@ -6,8 +6,8 @@ import pandas as pd
 
 def mkdirs(path : str):
     """Create a directory if it does not exist."""
-
-    if not os.path.exists(path) : os.makedirs(path)
+    path = path.strip().strip("'").strip('"')
+    os.makedirs(path, exist_ok=True)
 
 def get_df_name(df: pd.DataFrame) -> str:
     """

@@ -10,7 +10,7 @@ from datacat4ml.const import CURA_DATA_DIR, CAT_HHD_OR_DIR, CURA_HHD_OR_DIR, CUR
 from datacat4ml.const import OR_chemblids
 from datacat4ml.utils import mkdirs
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.select_assays import select_assays
-from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardize_on_dataset import standardize, remove_dup_mols
+from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardize_structures import standardize, remove_dupMol
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.apply_thresholds import apply_thresholds
 
 from datacat4ml.Scripts.data_prep.data_split.split_mldata import find_stereochemical_siblings
@@ -36,7 +36,7 @@ def curate(df: pd.DataFrame, rmv_dupMol: int = 1) -> pd.DataFrame:
     df: pd.DataFrame: The curated dataset and save it to the output_path
     """
     try:
-        print(f"Curating dataset")
+        print(f"======= Curating dataset=======")
         df = select_assays(df, **DEFAULT_CLEANING)
         df = standardize(df, rmv_dupMol, **DEFAULT_CLEANING)
         df = apply_thresholds(df, aim='vs', **DEFAULT_CLEANING)
@@ -274,31 +274,51 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                     print(f'No data points in the dataset at {input_df_path}')
                 else: 
                     raw_size = len(input_df)
-                    print(f'The length of the raw dataset is {raw_size}')
+                    print(f'The shape of the raw dataset is {input_df.shape}')
+                    ########################### preprocess df ###########################
+                    # remove rows with wrong activity_ids
+                    input_df = input_df[~input_df['activity_id'].isin(wrong_activity_ids)]
+
                     # run the curation pipeline
                     curated_df = curate(input_df, rmv_dupMol)
+                    print(f'After curation, the shape of the df: {curated_df.shape}')
 
                     if len(curated_df) == 0:
                         print(f'No data points left after curation for the dataset at {input_df_path}')
                     elif len(curated_df) > 0:
-                        ########################### preprocess df ###########################
+
+                        ########################### prepare df name ###############################
                         # add a column 'stereochemical_siblings'
                         curated_df = add_stereoSiblings_col(curated_df)
                         
-                        ########################### prepare df name ###############################
                         curated_df['target'] = target
                         curated_df['effect'] = effect
                         curated_df['assay'] = assay
                         curated_df['std_type'] = standard_type
 
-                        # remove rows with wrong activity_ids
-                        curated_df = curated_df[~curated_df['activity_id'].isin(wrong_activity_ids)]
+                         # file_basename
+                        if ds_cat_level == 'hhd':
+                            file_basename = f'{target}_{standard_type}_hhd'
+                        elif ds_cat_level == 'mhd':
+                            file_basename = f'{target}_{effect}_{assay}_{standard_type}_mhd'
+
+                        # delete rows with SMILES strings that will fail to be embeded for 3D descriptor featurization
+                        for f in failed_dict.keys():
+                            if f == file_basename:
+                                for key, value in failed_dict[f].items():
+                                    idx_to_drop = curated_df[curated_df['canonical_smiles'] == value].index
+                                    print(f'index to drop is {idx_to_drop} for SMILES: {value}')
+                                    curated_df = curated_df.drop(index=idx_to_drop)
                         
+                        print(f'After dropping failed SMILES, the length of the curated dataset is {len(curated_df)}')
+
                         # rename, add, delete columns
                         curated_df = rename_add_delete_cols(curated_df)
                         
                         # curated_size
                         curated_size = len(curated_df)
+                        print(f'The final shape of the curated dataset is {curated_df.shape}')
+
                         if curated_size < 50:
                             ds_size_level = 's50'
                         else:
@@ -312,23 +332,9 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         else:
                             ds_size_level_no_stereo = 'b50'
 
-                        # file_basename
-                        if ds_cat_level == 'hhd':
-                            file_basename = f'{target}_{standard_type}_hhd'
-                        elif ds_cat_level == 'mhd':
-                            file_basename = f'{target}_{effect}_{assay}_{standard_type}_mhd'
-
+                        # save file
                         filename = file_basename + f'_{ds_size_level}_{ds_size_level_no_stereo}_curated.csv'
 
-                        # delete rows with SMILES strings that will fail to be embeded for 3D descriptor featurization
-                        for f in failed_dict.keys():
-                            if f == file_basename:
-                                for key, value in failed_dict[f].items():
-                                    idx_to_drop = curated_df[curated_df['canonical_smiles_by_Std'] == value].index
-                                    print(f'index to drop is {idx_to_drop} for SMILES: {value}')
-                                    curated_df = curated_df.drop(index=idx_to_drop)
-
-                        # save file
                         save_path = os.path.join(output_path, 'rmvDupMol' + str(rmv_dupMol))
                         mkdirs(save_path)
                         curated_df.to_csv(os.path.join(save_path, filename), index=False)
@@ -380,48 +386,49 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                 print(f'No data points in the dataset at {lhd_df_path}')
                             else:
                                 lhd_raw_size = len(lhd_df)
-                                print(f'The length of the raw lhd dataset is {lhd_raw_size}')
+                                print(f'The shape of the raw lhd dataset is {lhd_df.shape}')
+                                
+                                ############################# preprocess df ###########################
+                                # remove rows with wrong activity_ids
+                                lhd_df = lhd_df[~lhd_df['activity_id'].isin(wrong_activity_ids)]
                                 # run the curation pipeline
                                 curated_lhd_df = curate(lhd_df, rmv_dupMol)
-
-                                ############################# preprocess df ###########################
-                                # add a column 'stereochemical_siblings'
-                                curated_lhd_df = add_stereoSiblings_col(curated_lhd_df)
 
                                 ############################ prepare df name ###############################
                                 if len(curated_lhd_df) == 0:
                                     print(f'No data points left after curation for the dataset at {lhd_df_path}')
                                 elif len(curated_lhd_df) > 0:
+                                    # add a column 'stereochemical_siblings'
+                                    curated_lhd_df = add_stereoSiblings_col(curated_lhd_df)
+
                                     curated_lhd_df['target'] = target
                                     curated_lhd_df['effect'] = effect
                                     curated_lhd_df['assay'] = assay
                                     curated_lhd_df['std_type'] = standard_type
-                                    
-                                    # remove rows with wrong activity_ids
-                                    curated_lhd_df = curated_lhd_df[~curated_lhd_df['activity_id'].isin(wrong_activity_ids)]
 
                                     # rename, add, delete columns
                                     curated_lhd_df = rename_add_delete_cols(curated_lhd_df)
 
-                                    # curated_size
-                                    curated_size = len(curated_lhd_df)
-                                    if curated_size < 50:
+                                    # curated_lhd_size
+                                    curated_lhd_size = len(curated_lhd_df)
+                                    print(f'After curation, the shape of the curated lhd dataset is {curated_lhd_df.shape}')
+
+                                    if curated_lhd_size < 50:
                                         ds_size_level = 's50'
                                     else:
                                         ds_size_level = 'b50'
                                     
                                     # no_stereo_size
                                     num_stereo = sum(curated_lhd_df['stereoSiblings'])
-                                    no_stereo_size = curated_size - num_stereo
+                                    no_stereo_size = curated_lhd_size - num_stereo
                                     if no_stereo_size < 50:
                                         ds_size_level_no_stereo = 's50'
                                     else:
                                         ds_size_level_no_stereo = 'b50'
-                                    
-                                    # filename
+
+                                    # save file
                                     filename = f'{target}_{effect}_{assay}_{standard_type}_{assay_chembl_id}_lhd_{ds_size_level}_{ds_size_level_no_stereo}_curated.csv'
 
-                                    # output_lhd_path
                                     if ds_type == 'gpcr':
                                         output_lhd_path = os.path.join(CURA_LHD_GPCR_DIR, 'rmvDupMol' + str(rmv_dupMol))
                                     elif ds_type == 'or':
@@ -436,28 +443,27 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(lhd_stats_file_path))
                                         with open(lhd_stats_file_path, 'w') as f:
-                                            f.write('ds_cat_level,ds_type,ds_size_level,ds_size_level_no_stereo,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,removed_size,curated_size,num_stereo,no_stereo_size,max_num_atoms,max_mw,vs_threshold,vs_num_active,vs_num_inactive,vs_%_active,lo_threshold,lo_num_active,lo_num_inactive,lo_%_active\n')
+                                            f.write('ds_cat_level,ds_type,ds_size_level,ds_size_level_no_stereo,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,removed_size,curated_lhd_size,num_stereo,no_stereo_size,max_num_atoms,max_mw,vs_threshold,vs_num_active,vs_num_inactive,vs_%_active,lo_threshold,lo_num_active,lo_num_inactive,lo_%_active\n')
 
                                     with open(lhd_stats_file_path, 'a') as f:
                                         # Print something for number check
-                                        curated_size = len(curated_lhd_df)
-                                        removed_size = lhd_raw_size - curated_size
+                                        removed_size = lhd_raw_size - curated_lhd_size
                                         max_num_atoms = curated_lhd_df['num_atoms'].max()
                                         max_mw = curated_lhd_df['molecular_weight'].max()
                                         vs_threshold = curated_lhd_df['vs_threshold'].unique()[0]
                                         vs_num_active = sum(curated_lhd_df['vs_activity'])
-                                        vs_num_inactive = curated_size - vs_num_active
+                                        vs_num_inactive = curated_lhd_size - vs_num_active
                                         lo_threshold = curated_lhd_df['lo_threshold'].unique()[0]
                                         lo_num_active = sum(curated_lhd_df['lo_activity'])
-                                        lo_num_inactive = curated_size - lo_num_active
-                                        if curated_size == 0:
+                                        lo_num_inactive = curated_lhd_size - lo_num_active
+                                        if curated_lhd_size == 0:
                                                 vs_percent_a = 0
                                                 lo_percent_a = 0
                                         else:
-                                                vs_percent_a = round(vs_num_active / curated_size * 100, 2)
-                                                lo_percent_a = round(lo_num_active / curated_size * 100, 2)
+                                                vs_percent_a = round(vs_num_active / curated_lhd_size * 100, 2)
+                                                lo_percent_a = round(lo_num_active / curated_lhd_size * 100, 2)
 
-                                        f.write(f"lhd,{ds_type},{ds_size_level},{ds_size_level_no_stereo},{target},{effect},{assay},{standard_type},{assay_chembl_id},{raw_size},{curated_size},{removed_size},{num_stereo},{no_stereo_size},{max_num_atoms},{max_mw},{vs_threshold},{vs_num_active},{vs_num_inactive},{vs_percent_a},{lo_threshold},{lo_num_active},{lo_num_inactive},{lo_percent_a}\n")
+                                        f.write(f"lhd,{ds_type},{ds_size_level},{ds_size_level_no_stereo},{target},{effect},{assay},{standard_type},{assay_chembl_id},{raw_size},{removed_size},{curated_lhd_size},{num_stereo},{no_stereo_size},{max_num_atoms},{max_mw},{vs_threshold},{vs_num_active},{vs_num_inactive},{vs_percent_a},{lo_threshold},{lo_num_active},{lo_num_inactive},{lo_percent_a}\n")
                     else:
                         print(f'No dataset at {lhd_path}')
 
@@ -511,16 +517,17 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
                     concat_df = pd.concat([concat_df, df], ignore_index=True)
                     concat_df.reset_index(drop=True, inplace=True)
             
+            # remove duplicate SMILES with different values if rmv_dupMol is 1 or True
+            if rmv_dupMol == 1:
+                concat_df = remove_dupMol(concat_df)
+            print(f'After removing duplicate SMILES with different values, the shape of the combined df is {concat_df.shape}')
+
             # re-apply 'thresholds'
             concat_df.drop(columns=['vs_activity_comment','vs_activity', 'vs_threshold',
                                     'lo_activity_comment','lo_activity', 'lo_threshold',
                                     ], inplace=True)
             concat_df = apply_thresholds(concat_df, aim='vs', **DEFAULT_CLEANING)
             concat_df = apply_thresholds(concat_df, aim='lo', **DEFAULT_CLEANING)
-
-            # remove duplicate SMILES with different values if rmv_dupMol is 1 or True
-            if rmv_dupMol == 1:
-                concat_df = remove_dup_mols(concat_df)
 
             # curated_size
             curated_size = len(concat_df)
