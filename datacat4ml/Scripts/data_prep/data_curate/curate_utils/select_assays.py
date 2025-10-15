@@ -14,7 +14,7 @@ def clean_units(x: pd.Series) -> bool:
 def clean_values(x: pd.Series) -> bool:
     """Remove where the standard value is None"""
     #return x["standard_value"] < 1e-13 or np.isnan(x["standard_value"])
-    return np.isnan(x["standard_value"])
+    return np.isnan(x["standard_value"]) or x["standard_value"] <= 0
 
 def clean_relation(x: pd.Series) -> bool:
     """Remove where the standard relation is not None"""

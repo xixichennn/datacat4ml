@@ -519,8 +519,9 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
             
             # remove duplicate SMILES with different values if rmv_dupMol is 1 or True
             if rmv_dupMol == 1:
+                print(f'==> Remove dupMols ...')
                 concat_df = remove_dupMol(concat_df)
-            print(f'After removing duplicate SMILES with different values, the shape of the combined df is {concat_df.shape}')
+                print(f'After removing duplicate SMILES with different values, the shape of the combined df is {concat_df.shape}')
 
             # re-apply 'thresholds'
             concat_df.drop(columns=['vs_activity_comment','vs_activity', 'vs_threshold',

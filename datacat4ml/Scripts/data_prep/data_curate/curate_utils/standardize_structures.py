@@ -25,7 +25,7 @@ def standardize_smiles(x: pd.DataFrame, taut_canonicalization: bool = True) -> p
     def standardize_smile(x: str):
         try:
             mol = Chem.MolFromSmiles(x)
-            mol_weight = MolWt(mol)  # get molecular weight to do downstream filtering
+            mol_weight = round(MolWt(mol), 2)  # get molecular weight to do downstream filtering
             num_atoms = mol.GetNumAtoms()
             standardized_mol, _ = sm.standardize_mol(mol)
             return Chem.MolToSmiles(standardized_mol), mol_weight, num_atoms
@@ -34,6 +34,7 @@ def standardize_smiles(x: pd.DataFrame, taut_canonicalization: bool = True) -> p
             return None
 
     standard = df["canonical_smiles"].apply(lambda row: standardize_smile(row))
+     # create new columns in the dataframe
     df["canonical_smiles_by_Std"] = standard.apply(lambda row: row[0])
     df["molecular_weight"] = standard.apply(lambda row: row[1])
     df["num_atoms"] = standard.apply(lambda row: row[2])
@@ -127,7 +128,6 @@ def standardize(
     # get log standard values
     df.loc[(df["standard_units"] == "uM"), "standard_value"] *= 1000
     df.loc[(df["standard_units"] == "uM"), "standard_units"] = "nM" # Convert uM to nM first
-
     df["pStandard_value"] = df.apply(log_standard_values, axis=1)
 
     if rmv_dupMol == 1:

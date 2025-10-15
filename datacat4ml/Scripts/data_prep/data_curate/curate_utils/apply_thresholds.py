@@ -144,20 +144,20 @@ def apply_thresholds(
         bin_col = f"{aim}_activity"
 
         allowed_labels = ["active", "inactive"]
-        if not hard_only:
+        if not hard_only: # also keep weak labels
             allowed_labels += ["weak active", "weak inactive"]
         
         print(f'available labels in {col}: {df[col].unique().tolist()}')
 
-        ## filter labels: remove rows where 'standard_relation' and 'standard_value' cannot give a label. The 'standard_relation' and 'standard_value' can be NaN or other unexpected values.
-        #df = df[df[col].isin(allowed_labels)]
+        # filter labels: remove rows where 'standard_relation' and 'standard_value' cannot give a label. The 'standard_relation' and 'standard_value' can be NaN or other unexpected values.
+        df = df[df[col].isin(allowed_labels)]
 
         # map to binary labels
         active_labels = {"active", "weak active"}
         df[bin_col] = df[col].apply(lambda v: 1.0 if v in active_labels else 0.0)
 
         # store threshold
-        df[thr_col] = threshold
+        df[thr_col] = round(threshold, 2)
 
         print(f"Threshold applied: {threshold}, the shape of the df after applying thresholds: {df.shape}")
 
