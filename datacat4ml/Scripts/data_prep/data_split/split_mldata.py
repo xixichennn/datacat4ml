@@ -359,12 +359,13 @@ def random_splitter(df, x, y, rmv_stereo, n_folds, aim):
     - df: pd.DataFrame
         a new df with additional columns for the random splits
     """
-    # check the minimum number of samples for each class in y
-    unique, counts = np.unique(y, return_counts=True)
-    min_class_count = min(counts)
-
-    # reduce n_folds to ensure stratification
     try:
+    
+        # check the minimum number of samples for each class in y
+        unique, counts = np.unique(y, return_counts=True)
+        min_class_count = min(counts)
+
+        # reduce n_folds to ensure stratification
         if min_class_count < n_folds: 
             print(f'Reset the n_folds from {n_folds} to {min_class_count} to ensure stratification')
             n_folds = min_class_count
@@ -377,7 +378,7 @@ def random_splitter(df, x, y, rmv_stereo, n_folds, aim):
             # assign split to df
             rmv_stereo = int(rmv_stereo)
             for i, fold in enumerate(test_folds):
-                col = f'rmv{rmv_stereo}_rs_{aim}_fold{i}'
+                col = f'rmvStereo{rmv_stereo}_rs_{aim}_fold{i}'
                 df[col] = ['test' if idx in fold else 'train' for idx in range(len(x))]
         else:
             print(f'Random split skipped, because k-fold CV is not applicable for this dataset')
@@ -420,7 +421,7 @@ def cluster_aware_splitter(df, x, rmv_stereo, selectionStrategy):
         # assign split to df
         rmv_stereo = int(rmv_stereo)
         for i, fold in enumerate(test_folds):
-            col = f'rmv{rmv_stereo}_{sS}_fold{i}'
+            col = f'rmvStereo{rmv_stereo}_{sS}_fold{i}'
             df[col] = ['test' if idx in fold else 'train' for idx in range(len(x))]
 
     except ValueError as e:
@@ -428,7 +429,7 @@ def cluster_aware_splitter(df, x, rmv_stereo, selectionStrategy):
     
     return df
 
-def split_data(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1):
+def split_data(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1, rmv_dupMol: int = 1):
     """
     Split data into train-test folds for file(s) in the input directory.
     Each `rmv_stereo` setting writes its own file:
@@ -441,10 +442,11 @@ def split_data(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1):
     """
     # input directory
     print(f"in_path is: {in_dir}\n")
-    files = os.listdir(in_dir)
+    in_file_dir = os.path.join(in_dir, 'rmvDupMol' + str(rmv_dupMol))
+    files = os.listdir(in_file_dir)
 
     # output directory
-    out_dir = Cura_Spl_Dic[in_dir]
+    out_dir = os.path.join(Cura_Spl_Dic[in_dir], 'rmvDupMol' + str(rmv_dupMol))
     print(f"out_dir is: {out_dir}\n")
     os.makedirs(out_dir, exist_ok=True)
 
@@ -452,37 +454,44 @@ def split_data(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1):
     for f in files:
 
         print (f"\ninput_file is: {f}\n")
-        df = pd.read_csv(os.path.join(in_dir, f))
+        df = pd.read_csv(os.path.join(in_file_dir, f))
+        
+        # skip files with less than 40 data points
+        if len(df) < 40:
+            print(f"Skip {f}, because it has less than 40 data points, not enough for building ML models")
+        else:
 
-        # remove stereochemical siblings
-        if rmv_stereo == 1:
-            print("remove stereochemical siblings...")
-            df = df[df['stereoSiblings'] == False].reset_index(drop=True)
+            # remove stereochemical siblings
+            if rmv_stereo == 1:
+                print("remove stereochemical siblings...")
+                df = df[df['stereoSiblings'] == False].reset_index(drop=True)
 
-        smiles = df['canonical_smiles_by_Std'].tolist() # x
-        lo_activity = df['lo_activity'].tolist() # y
-        vs_activity = df['vs_activity'].tolist() # y
-        activity_id = df['activity_id'].tolist() # identifier for cross-file splitting
+            smiles = df['canonical_smiles_by_Std'].tolist() # x
+            lo_activity = df['lo_activity'].tolist() # y
+            vs_activity = df['vs_activity'].tolist() # y
+            activity_id = df['activity_id'].tolist() # identifier for cross-file splitting
 
-        # apply split
-        print("random split...")
-        df = random_splitter(df, smiles, lo_activity, rmv_stereo, n_folds=5, aim='lo')
-        df = random_splitter(df, smiles, vs_activity, rmv_stereo, n_folds=5, aim='vs')
+            # apply split
+            print("random split...")
+            df = random_splitter(df, smiles, lo_activity, rmv_stereo, n_folds=5, aim='lo')
+            df = random_splitter(df, smiles, vs_activity, rmv_stereo, n_folds=5, aim='vs')
 
-        print("cluster-aware split...")
-        df = cluster_aware_splitter(df, smiles, rmv_stereo, selectionStrategy='clust_stratified')
-        df = cluster_aware_splitter(df, smiles, rmv_stereo, selectionStrategy='clust_holdout')
+            print("cluster-aware split...")
+            df = cluster_aware_splitter(df, smiles, rmv_stereo, selectionStrategy='clust_stratified')
+            df = cluster_aware_splitter(df, smiles, rmv_stereo, selectionStrategy='clust_holdout')
 
-        # save the new df
-        out_file = os.path.join(out_dir, f[:-12] + f"_split_rmv{rmv_stereo}.csv")
-        df.to_csv(out_file, index=False)
+            # save the new df
+            out_file = os.path.join(out_dir, f[:-12] + f"_split_rmvStereo{rmv_stereo}.csv")
+            df.to_csv(out_file, index=False)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Split data for ML model training and evaluation")
     parser.add_argument('--in_dir', type=str, required=True, help= 'Input directory containing files to be split')
     parser.add_argument('--rmv_stereo', type=int, required=True, help='Remove stereochemical siblings')
+    parser.add_argument('--rmv_dupMol', type=int, required=True, help='Remove duplicate molecules')
+
     args = parser.parse_args()
 
-    split_data(in_dir=args.in_dir, rmv_stereo=args.rmv_stereo)
+    split_data(in_dir=args.in_dir, rmv_stereo=args.rmv_stereo, rmv_dupMol=args.rmv_dupMol)
 

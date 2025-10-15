@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    curate_ORs(args.rmv_dupMol)
+    #curate_ORs(args.rmv_dupMol)
 
     group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=args.rmv_dupMol)
 
