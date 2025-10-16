@@ -249,7 +249,7 @@ def clusterData(dmat, threshold, clusterSizeThreshold, combineRandom=False):
     return largeClusters
 
 def assignUsingClusters(dmat, threshold, clusterSizeThreshold=5, combineRandom=False, 
-                        random_seed=RANDOM_SEED, test_size=0.2,n_samples=5, selectionStrategy='clust_holdout', ):
+                        random_seed=RANDOM_SEED, test_size=0.2,n_samples=5, selectionStrategy='clust_holdout'):
     """
     Assigns data points to training and testing sets based on selection strategies using clustering.
 
@@ -334,7 +334,7 @@ def cluster_aware_split(dist_type, selectionStrategy, x,
     return test_folds
 
 #===============================================================================
-# main
+# Internal splitting
 #===============================================================================
 Cura_Spl_Dic = {CURA_HHD_OR_DIR: SPL_HHD_OR_DIR,
                  CURA_MHD_OR_DIR: SPL_MHD_OR_DIR,
@@ -378,7 +378,7 @@ def random_splitter(df, x, y, rmv_stereo, n_folds, aim):
             # assign split to df
             rmv_stereo = int(rmv_stereo)
             for i, fold in enumerate(test_folds):
-                col = f'rmvStereo{rmv_stereo}_rs_{aim}_fold{i}'
+                col = f'int.rmvStereo{rmv_stereo}_rs_{aim}_fold{i}'
                 df[col] = ['test' if idx in fold else 'train' for idx in range(len(x))]
         else:
             print(f'Random split skipped, because k-fold CV is not applicable for this dataset')
@@ -421,7 +421,7 @@ def cluster_aware_splitter(df, x, rmv_stereo, selectionStrategy):
         # assign split to df
         rmv_stereo = int(rmv_stereo)
         for i, fold in enumerate(test_folds):
-            col = f'rmvStereo{rmv_stereo}_{sS}_fold{i}'
+            col = f'int.rmvStereo{rmv_stereo}_{sS}_fold{i}'
             df[col] = ['test' if idx in fold else 'train' for idx in range(len(x))]
 
     except ValueError as e:
@@ -429,7 +429,7 @@ def cluster_aware_splitter(df, x, rmv_stereo, selectionStrategy):
     
     return df
 
-def split_data(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1, rmv_dupMol: int = 1):
+def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1, rmv_dupMol: int = 1):
     """
     Split data into train-test folds for file(s) in the input directory.
     Each `rmv_stereo` setting writes its own file:
@@ -486,12 +486,12 @@ def split_data(in_dir: str = CURA_HHD_OR_DIR, rmv_stereo: int = 1, rmv_dupMol: i
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Split data for ML model training and evaluation")
+    parser = argparse.ArgumentParser(description="Split data into test/train internally for ML model training and evaluation")
     parser.add_argument('--in_dir', type=str, required=True, help= 'Input directory containing files to be split')
     parser.add_argument('--rmv_stereo', type=int, required=True, help='Remove stereochemical siblings')
     parser.add_argument('--rmv_dupMol', type=int, required=True, help='Remove duplicate molecules')
 
     args = parser.parse_args()
 
-    split_data(in_dir=args.in_dir, rmv_stereo=args.rmv_stereo, rmv_dupMol=args.rmv_dupMol)
+    internal_split(in_dir=args.in_dir, rmv_stereo=args.rmv_stereo, rmv_dupMol=args.rmv_dupMol)
 

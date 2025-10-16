@@ -2,7 +2,7 @@ import os
 import glob
 import pandas as pd
 
-from datacat4ml.Scripts.data_prep.data_split.split_mldata import Cura_Spl_Dic
+from datacat4ml.Scripts.data_prep.data_split.intSplit_mldata import Cura_Spl_Dic
 from datacat4ml.const import SPL_DATA_DIR, SPL_HHD_OR_DIR, SPL_MHD_OR_DIR, SPL_MHD_effect_OR_DIR, SPL_LHD_OR_DIR
 
 import argparse
