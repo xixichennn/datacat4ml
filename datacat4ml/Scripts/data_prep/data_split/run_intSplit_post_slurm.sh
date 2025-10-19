@@ -3,7 +3,7 @@
 #SBATCH --partition=bdw
 #SBATCH --ntasks=1
 #SBATCH --mem=28G
-#SBATCH --time=6:00:00
+#SBATCH --time=1:00:00
 
 # Activate the Python environment 
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
