@@ -108,6 +108,7 @@ def aligned_split(rmv_dupMol: int = 1):
 
     # collect all derived split columns per parent file across all pairs
     parent_file_map = {} # key = (parent, parent_file), value = dict of DataFrame and added columns
+    #child_file_map = {}  # key = (child, child_file), value = dict of DataFrame and added columns
 
     for (parent, child), pf_cfs_map in pf_cfs_pairs.items():
         pf_path = os.path.join(dir_name_dict[parent], f'rmvDupMol{rmv_dupMol}')
@@ -115,6 +116,7 @@ def aligned_split(rmv_dupMol: int = 1):
         print(f"\nProcessing parent='{parent}', child='{child}' ...")
 
         for pf, cfs in pf_cfs_map.items():
+            pf_basename = '_'.join(pf.split('_')[:5]) # get the base name by joining the first 5 identifiers
             pf_key = (parent, pf)
 
             # load parent file if not alreay in memory
@@ -125,25 +127,55 @@ def aligned_split(rmv_dupMol: int = 1):
                 pf_df = parent_file_map[pf_key]
             
             # collect new columns for this parent file
-            new_cols = {}
+            p_new_cols = {}
             for cf in cfs:
-                cf_basename = cf[:-22] # remove the suffix. e.g. '_lhd_b50_s50_split.csv'
+
+                c_new_cols = {}
+                cf_basename = '_'.join(cf.split('_')[:5]) # get the base name by joining the first 5 identifiers
                 cf_df = pd.read_csv(os.path.join(cf_path, cf))
-                cf_df_cols = [c for c in cf_df.columns if c.__contains__('fold')]
+                cf_df_cols = [c for c in cf_df.columns if c.__contains__('int')] # take internal split columns only
 
                 for col in cf_df_cols:
-                    test_idx = cf_df.index[cf_df[col] == 'test'].tolist()
-                    activity_ids = cf_df.loc[test_idx, 'activity_id'].tolist()
-                    col_basename = col.split('.')[1] 
-                    parent_col = f'aln.{parent}-{child}.{cf_basename}.{col_basename}'
+                    # create new column for the parent file based on the child file's split
+                    c_test_idx = cf_df.index[cf_df[col] == 'test'].tolist()
+                    c_test_activity_ids = cf_df.loc[c_test_idx, 'activity_id'].tolist()
+                    c_col_basename = col.split('.')[1]
+                    p_new_col = f'aln.parent.{parent}.{child}.{pf_basename}.{cf_basename}.{c_col_basename}'
+
+                    if p_new_col.__contains__('rmvStereo0'):
+                        p_new_cols[p_new_col]= ['test' if id in c_test_activity_ids else 'train' for id in pf_df['activity_id'].tolist()]
+                    elif p_new_col.__contains__('rmvStereo1'):
+                        stereo_activity_ids = pf_df.loc[pf_df['stereoSiblings'] == True, 'activity_id'].tolist()
+                        p_new_cols[p_new_col] = [
+                            'test' if (id in c_test_activity_ids and id not in stereo_activity_ids)
+                            else 'train' if id not in stereo_activity_ids
+                            else None
+                            for id in pf_df['activity_id'].tolist()
+                        ]
+
+                    # create new column for the child file based on the assigned split in the parent file
+                    c_new_col = f'aln.child.{parent}.{child}.{pf_basename}.{cf_basename}.{c_col_basename}'
+                    p_test_activity_ids = [id for id, split in zip(pf_df['activity_id'], p_new_cols[p_new_col]) if split == 'test']
+                    diff_test_activity_ids = list(set(c_test_activity_ids) - set(p_test_activity_ids))
+                    c_new_cols[c_new_col] = cf_df[col].tolist() # default copy all values
+                    c_new_cols[c_new_col] = [
+                            None if id in diff_test_activity_ids # assign None if in child's test but not in parent's test
+                            else cf_df.loc[cf_df['activity_id'] == id, col].values[0] # keep original value otherwise
+                            for id in cf_df['activity_id'].tolist()
+                        ]
+                
+                if c_new_cols:
+                    # add all new columns at once to avoid fragmentation
+                    new_df = pd.DataFrame(c_new_cols)
+                    cf_df = pd.concat([cf_df, new_df], axis=1)
+                    # overwrite the original child file with added columns
+                    cf_df.to_csv(os.path.join(cf_path, cf), index=False)
+                    print(f'Saved aligned child file: {os.path.join(cf_path, cf)}')
                     
-                    # avoid duplicate columns if the column already exists
-                    if parent_col not in pf_df.columns and parent_col not in new_cols:
-                        new_cols[parent_col]= ['test' if id in activity_ids else 'train' for id in pf_df['activity_id'].tolist()]
-            
+
             # add all new columns at once to avoid fragmentation
-            if new_cols:
-                new_df = pd.DataFrame(new_cols)
+            if p_new_cols:
+                new_df = pd.DataFrame(p_new_cols)
                 pf_df = pd.concat([pf_df, new_df], axis=1)
                 parent_file_map[pf_key] = pf_df
     
