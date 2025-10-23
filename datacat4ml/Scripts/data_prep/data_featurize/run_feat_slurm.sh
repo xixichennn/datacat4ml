@@ -3,30 +3,34 @@
 #SBATCH --partition=bdw
 #SBATCH --ntasks=1
 #SBATCH --mem=28G
-#SBATCH --time=6:00:00
+#SBATCH --time=5:00:00
 
 # Activate the Python environment 
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
 # Create arrays for in_dirs, tasks and descriptor_cats
-in_dirs=("/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_hhd_or"\
-        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_mhd_or"\
-        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_lhd_or"\
-        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_hhd_gpcr"\
-        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_mhd_gpcr"\
-        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_lhd_gpcr")
+in_dirs=("/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_hhd_or"\
+        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_mhd_or"\
+        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_lhd_or"\
+        "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_mhd-effect_or"\
+        #"/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_hhd_gpcr"\
+        #"/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_mhd_gpcr"\
+        #"/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_split/spl_lhd_gpcr"
+        )
 
-#descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
-#             'PHYSICOCHEM'\
-#             'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
-descriptors=('PHARM2D')
+descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
+             'PHYSICOCHEM'\
+             'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
+
+rmv_dupMols=(0 1)
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
 in_dir="${in_dirs[$SLURM_ARRAY_TASK_ID % ${#in_dirs[@]}]}" 
 descriptor="${descriptors[($SLURM_ARRAY_TASK_ID / ${#in_dirs[@]}) % ${#descriptors[@]}]}"
+rmv_dupMol="${rmv_dupMols[($SLURM_ARRAY_TASK_ID / (${#in_dirs[@]} * ${#descriptors[@]})) % ${#rmv_dupMols[@]}]}"
 
-python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor"
+python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor" --rmv_dupMol "$rmv_dupMol"
 
 #### run the blow command in terminal to submit all the job
 # sbatch --array=0-77 run_feat_slurm.sh 
@@ -42,3 +46,6 @@ python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor"
 
 ### Calc Pharm2D only
 # sbatch --array=0-5 run_feat_slurm.sh
+
+### After data_split
+# sbatch --array=0-103 run_feat_slurm.sh # 4*13*2 = 104

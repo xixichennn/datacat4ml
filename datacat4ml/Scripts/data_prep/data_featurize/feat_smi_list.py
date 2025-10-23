@@ -7,9 +7,8 @@ import numpy as np
 import pandas as pd
 
 #from datacat4ml.const import Descriptors
-from datacat4ml.const import CURA_HHD_OR_DIR, CURA_MHD_OR_DIR, CURA_LHD_OR_DIR, CURA_HHD_GPCR_DIR, CURA_MHD_GPCR_DIR, CURA_LHD_GPCR_DIR
-from datacat4ml.const import FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_HHD_GPCR_DIR, FEAT_MHD_GPCR_DIR, FEAT_LHD_GPCR_DIR
-from datacat4ml.const import Descriptor_cats
+from datacat4ml.const import SPL_DATA_DIR, SPL_HHD_OR_DIR, SPL_MHD_OR_DIR, SPL_LHD_OR_DIR, SPL_MHD_effect_OR_DIR
+from datacat4ml.const import FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
 
 #===================== Utility functions =====================#
 def mol_from_smi(smi: str):
@@ -376,35 +375,48 @@ class Featurizer:
             return self.graph_conv(**kwargs)
         
 # ===================== Featurize data =====================#
-Cura_Feat_Dic = {CURA_HHD_OR_DIR: FEAT_HHD_OR_DIR, 
-                 CURA_MHD_OR_DIR: FEAT_MHD_OR_DIR,
-                 CURA_LHD_OR_DIR: FEAT_LHD_OR_DIR,
-                 CURA_HHD_GPCR_DIR: FEAT_HHD_GPCR_DIR,
-                 CURA_MHD_GPCR_DIR: FEAT_MHD_GPCR_DIR,
-                 CURA_LHD_GPCR_DIR: FEAT_LHD_GPCR_DIR}
+Spl_Feat_Dic = {SPL_HHD_OR_DIR: FEAT_HHD_OR_DIR, 
+                SPL_MHD_OR_DIR: FEAT_MHD_OR_DIR,
+                SPL_LHD_OR_DIR: FEAT_LHD_OR_DIR,
+                SPL_MHD_effect_OR_DIR: FEAT_MHD_effect_OR_DIR
+                }
 
-def featurize_data(descriptor="ECFP4", in_dir:str = CURA_HHD_OR_DIR):
+def featurize_data(descriptor="ECFP4", in_dir:str = SPL_HHD_OR_DIR, rmv_dupMol: int=1):
+    """ 
+    Featurize data using specified descriptor and save the featurized data as pickle files in the specified output directory.
+    
+    params:
+    --------
+    descriptor: str
+        The descriptor to be calculated, e.g., ECFP4, ECFP6
+    in_dir: str
+        input directory containing curated csv files
+    rmv_dupMol: int
+        indicate the location of the input directory.
+    
+    returns:
+    --------
+    None
+    
+    """
 
     # initiate featurizer
     featurizer = Featurizer()
 
-    print(f"in_path is: {in_dir}\n")
-    # access the curated csv files obtained from data curation
-    files = os.listdir(in_dir)
-    curated_files = [file for file in files if file.endswith('_curated.csv')]
+    # input directory
+    print(f"in_dir is: {in_dir}\n")
+    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmv_dupMol)}')
+    files = os.listdir(in_file_dir)
 
-      
-    # make new directory to store the featurized data
-    out_dir = Cura_Feat_Dic[in_dir]
+    # output directory
+    out_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvDupMol{str(rmv_dupMol)}')
     print(f"out_dir is: {out_dir}\n")
     os.makedirs(out_dir, exist_ok=True)
 
-    for f in curated_files:
-        print (f"curated_file is: {f}\n")
-
-        df = pd.read_csv(os.path.join(in_dir, f))
-        # if df contains column 'Unnamed: 0', drop it
-        df = df.drop(columns=['Unnamed: 0'], errors='ignore')
+    # featurize data
+    for f in files:
+        print (f"input_file is: {f}\n")
+        df = pd.read_csv(os.path.join(in_file_dir, f))
 
         print (f"descriptor is: {descriptor}\n")
         smi_list = df['canonical_smiles_by_Std'].to_list()
@@ -413,7 +425,7 @@ def featurize_data(descriptor="ECFP4", in_dir:str = CURA_HHD_OR_DIR):
         df[descriptor] = [arr for arr in descriptor_array]
 
         # save the featurized data as a pickle file
-        df.to_pickle(os.path.join(out_dir, f[:-12]+f'_{descriptor}.pkl'))
+        df.to_pickle(os.path.join(out_dir, f[:-10]+f'_{descriptor}.pkl'))
 
 
 # ===================== Main =====================#
@@ -421,10 +433,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Featurize data")
     parser.add_argument("--descriptor", required=True, help="The descriptor to be calculated, e.g., ECFP4, ECFP6, MACCS, RDKITFP, PHARM2D, ERG, PHYSICOCHEM, SHAPE3D, AUTOCORR3D, RDF, MORSE, WHIM, GETAWAY")
     parser.add_argument("--in_dir", required=True, help="Path to datasets directory")
-    
+    parser.add_argument("--rmv_dupMol", type=int, required=True, help="Indicate the location of the input directory. Default is 1.")
     
     args = parser.parse_args()
 
     featurize_data(
         args.descriptor,
-        args.in_dir)
+        args.in_dir,
+        args.rmv_dupMol)
