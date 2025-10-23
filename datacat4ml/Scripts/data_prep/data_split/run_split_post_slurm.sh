@@ -10,13 +10,13 @@ source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
 # Create arrays
-rmv_dupMols=(0 1)
+rmvDupMols=(0 1)
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
-rmv_dupMol="${rmv_dupMols[$SLURM_ARRAY_TASK_ID % ${#rmv_dupMols[@]}]}" 
+rmvDupMol="${rmvDupMols[$SLURM_ARRAY_TASK_ID % ${#rmvDupMols[@]}]}" 
 
 # Submit the job
-python3 intSplit_post.py --rmv_dupMol $rmv_dupMol
+python3 intSplit_post.py --rmvDupMol $rmvDupMol
 
 # run the below command in terminal
 # sbatch --array=0-1 run_intSplit_post_slurm.sh

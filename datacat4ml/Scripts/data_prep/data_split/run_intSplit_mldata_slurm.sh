@@ -15,13 +15,13 @@ in_dirs=("/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_cur
         "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_lhd_or"\
         "/storage/homefs/yc24j783/datacat4ml/datacat4ml/Data/data_prep/data_curate/cura_mhd-effect_or"
         )
-rmv_dupMols=(0 1)
+rmvDupMols=(0 1)
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
 in_dir="${in_dirs[$SLURM_ARRAY_TASK_ID % ${#in_dirs[@]}]}" 
-rmv_dupMol="${rmv_dupMols[($SLURM_ARRAY_TASK_ID / ${#in_dirs[@]}) % ${#rmv_dupMols[@]}]}"
+rmvDupMol="${rmvDupMols[($SLURM_ARRAY_TASK_ID / ${#in_dirs[@]}) % ${#rmvDupMols[@]}]}"
 
-python3 intSplit_mldata.py --in_dir "$in_dir" --rmv_dupMol "$rmv_dupMol"
+python3 intSplit_mldata.py --in_dir "$in_dir" --rmvDupMol "$rmvDupMol"
 
 #### run the blow command in terminal to submit all the job
 # sbatch --array=0-7 run_intSplit_mldata_slurm.sh # 4*2 = 8

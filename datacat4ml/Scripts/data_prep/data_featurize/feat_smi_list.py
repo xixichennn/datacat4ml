@@ -381,7 +381,7 @@ Spl_Feat_Dic = {SPL_HHD_OR_DIR: FEAT_HHD_OR_DIR,
                 SPL_MHD_effect_OR_DIR: FEAT_MHD_effect_OR_DIR
                 }
 
-def featurize_data(descriptor="ECFP4", in_dir:str = SPL_HHD_OR_DIR, rmv_dupMol: int=1):
+def featurize_data(descriptor="ECFP4", in_dir:str = SPL_HHD_OR_DIR, rmvDupMol: int=1):
     """ 
     Featurize data using specified descriptor and save the featurized data as pickle files in the specified output directory.
     
@@ -405,11 +405,11 @@ def featurize_data(descriptor="ECFP4", in_dir:str = SPL_HHD_OR_DIR, rmv_dupMol: 
 
     # input directory
     print(f"in_dir is: {in_dir}\n")
-    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmv_dupMol)}')
+    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmvDupMol)}')
     files = os.listdir(in_file_dir)
 
     # output directory
-    out_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvDupMol{str(rmv_dupMol)}')
+    out_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvDupMol{str(rmvDupMol)}')
     print(f"out_dir is: {out_dir}\n")
     os.makedirs(out_dir, exist_ok=True)
 
@@ -433,11 +433,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Featurize data")
     parser.add_argument("--descriptor", required=True, help="The descriptor to be calculated, e.g., ECFP4, ECFP6, MACCS, RDKITFP, PHARM2D, ERG, PHYSICOCHEM, SHAPE3D, AUTOCORR3D, RDF, MORSE, WHIM, GETAWAY")
     parser.add_argument("--in_dir", required=True, help="Path to datasets directory")
-    parser.add_argument("--rmv_dupMol", type=int, required=True, help="Indicate the location of the input directory. Default is 1.")
+    parser.add_argument("--rmvDupMol", type=int, required=True, help="Indicate the location of the input directory. Default is 1.")
     
     args = parser.parse_args()
 
     featurize_data(
         args.descriptor,
         args.in_dir,
-        args.rmv_dupMol)
+        args.rmvDupMol)

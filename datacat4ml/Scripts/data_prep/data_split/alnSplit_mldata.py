@@ -41,12 +41,12 @@ def meta_cols(f:str):
     target, effect, assay, standard_type, assay_chembl_id = parts[0], parts[1], parts[2], parts[3], parts[4]
     return target, effect, assay, standard_type, assay_chembl_id
 
-def get_pf_cfs_pairs(rmv_dupMol: int = 1):
+def get_pf_cfs_pairs(rmvDupMol: int = 1):
     """Get comparison pairs for aligned splits between parent and child datasets.
 
     params
     ------
-    - rmv_dupMol: int, whether duplicate molecules have been removed. It is used to locate the correct directories.
+    - rmvDupMol: int, whether duplicate molecules have been removed. It is used to locate the correct directories.
 
     returns
     -------
@@ -69,12 +69,12 @@ def get_pf_cfs_pairs(rmv_dupMol: int = 1):
 
         pf_cfs_map = {}
         # iterate the files
-        for pf in os.listdir(os.path.join(parent_dir, f'rmvDupMol{rmv_dupMol}')):
+        for pf in os.listdir(os.path.join(parent_dir, f'rmvDupMol{rmvDupMol}')):
             #print(f'parent file is {pf}')
             target_p, effect_p, assay_p, standard_type_p, assay_chembl_id_p = meta_cols(f=pf)
 
             cfs = []
-            for cf in os.listdir(os.path.join(child_dir, f'rmvDupMol{rmv_dupMol}')):
+            for cf in os.listdir(os.path.join(child_dir, f'rmvDupMol{rmvDupMol}')):
                 #print(f'child file is {cf}')
                 target_c, effect_c, assay_c, standard_type_c, assay_chembl_id_c = meta_cols(f=cf)
                 
@@ -94,25 +94,25 @@ def get_pf_cfs_pairs(rmv_dupMol: int = 1):
 
     return pf_cfs_pairs
 
-def aligned_split(rmv_dupMol: int = 1):
+def aligned_split(rmvDupMol: int = 1):
     """
     Perform aligned splits for parent-child file pairs.
     Each parent file will only be written once, including all split columns derived from all its corresponding child files.
 
     params
     ------
-    - rmv_dupMol: int, whether duplicate molecules have been removed. It is used to locate the correct directories.
+    - rmvDupMol: int, whether duplicate molecules have been removed. It is used to locate the correct directories.
     """
 
-    pf_cfs_pairs = get_pf_cfs_pairs(rmv_dupMol=rmv_dupMol)
+    pf_cfs_pairs = get_pf_cfs_pairs(rmvDupMol=rmvDupMol)
 
     # collect all derived split columns per parent file across all pairs
     parent_file_map = {} # key = (parent, parent_file), value = dict of DataFrame and added columns
     #child_file_map = {}  # key = (child, child_file), value = dict of DataFrame and added columns
 
     for (parent, child), pf_cfs_map in pf_cfs_pairs.items():
-        pf_path = os.path.join(dir_name_dict[parent], f'rmvDupMol{rmv_dupMol}')
-        cf_path = os.path.join(dir_name_dict[child], f'rmvDupMol{rmv_dupMol}')
+        pf_path = os.path.join(dir_name_dict[parent], f'rmvDupMol{rmvDupMol}')
+        cf_path = os.path.join(dir_name_dict[child], f'rmvDupMol{rmvDupMol}')
         print(f"\nProcessing parent='{parent}', child='{child}' ...")
 
         for pf, cfs in pf_cfs_map.items():
@@ -181,15 +181,15 @@ def aligned_split(rmv_dupMol: int = 1):
     
     # --------- After all pairs are processed, save each parent file once -----------
     for (parent, pf), pf_df in parent_file_map.items():
-        pf_path = os.path.join(dir_name_dict[parent], f'rmvDupMol{rmv_dupMol}')
+        pf_path = os.path.join(dir_name_dict[parent], f'rmvDupMol{rmvDupMol}')
         pf_df.to_csv(os.path.join(pf_path, pf), index=False) # overwrite the original parent file with added columns
         print(f'Saved aligned parent file: {os.path.join(pf_path, pf)}')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Split data into test/train aligned for ML model training and evaluation")
-    parser.add_argument('--rmv_dupMol', type=int, required=True, help='Remove duplicate molecules')
+    parser.add_argument('--rmvDupMol', type=int, required=True, help='Remove duplicate molecules')
 
     args = parser.parse_args()
 
-    aligned_split(rmv_dupMol=args.rmv_dupMol)
+    aligned_split(rmvDupMol=args.rmvDupMol)

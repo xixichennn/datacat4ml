@@ -21,14 +21,14 @@ DEFAULT_CLEANING = {
     "automate_threshold": True,
     "num_workers": cpu_count()}
 
-def curate(df: pd.DataFrame, rmv_dupMol: int = 1) -> pd.DataFrame:
+def curate(df: pd.DataFrame, rmvDupMol: int = 1) -> pd.DataFrame:
     """
     apply the curation pipeline to a dataframe
 
     param:
     -----
     df: pd.DataFrame: The input dataset to be curated, should be from cat_hhd or cat_mhd
-    rmv_dupMol: whether to remove duplicate SMILES with different values. 1 or True means remove, 0 or False means keep.
+    rmvDupMol: whether to remove duplicate SMILES with different values. 1 or True means remove, 0 or False means keep.
 
 
     return:
@@ -38,7 +38,7 @@ def curate(df: pd.DataFrame, rmv_dupMol: int = 1) -> pd.DataFrame:
     try:
         print(f"======= Curating dataset=======")
         df = select_assays(df, **DEFAULT_CLEANING)
-        df = standardize(df, rmv_dupMol, **DEFAULT_CLEANING)
+        df = standardize(df, rmvDupMol, **DEFAULT_CLEANING)
         df = apply_thresholds(df, aim='vs', **DEFAULT_CLEANING)
         df = apply_thresholds(df, aim='lo', **DEFAULT_CLEANING)
 
@@ -229,7 +229,7 @@ wrong_activity_ids = [
 #===============================================================================
 def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
                 targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
-                ds_type= 'or', rmv_dupMol=1):
+                ds_type= 'or', rmvDupMol=1):
     """
     curate a series of datasets and get the stats for each dataset
 
@@ -243,7 +243,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
     assay: str: The assay of the dataset. It could be either 'RBA'
     std_types: List[str]: The list of standard types to process. The element of the list could be either 'Ki' or 'IC50'
     ds_type: str: The type of dataset. It could be either 'or' or 'gpcr'
-    rmv_dupMol: Whether to remove duplicate SMILES with different values during standardization. 1 or True means remove, 0 or False means keep.
+    rmvDupMol: Whether to remove duplicate SMILES with different values during standardization. 1 or True means remove, 0 or False means keep.
     
 
     output:
@@ -280,7 +280,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                     input_df = input_df[~input_df['activity_id'].isin(wrong_activity_ids)]
 
                     # run the curation pipeline
-                    curated_df = curate(input_df, rmv_dupMol)
+                    curated_df = curate(input_df, rmvDupMol)
                     print(f'After curation, the shape of the df: {curated_df.shape}')
 
                     if len(curated_df) == 0:
@@ -335,12 +335,12 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         # save file
                         filename = file_basename + f'_{ds_size_level}_{ds_size_level_noStereo}_curated.csv'
 
-                        save_path = os.path.join(output_path, 'rmvDupMol' + str(rmv_dupMol))
+                        save_path = os.path.join(output_path, 'rmvDupMol' + str(rmvDupMol))
                         mkdirs(save_path)
                         curated_df.to_csv(os.path.join(save_path, filename), index=False)
 
                         #################################### stats #######################################
-                        stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}_{ds_type}_rmvDupMol{str(rmv_dupMol)}_stats.csv')
+                        stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}_{ds_type}_rmvDupMol{str(rmvDupMol)}_stats.csv')
 
                         if not os.path.exists(stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                             mkdirs(os.path.dirname(stats_file_path))
@@ -392,7 +392,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                 # remove rows with wrong activity_ids
                                 lhd_df = lhd_df[~lhd_df['activity_id'].isin(wrong_activity_ids)]
                                 # run the curation pipeline
-                                curated_lhd_df = curate(lhd_df, rmv_dupMol)
+                                curated_lhd_df = curate(lhd_df, rmvDupMol)
 
                                 ############################ prepare df name ###############################
                                 if len(curated_lhd_df) == 0:
@@ -430,15 +430,15 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     filename = f'{target}_{effect}_{assay}_{standard_type}_{assay_chembl_id}_lhd_{ds_size_level}_{ds_size_level_noStereo}_curated.csv'
 
                                     if ds_type == 'gpcr':
-                                        output_lhd_path = os.path.join(CURA_LHD_GPCR_DIR, 'rmvDupMol' + str(rmv_dupMol))
+                                        output_lhd_path = os.path.join(CURA_LHD_GPCR_DIR, 'rmvDupMol' + str(rmvDupMol))
                                     elif ds_type == 'or':
-                                        output_lhd_path = os.path.join(CURA_LHD_OR_DIR, 'rmvDupMol' + str(rmv_dupMol))
+                                        output_lhd_path = os.path.join(CURA_LHD_OR_DIR, 'rmvDupMol' + str(rmvDupMol))
 
                                     mkdirs(output_lhd_path)
                                     curated_lhd_df.to_csv(os.path.join(output_lhd_path, filename), index=False)
                                     
                                     #################################### stats #######################################
-                                    lhd_stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_lhd_{ds_type}_rmvDupMol{str(rmv_dupMol)}_stats.csv')
+                                    lhd_stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_lhd_{ds_type}_rmvDupMol{str(rmvDupMol)}_stats.csv')
 
                                     if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(lhd_stats_file_path))
@@ -475,7 +475,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
 #=============================================================================
 # mhd-effect_or
 #=============================================================================
-def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
+def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
     """
     group dataset by target_chemblid and effect.
     """
@@ -483,7 +483,7 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
     curated_path = os.path.join(CURA_MHD_OR_DIR, 'rmvDupMol0')
     curated_files = [f for f in os.listdir(curated_path)]
 
-    save_path = os.path.join(CURA_DATA_DIR, 'cura_mhd-effect_or', 'rmvDupMol' + str(rmv_dupMol))
+    save_path = os.path.join(CURA_DATA_DIR, 'cura_mhd-effect_or', 'rmvDupMol' + str(rmvDupMol))
     mkdirs(save_path)
 
     # collect unique target_chembl_id and effect combinations
@@ -491,7 +491,7 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
         {f.split('_')[0] + '_' + f.split('_')[1] for f in curated_files}
         )  
 
-    stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}-effect_{ds_type}_rmvDupMol{str(rmv_dupMol)}_stats.csv')
+    stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}-effect_{ds_type}_rmvDupMol{str(rmvDupMol)}_stats.csv')
                                                   
     # open stats file and write header
     with open(stats_file_path, 'w') as f:
@@ -517,8 +517,8 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmv_dupMol=1):
                     concat_df = pd.concat([concat_df, df], ignore_index=True)
                     concat_df.reset_index(drop=True, inplace=True)
             
-            # remove duplicate SMILES with different values if rmv_dupMol is 1 or True
-            if rmv_dupMol == 1:
+            # remove duplicate SMILES with different values if rmvDupMol is 1 or True
+            if rmvDupMol == 1:
                 print(f'==> Remove dupMols ...')
                 concat_df = remove_dupMol(concat_df)
                 print(f'After removing duplicate SMILES with different values, the shape of the combined df is {concat_df.shape}')

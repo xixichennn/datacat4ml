@@ -23,14 +23,14 @@ descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
              'PHYSICOCHEM'\
              'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
 
-rmv_dupMols=(0 1)
+rmvDupMols=(0 1)
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
 in_dir="${in_dirs[$SLURM_ARRAY_TASK_ID % ${#in_dirs[@]}]}" 
 descriptor="${descriptors[($SLURM_ARRAY_TASK_ID / ${#in_dirs[@]}) % ${#descriptors[@]}]}"
-rmv_dupMol="${rmv_dupMols[($SLURM_ARRAY_TASK_ID / (${#in_dirs[@]} * ${#descriptors[@]})) % ${#rmv_dupMols[@]}]}"
+rmvDupMol="${rmvDupMols[($SLURM_ARRAY_TASK_ID / (${#in_dirs[@]} * ${#descriptors[@]})) % ${#rmvDupMols[@]}]}"
 
-python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor" --rmv_dupMol "$rmv_dupMol"
+python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor" --rmvDupMol "$rmvDupMol"
 
 #### run the blow command in terminal to submit all the job
 # sbatch --array=0-77 run_feat_slurm.sh 

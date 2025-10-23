@@ -485,7 +485,7 @@ def cluster_aware_splitter(df, selectionStrategy):
 
     return df_result
 
-def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmv_dupMol: int = 1):
+def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmvDupMol: int = 1):
     """
     Split data into train-test folds for file(s) in the input directory.
 
@@ -495,11 +495,11 @@ def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmv_dupMol: int = 1):
     """
     # input directory
     print(f"in_dir is: {in_dir}\n")
-    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmv_dupMol)}')
+    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmvDupMol)}')
     files = os.listdir(in_file_dir)
 
     # output directory
-    out_dir = os.path.join(Cura_Spl_Dic[in_dir], f'rmvDupMol{str(rmv_dupMol)}')
+    out_dir = os.path.join(Cura_Spl_Dic[in_dir], f'rmvDupMol{str(rmvDupMol)}')
     print(f"out_dir is: {out_dir}\n")
     os.makedirs(out_dir, exist_ok=True)
 
@@ -531,8 +531,8 @@ def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmv_dupMol: int = 1):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Split data into test/train internally for ML model training and evaluation")
     parser.add_argument('--in_dir', type=str, required=True, help= 'Input directory containing files to be split')
-    parser.add_argument('--rmv_dupMol', type=int, required=True, help='Remove duplicate molecules')
+    parser.add_argument('--rmvDupMol', type=int, required=True, help='Remove duplicate molecules')
 
     args = parser.parse_args()
 
-    internal_split(in_dir=args.in_dir, rmv_dupMol=args.rmv_dupMol)
+    internal_split(in_dir=args.in_dir, rmvDupMol=args.rmvDupMol)
