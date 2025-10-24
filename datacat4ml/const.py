@@ -38,23 +38,22 @@ CAT_MHD_OR_DIR = os.path.join(CAT_DATA_DIR, "cat_mhd_or")
 # data_curate
 CURA_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_curate")
 
+CURA_HHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_or")
+CURA_MHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or")
+CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_or")
+CURA_MHD_effect_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd-effect_or")
+
 CURA_HHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_gpcr")
 CURA_MHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_gpcr")
 CURA_LHD_GPCR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_gpcr")
 
-CURA_HHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_hhd_or")
-CURA_MHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or")
-CURA_LHD_OR_DIR = os.path.join(CURA_DATA_DIR, "cura_lhd_or")
-CURA_MHD_OR_effect_DIR = os.path.join(CURA_DATA_DIR, "cura_mhd_or_effect")
-
 # data_split
-SPLIT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
+SPL_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_split")
 
-SPLIT_HHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_hhd_or")
-SPLIT_MHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_or")
-SPLIT_MHD_OR_effect_DIR = os.path.join(SPLIT_DATA_DIR, "spl_mhd_or_effect")
-SPLIT_LHD_OR_DIR = os.path.join(SPLIT_DATA_DIR, "spl_lhd_or")
-
+SPL_HHD_OR_DIR = os.path.join(SPL_DATA_DIR, "spl_hhd_or")
+SPL_MHD_OR_DIR = os.path.join(SPL_DATA_DIR, "spl_mhd_or")
+SPL_LHD_OR_DIR = os.path.join(SPL_DATA_DIR, "spl_lhd_or")
+SPL_MHD_effect_OR_DIR = os.path.join(SPL_DATA_DIR, "spl_mhd-effect_or")
 
 # data_featurize
 FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
@@ -62,18 +61,12 @@ FEAT_DATA_DIR = os.path.join(DATA_DIR, "data_prep", "data_featurize")
 FEAT_HHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_or")
 FEAT_MHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or")
 FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_or")
-FEAT_MHD_OR_effect_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or_effect")
-
-FEAT_HHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_hhd_gpcr")
-FEAT_MHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_gpcr")
-FEAT_LHD_GPCR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_gpcr")
-
+FEAT_MHD_effect_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd-effect_or")
 
 # hparams
 MODEL_DIR = os.path.join(DATA_DIR, "model_dev")
 ML_HP_DIR= os.path.join(MODEL_DIR, 'ml_hp')
 CL_HP_DIR = os.path.join(MODEL_DIR, 'cl_hp')
-
 
 
 # benchmark
@@ -89,8 +82,8 @@ FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
 FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_fetch")
 CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
 CURA_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_curate")
+SPL_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_split")
 FEAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_featurize")
-SPLIT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_split")
 
 RESULT_FIG_DIR = os.path.join(FIG_DIR, "results")
 
