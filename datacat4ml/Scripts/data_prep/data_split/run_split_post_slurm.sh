@@ -16,7 +16,7 @@ rmvDupMols=(0 1)
 rmvDupMol="${rmvDupMols[$SLURM_ARRAY_TASK_ID % ${#rmvDupMols[@]}]}" 
 
 # Submit the job
-python3 intSplit_post.py --rmvDupMol $rmvDupMol
+python3 split_post.py --rmvDupMol $rmvDupMol
 
 # run the below command in terminal
-# sbatch --array=0-1 run_intSplit_post_slurm.sh
+# sbatch --array=0-1 run_split_post_slurm.sh

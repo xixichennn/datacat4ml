@@ -1,3 +1,9 @@
+"""
+Split datasets internally into train-test folds using different splitting strategies:
+- random split
+- cluster-aware split (cluster k-fold and cluster repeated holdout)
+"""
+
 import os
 from typing import List
 from tqdm import tqdm
@@ -9,7 +15,7 @@ import pandas as pd
 # for `def random_split`
 import random
 from sklearn.model_selection import StratifiedKFold
-# for `def cluster_aware_split`
+# for `def cluster_kfold_split` and `def cluster_repeated_holdout_split`
 from rdkit.ML.Cluster import Butina 
 # for molecular distance calculations
 from rdkit import Chem
@@ -249,8 +255,8 @@ def clusterData(dmat, threshold, clusterSizeThreshold, combineRandom=False):
                 largeClusters[closest].append(idx)
     return largeClusters
 
-def cluster_aware_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, combineRandom=False, 
-                        random_seed=RANDOM_SEED, test_size=0.2,n_samples=5, selectionStrategy='clust_holdout'):
+def cluster_repeated_holdout_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, combineRandom=False, 
+                        random_seed=RANDOM_SEED, test_size=0.2,n_splits=5, selectionStrategy='clust_holdout'):
     """
     Assigns data points to training and testing sets based on selection strategies using clustering.
 
@@ -265,9 +271,9 @@ def cluster_aware_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, co
     
     - randomSeed: int, seed for random number generator to ensure reproducibility.
     - test_size: float, the proportion of the dataset to include in the test split.
-    - n_samples: int, the number of different train-test splits to generate.
-        Here, n_samples is different from n_folds in `random_split`. 
-        - n_samples is the number of repeated samplings of train-test splits, each split is independent from each other.
+    - n_splits: int, the number of different train-test splits to generate.
+        Here, n_splits is different from n_folds in `random_split`. 
+        - n_splits is the number of repeated samplings of train-test splits, each split is independent from each other.
         - n_folds is the number of folds in cross-validation, each fold won't have identical data points.
     - selectionStrategy: SelectionStrategy, the strategy to use for selecting test samples.
         - 'cluster_stratified' ensures each fold has different data points for all kinds of datasets (hhd, mhd, lhd, small or large)
@@ -295,18 +301,20 @@ def cluster_aware_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, co
     largeClusters = clusterData(dmat, threshold, clusterSizeThreshold, combineRandom)
 
     # assign data into train and test sets
-    random.seed(random_seed) # set the random seed for reproducibility
     nTest= round(len(dmat)*test_size)
 
     test_folds = [] # list of lists, each containing the indices of the test samples for each split
     train_folds = []
 
-    for i in range(n_samples): 
+    for n in range(n_splits): 
+
+        random.seed(random_seed + n) # set different random seed for each split to get distinct splits.
+
         # ensure distributional overlap between train and test splits -> easier task
         if selectionStrategy == 'clust_stratified': 
             ordered = []
             for c in largeClusters:
-                random.shuffle(c) # shuffle the 
+                random.shuffle(c) # shuffle the cluster
                 ordered.extend((i / len(c), x) for i, x in enumerate(c))
             ordered = [y for x, y in sorted(ordered)]
             test=ordered[:nTest]
@@ -318,10 +326,12 @@ def cluster_aware_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, co
             test = []
             train = []
             for c in largeClusters:
-                if len(test) < nTest:
-                    nRequired = nTest - len(test)
-                    test.extend(c[:nRequired])
-                    train.extend(c[nRequired:])
+                if len(test) + len(c) <= nTest:
+                    test.extend(c) # add entire cluster to test set
+                #if len(test) < nTest:
+                #    nRequired = nTest - len(test)
+                #    test.extend(c[:nRequired]) # this way may sometimes split a cluster across train and test sets, which defeats the purpose of 'cluster disjointness'.
+                #    train.extend(c[nRequired:])
                 else: 
                     train.extend(c) # all remaining clusters go to train set
                     
@@ -329,6 +339,83 @@ def cluster_aware_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, co
         train_folds.append(train)
 
     return train_folds,test_folds
+
+def cluster_kfold_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, combineRandom=False,
+                        random_seed=RANDOM_SEED, n_folds=5, selectionStrategy='clust_holdout'):
+    """
+    Assigns data points to training and testing sets for k-fold cross-validation based on selection strategies using clustering.
+    """
+
+    random.seed(random_seed)
+    np.random.seed(random_seed)
+
+    # get distance matrix
+    if dist_type == 'substruct':
+        dmat = get_substructure_mat(x)
+    elif dist_type == 'scaf':
+        dmat = get_scaffold_mat(x)
+    elif dist_type == 'levenshtein':
+        dmat = get_levenshtein_mat(x)
+
+    # cluster the data
+    clusterSizeThreshold=max(5, len(x)/50) # set a minimum cluster size based on the dataset size
+    largeClusters = clusterData(dmat, threshold, clusterSizeThreshold, combineRandom)
+    n_mols = len(x)
+
+    test_folds = []
+    train_folds = []
+
+    if selectionStrategy == 'clust_stratified':
+        
+        fold_assignments = [[] for _ in range(n_folds)] # Each cluster contributes some members to each fold
+        for cluster in largeClusters:
+            random.shuffle(cluster)
+            # Split cluster into roughly equal parts across folds
+            splits = np.array_split(cluster, n_folds)
+            for i in range(n_folds):
+                fold_assignments[i].extend(splits[i])
+
+        # Construct train/test splits
+        for i in range(n_folds):
+            test_idx = fold_assignments[i]
+            train_idx = [idx for j, f in enumerate(fold_assignments) if j != i for idx in f] # when j == i, the idx belongs to test set
+            test_folds.append(np.array(test_idx))
+            train_folds.append(np.array(train_idx))
+
+    elif selectionStrategy == 'clust_holdout':
+        n_clusters = len(largeClusters)
+        if n_clusters < n_folds:
+            # Adjust n_folds down (Safest)
+            print(f"Warning: Reducing n_folds from {n_folds} to {n_clusters} due to low cluster count.")
+            n_folds = n_clusters
+
+        if n_folds < 2:
+            print(f'n_folds < 2 after adjustment, cannot perform cluster k-fold split.')
+        else:
+            try:
+                # Shuffle clusters (use local Random for reproducibility without changing global RNG)
+                rng = random.Random(random_seed)
+                rng.shuffle(largeClusters)
+
+                # Greedy assignment: assign each cluster to the fold with the smallest current size
+                fold_assignments = [[] for _ in range(n_folds)]
+                fold_sizes = [0] * n_folds  # number of molecules in each fold
+
+                for cluster in largeClusters:
+                    # choose fold with minimum size (tie-breaker: lowest index)
+                    smallestFold_idx = int(np.argmin(fold_sizes)) # get the indices of the fold with the smallest size
+                    fold_assignments[smallestFold_idx].extend(cluster)
+                    fold_sizes[smallestFold_idx] += len(cluster)
+
+                # Construct train/test splits (ensure integer dtype)
+                for i in range(n_folds):
+                    test_idx = np.array(fold_assignments[i], dtype=int)
+                    train_idx = np.array([idx for j, f in enumerate(fold_assignments) if j != i for idx in f], dtype=int)
+                    test_folds.append(test_idx)
+                    train_folds.append(train_idx)
+            except Exception as e:
+                print(f"Cluster k-fold split failed due to: {e}")
+    return train_folds, test_folds
 
 #===============================================================================
 # Internal splitting
@@ -393,14 +480,14 @@ def random_splitter(df, n_folds, aim):
         if n_folds < 2:
             print(f"{prefix}: skipped — k-fold CV not applicable (n_folds < 2).")
             return None
-
-        try:
-            train_folds, test_folds = random_split(x, y, n_folds, RANDOM_SEED)
-            df_split = add_fold_columns(sub_df, prefix, train_folds, test_folds)
-            return df_split
-        except ValueError as e:
-            print(f"{prefix}: skipped due to {e}")
-            return None
+        else:
+            try:
+                train_folds, test_folds = random_split(x, y, n_folds, RANDOM_SEED)
+                df_split = add_fold_columns(sub_df, prefix, train_folds, test_folds)
+                return df_split
+            except ValueError as e:
+                print(f"{prefix}: skipped due to {e}")
+                return None
 
     # --- Perform both splits ---
     df_rmvStereo0 = _safe_split(df, f"int.rmvStereo0_rs_{aim}", n_folds)
@@ -419,7 +506,7 @@ def random_splitter(df, n_folds, aim):
 
     return df_result
 
-def cluster_aware_splitter(df, selectionStrategy):
+def cluster_kfold_splitter(df, selectionStrategy):
     """
     Apply cluster-aware split and add new columns for train/test folds.
 
@@ -443,27 +530,28 @@ def cluster_aware_splitter(df, selectionStrategy):
             print(f"{prefix}: skipped — empty subset.")
             return None
 
-        x = sub_df['canonical_smiles_by_Std'].tolist()
+        else:
+            x = sub_df['canonical_smiles_by_Std'].tolist()
 
-        try:
-            train_folds, test_folds = cluster_aware_split(
-                dist_type='substruct', 
-                x=x,
-                selectionStrategy=selectionStrategy,
-            )
+            try:
+                train_folds, test_folds = cluster_kfold_split(
+                    dist_type='substruct', 
+                    x=x,
+                    selectionStrategy=selectionStrategy,
+                )
 
-            # Check and deduplicate folds if necessary
-            tupled_test_folds = [tuple(sorted(fold)) for fold in test_folds]
-            if len(tupled_test_folds) != len(set(tupled_test_folds)):
-                print(f"{prefix}: duplicate test folds detected. Keeping unique ones.")
-                test_folds = list(set(tupled_test_folds))
+                # Check and deduplicate folds if necessary
+                tupled_test_folds = [tuple(sorted(fold)) for fold in test_folds]
+                if len(tupled_test_folds) != len(set(tupled_test_folds)):
+                    print(f"{prefix}: duplicate test folds detected. Keeping unique ones.")
+                    test_folds = list(set(tupled_test_folds))
 
-            # Add fold columns
-            return add_fold_columns(sub_df, prefix, train_folds, test_folds)
+                # Add fold columns
+                return add_fold_columns(sub_df, prefix, train_folds, test_folds)
 
-        except ValueError as e:
-            print(f"{prefix}: cluster-aware split skipped due to {e}")
-            return None
+            except ValueError as e:
+                print(f"{prefix}: cluster-aware split skipped due to {e}")
+                return None
 
     # --- Run for both rmvStereo0 and rmvStereo1 ---
     df_rmvStereo0 = _safe_cluster_split(df, f"int.rmvStereo0_{sS}", selectionStrategy)
@@ -520,8 +608,8 @@ def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmvDupMol: int = 1):
         df = random_splitter(df, n_folds=5, aim='vs')
 
         print("cluster-aware split...")
-        df = cluster_aware_splitter(df, selectionStrategy='clust_stratified')
-        df = cluster_aware_splitter(df, selectionStrategy='clust_holdout')
+        df = cluster_kfold_splitter(df, selectionStrategy='clust_stratified')
+        df = cluster_kfold_splitter(df, selectionStrategy='clust_holdout')
 
         # save the new df
         out_file = os.path.join(out_dir, f[:-12] + f"_split.csv")
