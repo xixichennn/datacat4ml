@@ -16,9 +16,9 @@ source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
 # Run with chunk parameters
-python3 run_curation_gpcr.py \
+python3 cura_gpcr.py \
     --job_index "$job_index" \
     --total_jobs "$chunks_per_task"
 
 # run the command below in the terminal to submit the job
-# sbatch run_curation_gpcr_slurm.sh
+# sbatch run_cura_gpcr_slurm.sh

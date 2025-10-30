@@ -10,13 +10,13 @@
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
-rmvDupMols=(0 1)
+rmvDs=(0 1)
 
 # SLURM_ARRAY_TASK_ID
-rmvDupMol="${rmvDupMols[$SLURM_ARRAY_TASK_ID % ${#rmvDupMols[@]}]}"
+rmvD="${rmvDs[$SLURM_ARRAY_TASK_ID % ${#rmvDs[@]}]}"
 
 # Run your Python script with arguments
-python3 run_curation_or.py --rmvDupMol="$rmvDupMol"
+python3 cura_or.py --rmvD="$rmvD"
 
 # run the command below in the terminal to submit the job
-# sbatch --array=0-1 run_curation_or_slurm.sh
+# sbatch --array=0-1 run_cura_or_slurm.sh

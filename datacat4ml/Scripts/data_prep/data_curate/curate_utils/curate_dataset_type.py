@@ -13,7 +13,7 @@ from datacat4ml.Scripts.data_prep.data_curate.curate_utils.select_assays import 
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.standardize_structures import standardize, remove_dupMol
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.apply_thresholds import apply_thresholds
 
-from datacat4ml.Scripts.data_prep.data_split.split_mldata import find_stereochemical_siblings
+from datacat4ml.Scripts.data_prep.data_split.intSplit_mldata import find_stereochemical_siblings
 
 
 DEFAULT_CLEANING = {
@@ -21,14 +21,14 @@ DEFAULT_CLEANING = {
     "automate_threshold": True,
     "num_workers": cpu_count()}
 
-def curate(df: pd.DataFrame, rmvDupMol: int = 1) -> pd.DataFrame:
+def curate(df: pd.DataFrame, rmvD: int = 1) -> pd.DataFrame:
     """
     apply the curation pipeline to a dataframe
 
     param:
     -----
     df: pd.DataFrame: The input dataset to be curated, should be from cat_hhd or cat_mhd
-    rmvDupMol: whether to remove duplicate SMILES with different values. 1 or True means remove, 0 or False means keep.
+    rmvD: whether to remove duplicate SMILES with different values. 1 or True means remove, 0 or False means keep.
 
 
     return:
@@ -38,7 +38,7 @@ def curate(df: pd.DataFrame, rmvDupMol: int = 1) -> pd.DataFrame:
     try:
         print(f"======= Curating dataset=======")
         df = select_assays(df, **DEFAULT_CLEANING)
-        df = standardize(df, rmvDupMol, **DEFAULT_CLEANING)
+        df = standardize(df, rmvD, **DEFAULT_CLEANING)
         df = apply_thresholds(df, aim='vs', **DEFAULT_CLEANING)
         df = apply_thresholds(df, aim='lo', **DEFAULT_CLEANING)
 
@@ -85,7 +85,7 @@ def rename_add_delete_cols(df: pd.DataFrame) -> pd.DataFrame:
         inplace=True)
     
     # delete the following columns
-    df.drop(columns=['target', 'std_type', 'max_num_atoms', 'max_molecular_weight',
+    df.drop(columns=['max_num_atoms', 'max_molecular_weight',
                     'relationship_type', 'relationship_type_description'], inplace=True)
 
     return df
@@ -228,8 +228,8 @@ wrong_activity_ids = [
 # run_curation
 #===============================================================================
 def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CURA_HHD_OR_DIR,
-                targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', std_types=["Ki", 'IC50'], 
-                ds_type= 'or', rmvDupMol=1):
+                targets_list: List[str]= OR_chemblids, effect='bind', assay='RBA', standard_types=["Ki", 'IC50'], 
+                ds_type= 'or', rmvD=1):
     """
     curate a series of datasets and get the stats for each dataset
 
@@ -241,9 +241,9 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
     targets_list: List[str]: The list of targets to process. The element of the list could be target_chembl_id (e.g. 'CHEMBL1824')
     effect: str: The effect of the dataset. It could be either 'bind' or 'antag'
     assay: str: The assay of the dataset. It could be either 'RBA'
-    std_types: List[str]: The list of standard types to process. The element of the list could be either 'Ki' or 'IC50'
+    standard_types: List[str]: The list of standard types to process. The element of the list could be either 'Ki' or 'IC50'
     ds_type: str: The type of dataset. It could be either 'or' or 'gpcr'
-    rmvDupMol: Whether to remove duplicate SMILES with different values during standardization. 1 or True means remove, 0 or False means keep.
+    rmvD: Whether to remove Duplicate SMILES with different values during standardization. 1 or True means remove, 0 or False means keep.
     
 
     output:
@@ -252,21 +252,21 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
     
     """
 
-    for target in targets_list:
-        print(f'Processing target {target} ...')
-            
-        for standard_type in std_types:
+    for target_chembl_id in targets_list:
+        print(f'Processing target_chembl_id {target_chembl_id} ...')
+
+        for standard_type in standard_types:
             print(f'Processing {standard_type} ...')
 
             # ================= curate hhd or mhd ================
             print(f'========================= Curating hhd/mhd dataset===========================')
             if ds_cat_level == 'hhd':
-                print(f"Processing hhd: {target}_{standard_type}...")
-                input_df_path = os.path.join(input_path, target, standard_type, f'{target}_{standard_type}_hhd_df.csv')
+                print(f"Processing hhd: {target_chembl_id}_{standard_type}...")
+                input_df_path = os.path.join(input_path, target_chembl_id, standard_type, f'{target_chembl_id}_{standard_type}_hhd_df.csv')
 
             elif ds_cat_level == 'mhd':
-                print(f"Processing mhd: {target}_{effect}_{assay}_{standard_type}...")
-                input_df_path = os.path.join(input_path, target, effect, assay, standard_type, f'{target}_{effect}_{assay}_{standard_type}_mhd_df.csv')
+                print(f"Processing mhd: {target_chembl_id}_{effect}_{assay}_{standard_type}...")
+                input_df_path = os.path.join(input_path, target_chembl_id, effect, assay, standard_type, f'{target_chembl_id}_{effect}_{assay}_{standard_type}_mhd_df.csv')
 
             if os.path.exists(input_df_path):
                 input_df = pd.read_csv(input_df_path)
@@ -280,7 +280,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                     input_df = input_df[~input_df['activity_id'].isin(wrong_activity_ids)]
 
                     # run the curation pipeline
-                    curated_df = curate(input_df, rmvDupMol)
+                    curated_df = curate(input_df, rmvD)
                     print(f'After curation, the shape of the df: {curated_df.shape}')
 
                     if len(curated_df) == 0:
@@ -291,20 +291,18 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         # add a column 'stereochemical_siblings'
                         curated_df = add_stereoSiblings_col(curated_df)
                         
-                        curated_df['target'] = target
                         curated_df['effect'] = effect
                         curated_df['assay'] = assay
-                        curated_df['std_type'] = standard_type
 
-                         # file_basename
+                         # fprefix
                         if ds_cat_level == 'hhd':
-                            file_basename = f'{target}_None_None_{standard_type}_None_hhd'
+                            fprefix = f'{target_chembl_id}_None_None_{standard_type}_None_hhd'
                         elif ds_cat_level == 'mhd':
-                            file_basename = f'{target}_{effect}_{assay}_{standard_type}_None_mhd'
+                            fprefix = f'{target_chembl_id}_{effect}_{assay}_{standard_type}_None_mhd'
 
                         # delete rows with SMILES strings that will fail to be embeded for 3D descriptor featurization
                         for f in failed_dict.keys():
-                            if f == file_basename:
+                            if f == fprefix:
                                 for key, value in failed_dict[f].items():
                                     idx_to_drop = curated_df[curated_df['canonical_smiles'] == value].index
                                     print(f'index to drop is {idx_to_drop} for SMILES: {value}')
@@ -315,59 +313,79 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         # rename, add, delete columns
                         curated_df = rename_add_delete_cols(curated_df)
                         
-                        # curated_size
+                        # curated_size = rmvS0_ds_size_level
                         curated_size = len(curated_df)
                         print(f'The final shape of the curated dataset is {curated_df.shape}')
 
                         if curated_size < 50:
-                            ds_size_level = 's50'
+                            rmvS0_ds_size_level = 's50'
                         else:
-                            ds_size_level = 'b50'
+                            rmvS0_ds_size_level = 'b50'
                         
-                        # noStereo_size
+                        # rmvS1_ds_size_level
                         numStereo = sum(curated_df['stereoSiblings'])
-                        noStereo_size = curated_size - numStereo
-                        if noStereo_size < 50:
-                            ds_size_level_noStereo = 's50'
+                        rmvS1_ds_size = curated_size - numStereo
+                        if rmvS1_ds_size < 50:
+                            rmvS1_ds_size_level = 's50'
                         else:
-                            ds_size_level_noStereo = 'b50'
+                            rmvS1_ds_size_level = 'b50'
 
                         # save file
-                        filename = file_basename + f'_{ds_size_level}_{ds_size_level_noStereo}_curated.csv'
+                        fname = fprefix + f'_{rmvS0_ds_size_level}_{rmvS1_ds_size_level}_curated.csv'
 
-                        save_path = os.path.join(output_path, 'rmvDupMol' + str(rmvDupMol))
+                        save_path = os.path.join(output_path, 'rmvD' + str(rmvD))
                         mkdirs(save_path)
-                        curated_df.to_csv(os.path.join(save_path, filename), index=False)
+                        curated_df.to_csv(os.path.join(save_path, fname), index=False)
 
                         #################################### stats #######################################
-                        stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}_{ds_type}_rmvDupMol{str(rmvDupMol)}_stats.csv')
+                        stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}_{ds_type}_rmvD{str(rmvD)}_stats.csv')
 
                         if not os.path.exists(stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                             mkdirs(os.path.dirname(stats_file_path))
                             with open(stats_file_path, 'w') as f:
-                                f.write('ds_cat_level,ds_type,ds_size_level,ds_size_level_noStereo,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,removed_size,curated_size,numStereo,noStereo_size,max_num_atoms,max_mw,vs_threshold,vs_num_active,vs_num_inactive,vs_%_active,lo_threshold,lo_num_active,lo_num_inactive,lo_%_active\n')
+                                f.write('ds_cat_level,ds_type,' 
+                                        'target_chembl_id,effect,assay,standard_type,assay_chembl_id,'
+                                        'raw_size,removed_size,rmvS0_ds_size,rmvS0_ds_size_level,numStereo,rmvS1_ds_size,rmvS1_ds_size_level,'
+                                        'max_num_atoms,max_mw,'
+                                        'vs_threshold,rmvS0_vs_num_active,rmvS0_vs_num_inactive,rmvS0_vs_percent_a, rmvS1_vs_num_active,rmvS1_vs_num_inactive,rmvS1_vs_percent_a,'
+                                        'lo_threshold,rmvS0_lo_num_active,rmvS0_lo_num_inactive,rmvS0_lo_percent_a,rmvS1_lo_num_active,rmvS1_lo_num_inactive,rmvS1_lo_percent_a\n'
+                                        )
 
                         with open(stats_file_path, 'a') as f:
                             # Print something for number check
                             removed_size = raw_size - curated_size
                             max_num_atoms = curated_df['num_atoms'].max()
                             max_mw = curated_df['molecular_weight'].max()
+
                             vs_threshold = curated_df['vs_threshold'].unique()[0]
-                            vs_num_active = sum(curated_df['vs_activity'])
-                            vs_num_inactive = curated_size - vs_num_active
+                            rmvS0_vs_num_active = sum(curated_df['vs_activity'])
+                            rmvS0_vs_num_inactive = curated_size - rmvS0_vs_num_active
+                            rmvS1_vs_num_active = sum(curated_df[curated_df['stereoSiblings'] == False]['vs_activity'])
+                            rmvS1_vs_num_inactive = rmvS1_ds_size - rmvS1_vs_num_active
 
                             lo_threshold = curated_df['lo_threshold'].unique()[0]
-                            lo_num_active = sum(curated_df['lo_activity'])
-                            lo_num_inactive = curated_size - lo_num_active
+                            rmvS0_lo_num_active = sum(curated_df['lo_activity'])
+                            rmvS0_lo_num_inactive = curated_size - rmvS0_lo_num_active
+                            rmvS1_lo_num_active = sum(curated_df[curated_df['stereoSiblings'] == False]['lo_activity'])
+                            rmvS1_lo_num_inactive = rmvS1_ds_size - rmvS1_lo_num_active
                             
-                            if curated_size == 0:
-                                vs_percent_a = 0
-                                lo_percent_a = 0
+                            if curated_size == 0 or rmvS1_ds_size == 0:
+                                rmvS0_vs_percent_a = 0
+                                rmvS0_lo_percent_a = 0
+                                rmvS1_vs_percent_a = 0
+                                rmvS1_lo_percent_a = 0
                             else:
-                                vs_percent_a = round(vs_num_active / curated_size * 100, 2)
-                                lo_percent_a = round(lo_num_active / curated_size * 100, 2)
+                                rmvS0_vs_percent_a = round(rmvS0_vs_num_active / curated_size * 100, 2)
+                                rmvS0_lo_percent_a = round(rmvS0_lo_num_active / curated_size * 100, 2)
+                                rmvS1_vs_percent_a = round(rmvS1_vs_num_active / rmvS1_ds_size * 100, 2)
+                                rmvS1_lo_percent_a = round(rmvS1_lo_num_active / rmvS1_ds_size * 100, 2)
 
-                            f.write(f"{ds_cat_level},{ds_type},{ds_size_level},{ds_size_level_noStereo},{target},{effect},{assay},{standard_type},{None},{raw_size},{removed_size},{curated_size},{numStereo},{noStereo_size},{max_num_atoms},{max_mw},{vs_threshold},{vs_num_active},{vs_num_inactive},{vs_percent_a},{lo_threshold},{lo_num_active},{lo_num_inactive},{lo_percent_a}\n")
+                            f.write(f"{ds_cat_level},{ds_type},"
+                                    f"{target_chembl_id},{effect},{assay},{standard_type},{None},"
+                                    f"{raw_size},{removed_size},{curated_size},{rmvS0_ds_size_level},{numStereo},{rmvS1_ds_size},{rmvS1_ds_size_level},"
+                                    f"{max_num_atoms},{max_mw},"
+                                    f"{vs_threshold},{rmvS0_vs_num_active},{rmvS0_vs_num_inactive},{rmvS0_vs_percent_a},{rmvS1_vs_num_active},{rmvS1_vs_num_inactive},{rmvS1_vs_percent_a},"
+                                    f"{lo_threshold},{rmvS0_lo_num_active},{rmvS0_lo_num_inactive},{rmvS0_lo_percent_a},{rmvS1_lo_num_active},{rmvS1_lo_num_inactive},{rmvS1_lo_percent_a}\n")
 
                     # ================= curate lhd ================
                     print(f'======= Curating lhd dataset=======')
@@ -379,8 +397,8 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                         lhd_assay_chembl_ids = list(set([f.split('_')[4] for f in lhd_files]))
 
                         for assay_chembl_id in lhd_assay_chembl_ids:
-                            print(f'Processing lhd: {target}_{effect}_{assay}_{standard_type}_{assay_chembl_id}...')
-                            lhd_df_path = os.path.join(lhd_path, f'{target}_{effect}_{assay}_{standard_type}_{assay_chembl_id}_lhd_df.csv')
+                            print(f'Processing lhd: {target_chembl_id}_{effect}_{assay}_{standard_type}_{assay_chembl_id}...')
+                            lhd_df_path = os.path.join(lhd_path, f'{target_chembl_id}_{effect}_{assay}_{standard_type}_{assay_chembl_id}_lhd_df.csv')
                             lhd_df = pd.read_csv(lhd_df_path)
                             if len(lhd_df) == 0:
                                 print(f'No data points in the dataset at {lhd_df_path}')
@@ -392,7 +410,7 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                 # remove rows with wrong activity_ids
                                 lhd_df = lhd_df[~lhd_df['activity_id'].isin(wrong_activity_ids)]
                                 # run the curation pipeline
-                                curated_lhd_df = curate(lhd_df, rmvDupMol)
+                                curated_lhd_df = curate(lhd_df, rmvD)
 
                                 ############################ prepare df name ###############################
                                 if len(curated_lhd_df) == 0:
@@ -401,69 +419,89 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                                     # add a column 'stereochemical_siblings'
                                     curated_lhd_df = add_stereoSiblings_col(curated_lhd_df)
 
-                                    curated_lhd_df['target'] = target
                                     curated_lhd_df['effect'] = effect
                                     curated_lhd_df['assay'] = assay
-                                    curated_lhd_df['std_type'] = standard_type
 
                                     # rename, add, delete columns
                                     curated_lhd_df = rename_add_delete_cols(curated_lhd_df)
 
-                                    # curated_lhd_size
+                                    # curated_lhd_size = rmvS0_ds_size_level
                                     curated_lhd_size = len(curated_lhd_df)
                                     print(f'After curation, the shape of the curated lhd dataset is {curated_lhd_df.shape}')
 
                                     if curated_lhd_size < 50:
-                                        ds_size_level = 's50'
+                                        rmvS0_ds_size_level = 's50'
                                     else:
-                                        ds_size_level = 'b50'
-                                    
-                                    # no_stereo_size
+                                        rmvS0_ds_size_level = 'b50'
+
+                                    # rmvS1_ds_size_level
                                     numStereo = sum(curated_lhd_df['stereoSiblings'])
-                                    noStereo_size = curated_lhd_size - numStereo
-                                    if noStereo_size < 50:
-                                        ds_size_level_noStereo = 's50'
+                                    rmvS1_ds_size = curated_lhd_size - numStereo
+                                    if rmvS1_ds_size < 50:
+                                        rmvS1_ds_size_level = 's50'
                                     else:
-                                        ds_size_level_noStereo = 'b50'
+                                        rmvS1_ds_size_level = 'b50'
 
                                     # save file
-                                    filename = f'{target}_{effect}_{assay}_{standard_type}_{assay_chembl_id}_lhd_{ds_size_level}_{ds_size_level_noStereo}_curated.csv'
+                                    fname = f'{target_chembl_id}_{effect}_{assay}_{standard_type}_{assay_chembl_id}_lhd_{rmvS0_ds_size_level}_{rmvS1_ds_size_level}_curated.csv'
 
                                     if ds_type == 'gpcr':
-                                        output_lhd_path = os.path.join(CURA_LHD_GPCR_DIR, 'rmvDupMol' + str(rmvDupMol))
+                                        output_lhd_path = os.path.join(CURA_LHD_GPCR_DIR, 'rmvD' + str(rmvD))
                                     elif ds_type == 'or':
-                                        output_lhd_path = os.path.join(CURA_LHD_OR_DIR, 'rmvDupMol' + str(rmvDupMol))
+                                        output_lhd_path = os.path.join(CURA_LHD_OR_DIR, 'rmvD' + str(rmvD))
 
                                     mkdirs(output_lhd_path)
-                                    curated_lhd_df.to_csv(os.path.join(output_lhd_path, filename), index=False)
+                                    curated_lhd_df.to_csv(os.path.join(output_lhd_path, fname), index=False)
                                     
                                     #################################### stats #######################################
-                                    lhd_stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_lhd_{ds_type}_rmvDupMol{str(rmvDupMol)}_stats.csv')
+                                    lhd_stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_lhd_{ds_type}_rmvD{str(rmvD)}_stats.csv')
 
                                     if not os.path.exists(lhd_stats_file_path): # don't use check_file_exists() and then remove the file if it exists
                                         mkdirs(os.path.dirname(lhd_stats_file_path))
                                         with open(lhd_stats_file_path, 'w') as f:
-                                            f.write('ds_cat_level,ds_type,ds_size_level,ds_size_level_noStereo,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,removed_size,curated_lhd_size,numStereo,noStereo_size,max_num_atoms,max_mw,vs_threshold,vs_num_active,vs_num_inactive,vs_%_active,lo_threshold,lo_num_active,lo_num_inactive,lo_%_active\n')
+                                            f.write('ds_cat_level,ds_type,' 
+                                                    'target_chembl_id,effect,assay,standard_type,assay_chembl_id,'
+                                                    'raw_size,removed_size,rmvS0_ds_size,rmvS0_ds_size_level,numStereo,rmvS1_ds_size,rmvS1_ds_size_level,'
+                                                    'max_num_atoms,max_mw,'
+                                                    'vs_threshold,rmvS0_vs_num_active,rmvS0_vs_num_inactive,rmvS0_vs_percent_a, rmvS1_vs_num_active,rmvS1_vs_num_inactive,rmvS1_vs_percent_a,'
+                                                    'lo_threshold,rmvS0_lo_num_active,rmvS0_lo_num_inactive,rmvS0_lo_percent_a,rmvS1_lo_num_active,rmvS1_lo_num_inactive,rmvS1_lo_percent_a\n'
+                                                    )
 
                                     with open(lhd_stats_file_path, 'a') as f:
                                         # Print something for number check
                                         removed_size = lhd_raw_size - curated_lhd_size
                                         max_num_atoms = curated_lhd_df['num_atoms'].max()
                                         max_mw = curated_lhd_df['molecular_weight'].max()
-                                        vs_threshold = curated_lhd_df['vs_threshold'].unique()[0]
-                                        vs_num_active = sum(curated_lhd_df['vs_activity'])
-                                        vs_num_inactive = curated_lhd_size - vs_num_active
-                                        lo_threshold = curated_lhd_df['lo_threshold'].unique()[0]
-                                        lo_num_active = sum(curated_lhd_df['lo_activity'])
-                                        lo_num_inactive = curated_lhd_size - lo_num_active
-                                        if curated_lhd_size == 0:
-                                                vs_percent_a = 0
-                                                lo_percent_a = 0
-                                        else:
-                                                vs_percent_a = round(vs_num_active / curated_lhd_size * 100, 2)
-                                                lo_percent_a = round(lo_num_active / curated_lhd_size * 100, 2)
 
-                                        f.write(f"lhd,{ds_type},{ds_size_level},{ds_size_level_noStereo},{target},{effect},{assay},{standard_type},{assay_chembl_id},{raw_size},{removed_size},{curated_lhd_size},{numStereo},{noStereo_size},{max_num_atoms},{max_mw},{vs_threshold},{vs_num_active},{vs_num_inactive},{vs_percent_a},{lo_threshold},{lo_num_active},{lo_num_inactive},{lo_percent_a}\n")
+                                        vs_threshold = curated_lhd_df['vs_threshold'].unique()[0]
+                                        rmvS0_vs_num_active = sum(curated_lhd_df['vs_activity'])
+                                        rmvS0_vs_num_inactive = curated_lhd_size - rmvS0_vs_num_active
+                                        rmvS1_vs_num_active = sum(curated_lhd_df[curated_lhd_df['stereoSiblings'] == False]['vs_activity'])
+                                        rmvS1_vs_num_inactive = rmvS1_ds_size - rmvS1_vs_num_active
+
+                                        lo_threshold = curated_lhd_df['lo_threshold'].unique()[0]
+                                        rmvS0_lo_num_active = sum(curated_lhd_df['lo_activity'])
+                                        rmvS0_lo_num_inactive = curated_lhd_size - rmvS0_lo_num_active
+                                        rmvS1_lo_num_active = sum(curated_lhd_df[curated_lhd_df['stereoSiblings'] == False]['lo_activity'])
+                                        rmvS1_lo_num_inactive = rmvS1_ds_size - rmvS1_lo_num_active
+
+                                        if curated_lhd_size == 0 or rmvS1_ds_size == 0:
+                                                rmvS0_vs_percent_a = 0
+                                                rmvS0_lo_percent_a = 0
+                                                rmvS1_vs_percent_a = 0
+                                                rmvS1_lo_percent_a = 0
+                                        else:
+                                                rmvS0_vs_percent_a = round(rmvS0_vs_num_active / curated_lhd_size * 100, 2)
+                                                rmvS0_lo_percent_a = round(rmvS0_lo_num_active / curated_lhd_size * 100, 2)
+                                                rmvS1_vs_percent_a = round(rmvS1_vs_num_active / rmvS1_ds_size * 100, 2)
+                                                rmvS1_lo_percent_a = round(rmvS1_lo_num_active / rmvS1_ds_size * 100, 2)
+
+                                        f.write(f"lhd,{ds_type},"
+                                                f"{target_chembl_id},{effect},{assay},{standard_type},{assay_chembl_id},"
+                                                f"{raw_size},{removed_size},{curated_size},{rmvS0_ds_size_level},{numStereo},{rmvS1_ds_size},{rmvS1_ds_size_level},"
+                                                f"{max_num_atoms},{max_mw},"
+                                                f"{vs_threshold},{rmvS0_vs_num_active},{rmvS0_vs_num_inactive},{rmvS0_vs_percent_a},{rmvS1_vs_num_active},{rmvS1_vs_num_inactive},{rmvS1_vs_percent_a},"
+                                                f"{lo_threshold},{rmvS0_lo_num_active},{rmvS0_lo_num_inactive},{rmvS0_lo_percent_a},{rmvS1_lo_num_active},{rmvS1_lo_num_inactive},{rmvS1_lo_percent_a}\n")
                     else:
                         print(f'No dataset at {lhd_path}')
 
@@ -475,15 +513,15 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
 #=============================================================================
 # mhd-effect_or
 #=============================================================================
-def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
+def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvD=1):
     """
     group dataset by target_chemblid and effect.
     """
 
-    curated_path = os.path.join(CURA_MHD_OR_DIR, 'rmvDupMol0')
+    curated_path = os.path.join(CURA_MHD_OR_DIR, 'rmvD0')
     curated_files = [f for f in os.listdir(curated_path)]
 
-    save_path = os.path.join(CURA_DATA_DIR, 'cura_mhd-effect_or', 'rmvDupMol' + str(rmvDupMol))
+    save_path = os.path.join(CURA_DATA_DIR, 'cura_mhd-effect_or', 'rmvD' + str(rmvD))
     mkdirs(save_path)
 
     # collect unique target_chembl_id and effect combinations
@@ -491,11 +529,17 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
         {f.split('_')[0] + '_' + f.split('_')[1] for f in curated_files}
         )  
 
-    stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}-effect_{ds_type}_rmvDupMol{str(rmvDupMol)}_stats.csv')
+    stats_file_path = os.path.join(CURA_DATA_DIR, f'cura_{ds_cat_level}-effect_{ds_type}_rmvD{str(rmvD)}_stats.csv')
                                                   
     # open stats file and write header
     with open(stats_file_path, 'w') as f:
-        f.write('ds_cat_level,ds_type,ds_size_level,ds_size_level_noStereo,target_chembl_id,effect,assay,standard_type,assay_chembl_id,raw_size,removed_size,curated_size,numStereo,noStereo_size,max_num_atoms,max_mw,vs_threshold,vs_num_active,vs_num_inactive,vs_%_active,lo_threshold,lo_num_active,lo_num_inactive,lo_%_active\n')
+        f.write('ds_cat_level,ds_type,' 
+                'target_chembl_id,effect,assay,standard_type,assay_chembl_id,'
+                'raw_size,removed_size,rmvS0_ds_size,rmvS0_ds_size_level,numStereo,rmvS1_ds_size,rmvS1_ds_size_level,'
+                'max_num_atoms,max_mw,'
+                'vs_threshold,rmvS0_vs_num_active,rmvS0_vs_num_inactive,rmvS0_vs_percent_a, rmvS1_vs_num_active,rmvS1_vs_num_inactive,rmvS1_vs_percent_a,'
+                'lo_threshold,rmvS0_lo_num_active,rmvS0_lo_num_inactive,rmvS0_lo_percent_a,rmvS1_lo_num_active,rmvS1_lo_num_inactive,rmvS1_lo_percent_a\n'
+                )
 
         for target_effect in target_effects:
             ds_cat_level = 'mhd-effect'
@@ -506,10 +550,10 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
             raw_size = 0
             removed_size = 0
 
-            target = target_effect.split('_')[0]
+            target_chembl_id = target_effect.split('_')[0]
             effect = target_effect.split('_')[1]
 
-            # combine files with the same target and effect
+            # combine files with the same target_chembl_id and effect
             concat_df = pd.DataFrame()
             for file in curated_files:
                 if file.startswith(target_effect):
@@ -517,8 +561,8 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
                     concat_df = pd.concat([concat_df, df], ignore_index=True)
                     concat_df.reset_index(drop=True, inplace=True)
             
-            # remove duplicate SMILES with different values if rmvDupMol is 1 or True
-            if rmvDupMol == 1:
+            # remove duplicate SMILES with different values if rmvD is 1 or True
+            if rmvD == 1:
                 print(f'==> Remove dupMols ...')
                 concat_df = remove_dupMol(concat_df)
                 print(f'After removing duplicate SMILES with different values, the shape of the combined df is {concat_df.shape}')
@@ -530,23 +574,23 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
             concat_df = apply_thresholds(concat_df, aim='vs', **DEFAULT_CLEANING)
             concat_df = apply_thresholds(concat_df, aim='lo', **DEFAULT_CLEANING)
 
-            # curated_size
+            # curated_size = rmvS0_ds_size_level
             curated_size = len(concat_df)
             if curated_size < 50:
-                ds_size_level = 's50'
+                rmvS0_ds_size_level = 's50'
             else:
-                ds_size_level = 'b50'
+                rmvS0_ds_size_level = 'b50'
 
             # noStereo_size
             numStereo = sum(concat_df['stereoSiblings'])
-            noStereo_size = curated_size - numStereo
-            if noStereo_size < 50:
-                ds_size_level_noStereo = 's50'
+            rmvS1_ds_size = curated_size - numStereo
+            if rmvS1_ds_size < 50:
+                rmvS1_ds_size_level = 's50'
             else:
-                ds_size_level_noStereo = 'b50'
+                rmvS1_ds_size_level = 'b50'
 
             # save combined df
-            concat_df.to_csv(os.path.join(save_path, f'{target_effect}_None_None_None_mhd-effect_{ds_size_level}_{ds_size_level_noStereo}_curated.csv'), index=False)
+            concat_df.to_csv(os.path.join(save_path, f'{target_effect}_None_None_None_mhd-effect_{rmvS0_ds_size_level}_{rmvS1_ds_size_level}_curated.csv'), index=False)
             print(f'The shape of combined df: {concat_df.shape}')
 
             # save stats
@@ -554,14 +598,25 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvDupMol=1):
             max_mw= concat_df['molecular_weight'].max()
 
             vs_threshold = concat_df['vs_threshold'].unique()[0]
-            vs_num_active = sum(concat_df['vs_activity'])
-            vs_num_inactive = curated_size - vs_num_active
+            rmvS0_vs_num_active = sum(concat_df['vs_activity'])
+            rmvS0_vs_num_inactive = curated_size - rmvS0_vs_num_active
+            rmvS1_vs_num_active = sum(concat_df[concat_df['stereoSiblings'] == False]['vs_activity'])
+            rmvS1_vs_num_inactive = rmvS1_ds_size - rmvS1_vs_num_active
 
             lo_threshold = concat_df['lo_threshold'].unique()[0]
-            lo_num_active = sum(concat_df['lo_activity'])
-            lo_num_inactive = curated_size - lo_num_active
+            rmvS0_lo_num_active = sum(concat_df['lo_activity'])
+            rmvS0_lo_num_inactive = curated_size - rmvS0_lo_num_active
+            rmvS1_lo_num_active = sum(concat_df[concat_df['stereoSiblings'] == False]['lo_activity'])
+            rmvS1_lo_num_inactive = rmvS1_ds_size - rmvS1_lo_num_active
 
-            vs_percent_a = round(vs_num_active / curated_size * 100, 2)
-            lo_percent_a = round(lo_num_active / curated_size * 100, 2)
+            rmvS0_vs_percent_a = round(rmvS0_vs_num_active / curated_size * 100, 2)
+            rmvS0_lo_percent_a = round(rmvS0_lo_num_active / curated_size * 100, 2)
+            rmvS1_vs_percent_a = round(rmvS1_vs_num_active / rmvS1_ds_size * 100, 2)
+            rmvS1_lo_percent_a = round(rmvS1_lo_num_active / rmvS1_ds_size * 100, 2)
 
-            f.write(f"{ds_cat_level},{ds_type},{ds_size_level},{ds_size_level_noStereo},{target},{effect},{assay},{standard_type},{assay_chembl_id},{raw_size},{removed_size},{curated_size},{numStereo},{noStereo_size},{max_num_atoms},{max_mw},{vs_threshold},{vs_num_active},{vs_num_inactive},{vs_percent_a},{lo_threshold},{lo_num_active},{lo_num_inactive},{lo_percent_a}\n")
+            f.write(f"{ds_cat_level},{ds_type},"
+                    f"{target_chembl_id},{effect},{assay},{standard_type},{assay_chembl_id},"
+                    f"{raw_size},{removed_size},{curated_size},{rmvS0_ds_size_level},{numStereo},{rmvS1_ds_size},{rmvS1_ds_size_level},"
+                    f"{max_num_atoms},{max_mw},"
+                    f"{vs_threshold},{rmvS0_vs_num_active},{rmvS0_vs_num_inactive},{rmvS0_vs_percent_a},{rmvS1_vs_num_active},{rmvS1_vs_num_inactive},{rmvS1_vs_percent_a},"
+                    f"{lo_threshold},{rmvS0_lo_num_active},{rmvS0_lo_num_inactive},{rmvS0_lo_percent_a},{rmvS1_lo_num_active},{rmvS1_lo_num_inactive},{rmvS1_lo_percent_a}\n")

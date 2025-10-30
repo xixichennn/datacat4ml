@@ -70,14 +70,14 @@ def remove_dupMol(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pSta
 
     # remove multi-appearance with high std (>1)
     keep_multi_idx = df_group.loc[multi_idx].loc[lambda x: x['std'] <=1].index
-    rmv_dupMol_df = multi_df[multi_df[std_smiles_col].isin(keep_multi_idx)].drop_duplicates(subset=std_smiles_col, keep='first').copy()
-    print(f'rmv_dupMol_df.shape: {rmv_dupMol_df.shape}')
+    rmvD_df = multi_df[multi_df[std_smiles_col].isin(keep_multi_idx)].drop_duplicates(subset=std_smiles_col, keep='first').copy()
+    print(f'rmvD_df.shape: {rmvD_df.shape}')
 
     # map the mean pStandard_value to each remaining multi-smiles row
-    rmv_dupMol_df[pvalue_col] = rmv_dupMol_df[std_smiles_col].map(df_group['mean'])
+    rmvD_df[pvalue_col] = rmvD_df[std_smiles_col].map(df_group['mean'])
 
     # combine single and multi-appearance smiles
-    final_df = pd.concat([single_df, rmv_dupMol_df], axis=0).reset_index(drop=True)
+    final_df = pd.concat([single_df, rmvD_df], axis=0).reset_index(drop=True)
     print(f'final_df.shape: {final_df.shape}')
 
     return final_df
@@ -85,7 +85,7 @@ def remove_dupMol(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pSta
 # ======================= run standardizing pipeling ==============================
 def standardize(
     x: pd.DataFrame,
-    rmv_dupMol: int = 1,
+    rmvD: int = 1,
     num_workers: int = 6,
     max_mol_weight: float = 900.0,
     **kwargs,
@@ -105,6 +105,7 @@ def standardize(
     x: pd.DataFrame, the dataframe to clean
     num_workers: int, number of workers to use in parallel
     max_mol_weight: float, maximum molecular weight to keep
+    rmvD: int, whether to remove duplicate molecules with conflicting values (1: yes, 0: no)
 
     returns:
     pd.DataFrame, cleaned dataframe
@@ -130,8 +131,8 @@ def standardize(
     df.loc[(df["standard_units"] == "uM"), "standard_units"] = "nM" # Convert uM to nM first
     df["pStandard_value"] = df.apply(log_standard_values, axis=1)
 
-    if rmv_dupMol == 1:
-        print(f'==> Remove dupMOls ...')
+    if rmvD == 1:
+        print(f'==> Remove duplicate molecules ...')
         df = remove_dupMol(df)
         print(f'After removing the mols with multiple values, the missing values in pStandard_value: {df["pStandard_value"].isna().sum()}, the shape of the df: {df.shape}')
 
