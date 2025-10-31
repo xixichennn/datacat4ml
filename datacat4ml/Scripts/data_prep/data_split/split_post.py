@@ -12,22 +12,21 @@ import argparse
 #===============================================================================
 def count_splCol(df, patterns):
     """Count the number of split columns in a dataframe based on a specific substring pattern."""
-    return {name: sum(df.columns.str.contains(name)) for name in patterns}
+    return {name: sum(df.columns.str.startswith(name)) for name in patterns}
 
-def get_spl_stats(in_path: str = SPL_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_type: str = 'or', rmvDupMol: int = 0):
+def get_spl_stats(in_path: str = SPL_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_type: str = 'or', rmvD: int = 0):
     
     """Get the statistics of the split datasets and save them to a csv file."""
     
     print(f'Processing: {in_path}...')
-    in_file_dir = os.path.join(in_path, 'rmvDupMol'+str(rmvDupMol))
+    in_file_dir = os.path.join(in_path, 'rmvD'+str(rmvD))
     files = [f for f in os.listdir(in_file_dir)]
     print(f'{len(files)} files found.')
 
     pattern_labels = [
-        "int.rmvStereo0_rs_lo", "int.rmvStereo0_rs_vs", "int.rmvStereo0_cs", "int.rmvStereo0_ch",
-        "int.rmvStereo1_rs_lo", "int.rmvStereo1_rs_vs", "int.rmvStereo1_cs", "int.rmvStereo1_ch",
-        "aln.parent.hhd.mhd", "aln.parent.hhd.lhd", "aln.parent.mhd-effect.mhd", "aln.parent.mhd-effect.lhd", "aln.parent.mhd.lhd",
-        "aln.child.hhd.mhd", "aln.child.hhd.lhd", "aln.child.mhd-effect.mhd", "aln.child.mhd-effect.lhd", "aln.child.mhd.lhd"
+        "int.rmvS0_rs_lo", "int.rmvS0_rs_vs", "int.rmvS0_cs", "int.rmvS0_ch",
+        "int.rmvS1_rs_lo", "int.rmvS1_rs_vs", "int.rmvS1_cs", "int.rmvS1_ch",
+        "aln.parent", "aln.child"
     ]
 
     stats = []
@@ -55,7 +54,7 @@ def get_spl_stats(in_path: str = SPL_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_t
         })
     
     # write stats to a csv file
-    stats_file = os.path.join(SPL_DATA_DIR, f'spl_{ds_cat_level}_{ds_type}_rmvDupMol{rmvDupMol}_stats.csv')
+    stats_file = os.path.join(SPL_DATA_DIR, f'spl_{ds_cat_level}_{ds_type}_rmvD{rmvD}_stats.csv')
     pd.DataFrame(stats).to_csv(stats_file, index=False)
     print(f"Saved stats to: {stats_file}")
 
@@ -65,11 +64,11 @@ def get_spl_stats(in_path: str = SPL_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_t
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Post-process split datasets: merge files and get statistics.")
-    parser.add_argument("--rmvDupMol", type=int, choices=[0, 1], default=1, help="Whether to process files with duplicate molecules removed (1) or not (0). Default is 1.")
+    parser.add_argument("--rmvD", type=int, choices=[0, 1], default=1, help="Whether to process files with duplicate molecules removed (1) or not (0). Default is 1.")
     args = parser.parse_args()
     
     # get stats
-    get_spl_stats(in_path=SPL_HHD_OR_DIR, ds_cat_level='hhd', ds_type='or', rmvDupMol=args.rmvDupMol)
-    get_spl_stats(in_path=SPL_MHD_OR_DIR, ds_cat_level='mhd', ds_type='or', rmvDupMol=args.rmvDupMol)
-    get_spl_stats(in_path=SPL_MHD_effect_OR_DIR, ds_cat_level='mhd-effect', ds_type='or', rmvDupMol=args.rmvDupMol)
-    get_spl_stats(in_path=SPL_LHD_OR_DIR, ds_cat_level='lhd', ds_type='or', rmvDupMol=args.rmvDupMol)
+    get_spl_stats(in_path=SPL_HHD_OR_DIR, ds_cat_level='hhd', ds_type='or', rmvD=args.rmvD)
+    get_spl_stats(in_path=SPL_MHD_OR_DIR, ds_cat_level='mhd', ds_type='or', rmvD=args.rmvD)
+    get_spl_stats(in_path=SPL_MHD_effect_OR_DIR, ds_cat_level='mhd-effect', ds_type='or', rmvD=args.rmvD)
+    get_spl_stats(in_path=SPL_LHD_OR_DIR, ds_cat_level='lhd', ds_type='or', rmvD=args.rmvD)

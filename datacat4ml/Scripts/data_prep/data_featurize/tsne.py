@@ -58,10 +58,10 @@ split_palette = {'train':train_color, 'test':test_color}
 ##########################
 y_palette1 = {
     "activity": activity_palette,
-    'int.rmvStereo0_rs_lo_fold0': split_palette,
-    'int.rmvStereo0_rs_vs_fold0': split_palette,
-    'int.rmvStereo0_cs_fold0': split_palette,
-    'int.rmvStereo0_ch_fold0': split_palette,
+    'int.rmvS0_rs_lo_fold0': split_palette,
+    'int.rmvS0_rs_vs_fold0': split_palette,
+    'int.rmvS0_cs_fold0': split_palette,
+    'int.rmvS0_ch_fold0': split_palette,
 }
 
 y_palette2 = {
@@ -73,9 +73,9 @@ y_palette2 = {
 
 #=======================================================
 
-def concat_pkl(in_path=FEAT_MHD_OR_DIR, rmvDupMol=0) -> pd.DataFrame:
+def concat_pkl(in_path=FEAT_MHD_OR_DIR, rmvD=0) -> pd.DataFrame:
     concat_df = pd.DataFrame()
-    in_file_path = os.path.join(in_path, f'rmvDupMol{str(rmvDupMol)}')
+    in_file_path = os.path.join(in_path, f'rmvD{str(rmvD)}')
     for f in os.listdir(in_file_path):
         df = pd.read_pickle(os.path.join(in_file_path, f))
         concat_df = pd.concat([concat_df, df], ignore_index=True)
@@ -219,7 +219,7 @@ def run_tsne_plot(df, x_col="ECFP4", y_col="activity",
         plot(x=embedding, y=y, title=f'{x_col}', colors=colors, 
              draw_legend=draw_legend, draw_centers=draw_centers, draw_cluster_labels=draw_cluster_labels)
 
-def main(descriptor: str = "ECFP4", rmvDupMol: int = 0):
+def main(descriptor: str = "ECFP4", rmvD: int = 0):
 
     print(f'Processing descriptor: {descriptor} ...')
 
@@ -227,8 +227,8 @@ def main(descriptor: str = "ECFP4", rmvDupMol: int = 0):
     #===========================================================
     # y_col='assay_chembl_id', only for in_path: FEAT_LHD_OR_DIR
     #===========================================================
-    lhd_or_df = concat_pkl(FEAT_LHD_OR_DIR, rmvDupMol=rmvDupMol)
-    save_path = os.path.join(FEAT_FIG_DIR, 'feat_lhd_or', 'desc_assayid', 'concat_ds', f'rmvDupMol{str(rmvDupMol)}')
+    lhd_or_df = concat_pkl(FEAT_LHD_OR_DIR, rmvD=rmvD)
+    save_path = os.path.join(FEAT_FIG_DIR, 'feat_lhd_or', 'desc_assayid', 'concat_ds', f'rmvD{str(rmvD)}')
     mkdirs(save_path)
 
     # Get counts and filter valid IDs
@@ -282,19 +282,19 @@ def main(descriptor: str = "ECFP4", rmvDupMol: int = 0):
 
     for in_path in in_paths:
         print(f'Processing in_path: {in_path} ...')
-        in_file_path = os.path.join(in_path, f'rmvDupMol{str(rmvDupMol)}')
+        in_file_path = os.path.join(in_path, f'rmvD{str(rmvD)}')
 
         for f in os.listdir(in_file_path):
             df = pd.read_pickle(os.path.join(in_file_path, f))
 
             for y_col in [
                 #'activity',
-                'int.rmvStereo0_rs_lo_fold0',
-                'int.rmvStereo0_rs_vs_fold0',
-                'int.rmvStereo0_cs_fold0',
-                'int.rmvStereo0_ch_fold0',
+                'int.rmvS0_rs_lo_fold0',
+                'int.rmvS0_rs_vs_fold0',
+                'int.rmvS0_cs_fold0',
+                'int.rmvS0_ch_fold0',
                 ]:
-                save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1], f'desc_{y_col}', 'single_ds', f'rmvDupMol{str(rmvDupMol)}')
+                save_path = os.path.join(FEAT_FIG_DIR, in_path.split('/')[-1], f'desc_{y_col}', 'single_ds', f'rmvD{str(rmvD)}')
                 mkdirs(save_path)
 
                 run_tsne_plot(df, x_col=descriptor, y_col=y_col,
@@ -310,7 +310,7 @@ def main(descriptor: str = "ECFP4", rmvDupMol: int = 0):
     #  y_col= .., in_path: FEAT_MHD_OR_DIR
     #===================================================
     ## input datasets
-    #mhd_or_df = concat_pkl(FEAT_MHD_OR_DIR, rmvDupMol=rmvDupMol)
+    #mhd_or_df = concat_pkl(FEAT_MHD_OR_DIR, rmvD=rmvD)
     #print(f'The size of mhd_or_df: {len(mhd_or_df)}')
     #
     #for y_col in [
@@ -320,7 +320,7 @@ def main(descriptor: str = "ECFP4", rmvDupMol: int = 0):
     #            ]:
     #    print(f'Processing label: {y_col} ...')
 #
-    #    save_path = os.path.join(FEAT_FIG_DIR, 'feat_mhd_or', f'desc_{y_col}', 'concat_ds', f'rmvDupMol{str(rmvDupMol)}')
+    #    save_path = os.path.join(FEAT_FIG_DIR, 'feat_mhd_or', f'desc_{y_col}', 'concat_ds', f'rmvD{str(rmvD)}')
     #    mkdirs(save_path)
     #
     #    run_tsne_plot(mhd_or_df, x_col=descriptor, y_col=y_col,
@@ -336,8 +336,8 @@ def main(descriptor: str = "ECFP4", rmvDupMol: int = 0):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="t-SNE and plot")
     parser.add_argument("--descriptor", required=True, help="descriptor column name, e.g. ECFP4")
-    parser.add_argument("--rmvDupMol", type=int, default=0, help="remove duplicate molecules")
+    parser.add_argument("--rmvD", type=int, default=0, help="remove duplicate molecules")
 
     args = parser.parse_args()
 
-    main(args.descriptor, args.rmvDupMol)
+    main(args.descriptor, args.rmvD)

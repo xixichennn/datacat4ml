@@ -54,6 +54,7 @@ def remove_dupMol(df, std_smiles_col='canonical_smiles_by_Std', pvalue_col='pSta
     keep single-appearance smiles, and replace pStandard_value for multi-appearance
     molecules with the mean pStandard_value of that group.
     """
+    print(f'Initial df.shape: {df.shape}')
 
     #group stats per smiles
     df_group = df.groupby(std_smiles_col)[pvalue_col].agg(['mean', 'std'])

@@ -8,7 +8,7 @@ from datacat4ml.Scripts.data_prep.data_featurize.feat_smi_list import Spl_Feat_D
 #=============================================================================
 # merge_feat_pkl
 #=============================================================================
-def merge_feat_pkls(in_dir, rmvDupMol: int = 0):
+def merge_feat_pkls(in_dir, rmvD: int = 0):
     """
     After featurization by different descriptors, 
     get the descriptor column from each pickle file and append it to the original curated dataframe,
@@ -18,7 +18,7 @@ def merge_feat_pkls(in_dir, rmvDupMol: int = 0):
     ------
     in_dir: str
         The input directory contains the original split files. e.g. SPL_HHD_OR_DIR
-    rmvDupMol: int
+    rmvD: int
         indicate the location of the input directory.
 
     Returns:
@@ -30,12 +30,12 @@ def merge_feat_pkls(in_dir, rmvDupMol: int = 0):
                    'SHAPE3D', 'AUTOCORR3D', 'RDF', 'MORSE', 'WHIM', 'GETAWAY']
     
     # input directory
-    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmvDupMol)}')
+    in_file_dir = os.path.join(in_dir, f'rmvD{str(rmvD)}')
     print(f'in_file_dir is {in_file_dir}\n')
     files = os.listdir(in_file_dir)
 
     # output directory
-    pkl_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvDupMol{str(rmvDupMol)}')
+    pkl_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvD{str(rmvD)}')
     print(f'pkl_dir is {pkl_dir}\n')
 
 
@@ -62,13 +62,13 @@ def merge_feat_pkls(in_dir, rmvDupMol: int = 0):
 #=============================================================================
 # get_feat_stats
 #=============================================================================
-def get_feat_stats(in_dir: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_type: str = 'or', rmvDupMol: int = 0):
+def get_feat_stats(in_dir: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_type: str = 'or', rmvD: int = 0):
     """
     Get the statistics of the featurized datasets and save them to a csv file.
     """
 
     print(f'Processing: {in_dir}')
-    feat_path = os.path.join(in_dir, f'rmvDupMol{str(rmvDupMol)}')
+    feat_path = os.path.join(in_dir, f'rmvD{str(rmvD)}')
     feat_files = [f for f in os.listdir(feat_path)]
 
     for f in feat_files:
@@ -79,7 +79,7 @@ def get_feat_stats(in_dir: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_
         df = pd.read_pickle(os.path.join(feat_path, f))
 
         ################################ write the stats ################################
-        stats_file_path = os.path.join(FEAT_DATA_DIR, f'feat_{ds_cat_level}_{ds_type}_rmvDupMol{rmvDupMol}_stats.csv')
+        stats_file_path = os.path.join(FEAT_DATA_DIR, f'feat_{ds_cat_level}_{ds_type}_rmvD{rmvD}_stats.csv')
 
         if not os.path.exists(stats_file_path):
             with open(stats_file_path, 'w') as f:
@@ -93,7 +93,7 @@ def get_feat_stats(in_dir: str = FEAT_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_
 #=============================================================================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Merge feature pickle files and get feature statistics.')
-    parser.add_argument('--rmvDupMol', type=int, help='Indicate the location of the input directory.', default=0)
+    parser.add_argument('--rmvD', type=int, help='Indicate the location of the input directory.', default=0)
     args = parser.parse_args()
 
     #============ merge_feat_pkls =================
@@ -101,10 +101,10 @@ if __name__ == "__main__":
 
     for in_dir in keys_list:
         print(f'Processing {in_dir}...')
-        merge_feat_pkls(in_dir, rmvDupMol=args.rmvDupMol)
+        merge_feat_pkls(in_dir, rmvD=args.rmvD)
 
     #============ get_feat_stats =================
-    get_feat_stats(in_dir=FEAT_HHD_OR_DIR, ds_cat_level='hhd', ds_type='or', rmvDupMol=args.rmvDupMol)
-    get_feat_stats(in_dir=FEAT_MHD_OR_DIR, ds_cat_level='mhd', ds_type='or', rmvDupMol=args.rmvDupMol)
-    get_feat_stats(in_dir=FEAT_LHD_OR_DIR, ds_cat_level='lhd', ds_type='or', rmvDupMol=args.rmvDupMol)
-    get_feat_stats(in_dir=FEAT_MHD_effect_OR_DIR, ds_cat_level='mhd_effect', ds_type='or', rmvDupMol=args.rmvDupMol)
+    get_feat_stats(in_dir=FEAT_HHD_OR_DIR, ds_cat_level='hhd', ds_type='or', rmvD=args.rmvD)
+    get_feat_stats(in_dir=FEAT_MHD_OR_DIR, ds_cat_level='mhd', ds_type='or', rmvD=args.rmvD)
+    get_feat_stats(in_dir=FEAT_LHD_OR_DIR, ds_cat_level='lhd', ds_type='or', rmvD=args.rmvD)
+    get_feat_stats(in_dir=FEAT_MHD_effect_OR_DIR, ds_cat_level='mhd_effect', ds_type='or', rmvD=args.rmvD)

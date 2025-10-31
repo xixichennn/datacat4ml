@@ -9,12 +9,12 @@
 source /storage/homefs/yc24j783/miniconda3/etc/profile.d/conda.sh
 conda activate datacat
 
-rmvDupMols=(0 1)
+rmvDs=(0 1)
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
-rmvDupMol="${rmvDupMols[$SLURM_ARRAY_TASK_ID % ${#rmvDupMols[@]}]}" 
+rmvD="${rmvDs[$SLURM_ARRAY_TASK_ID % ${#rmvDs[@]}]}" 
 
-python3 alnSplit_mldata.py --rmvDupMol $rmvDupMol
+python3 alnSplit_mldata.py --rmvD $rmvD
 
 # run the below command in terminal
 # sbatch --array=0-1 run_alnSplit_mldata_slurm.sh

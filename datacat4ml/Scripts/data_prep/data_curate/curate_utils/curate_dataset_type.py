@@ -517,8 +517,7 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvD=1):
     """
     group dataset by target_chemblid and effect.
     """
-
-    curated_path = os.path.join(CURA_MHD_OR_DIR, 'rmvD0')
+    curated_path = os.path.join(CURA_MHD_OR_DIR, 'rmvD0') # start from rmvD0 curated files, because if rmvD=1, the combined files will be removed again later.
     curated_files = [f for f in os.listdir(curated_path)]
 
     save_path = os.path.join(CURA_DATA_DIR, 'cura_mhd-effect_or', 'rmvD' + str(rmvD))
@@ -542,6 +541,8 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvD=1):
                 )
 
         for target_effect in target_effects:
+            print(f'=========== Processing {target_effect} =============')
+
             ds_cat_level = 'mhd-effect'
             ds_type = ds_type
             assay = 'None'
@@ -560,12 +561,13 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvD=1):
                     df = pd.read_csv(os.path.join(curated_path, file))
                     concat_df = pd.concat([concat_df, df], ignore_index=True)
                     concat_df.reset_index(drop=True, inplace=True)
+            print(f'After combining files, the shape of the combined df is {concat_df.shape}')
             
             # remove duplicate SMILES with different values if rmvD is 1 or True
             if rmvD == 1:
                 print(f'==> Remove dupMols ...')
                 concat_df = remove_dupMol(concat_df)
-                print(f'After removing duplicate SMILES with different values, the shape of the combined df is {concat_df.shape}')
+                print(f'After removing duplicate molecules with different values, the shape of the combined df is {concat_df.shape}')
 
             # re-apply 'thresholds'
             concat_df.drop(columns=['vs_activity_comment','vs_activity', 'vs_threshold',
@@ -581,7 +583,7 @@ def group_by_effect(ds_type='or', ds_cat_level='mhd', rmvD=1):
             else:
                 rmvS0_ds_size_level = 'b50'
 
-            # noStereo_size
+            # rmvS1_ds_size_level
             numStereo = sum(concat_df['stereoSiblings'])
             rmvS1_ds_size = curated_size - numStereo
             if rmvS1_ds_size < 50:

@@ -187,13 +187,26 @@ def random_split(x, y, n_folds=5, random_seed=RANDOM_SEED):
     - test_splits: List[np.ndarray]
         A list of lists, each containing the indices of the test set for each fold.
     """
-    skf = StratifiedKFold(n_splits=n_folds, random_state=random_seed, shuffle=True)
-    train_folds, test_folds = [], []
-    for train_idx, test_idx in skf.split(x, y):
-        train_folds.append((train_idx.tolist()))
-        test_folds.append((test_idx.tolist()))
+    # adjust folds if class imbalance prevents stratification
+    unique, counts = np.unique(y, return_counts=True)
+    min_class_count = min(counts)
+    print(f'min_class_count: {min_class_count}')
 
-    return train_folds, test_folds
+    if min_class_count < n_folds:
+        print(f'resetting n_folds {n_folds} → {min_class_count} due to class imbalance.')
+        n_folds = min_class_count
+    if n_folds < 2:
+        print(f"skipped — k-fold CV not applicable due to n_folds < 2).")
+        return None, None
+
+    else:
+        skf = StratifiedKFold(n_splits=n_folds, random_state=random_seed, shuffle=True)
+        train_folds, test_folds = [], []
+        for train_idx, test_idx in skf.split(x, y):
+            train_folds.append((train_idx.tolist()))
+            test_folds.append((test_idx.tolist()))
+
+        return train_folds, test_folds
 
 # cluster-aware split
 """Adopted from https://github.com/rinikerlab/molecular_time_series/blob/main/ga_lib_3.py#L1171"""
@@ -255,16 +268,16 @@ def clusterData(dmat, threshold, clusterSizeThreshold, combineRandom=False):
                 largeClusters[closest].append(idx)
     return largeClusters
 
-def cluster_repeated_holdout_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, combineRandom=False, 
+def cluster_repeated_holdout_split(x, dist_type='substruct', clusterSizeThreshold=5, threshold=0.65, combineRandom=False, 
                         random_seed=RANDOM_SEED, test_size=0.2,n_splits=5, selectionStrategy='clust_holdout'):
     """
     Assigns data points to training and testing sets based on selection strategies using clustering.
 
     Params
     ------
-    - dist_type: str, the type of distance metric to use. Options are 'substruct', 'scaf', and 'levenshtein'.
     - x: list or np.array
         input features (e.g., list of SMILES strings)
+    - dist_type: str, the type of distance metric to use. Options are 'substruct', 'scaf', and 'levenshtein'.
     - clusterSizeThreshold: int, the minimum size for a cluster to be considered "large". Clusters smaller than this size will be handled according to the `combineRandom` parameter.
     - threshold: float, the distance threshold for clustering. Molecules with distances below this threshold will be grouped into the same cluster.
     - combineRandom: bool, if True, small clusters will be combined randomly to form larger clusters. If False, points from small clusters will be added to the nearest larger cluster based on the distance matrix.
@@ -340,7 +353,7 @@ def cluster_repeated_holdout_split(dist_type, x, clusterSizeThreshold=5, thresho
 
     return train_folds,test_folds
 
-def cluster_kfold_split(dist_type, x, clusterSizeThreshold=5, threshold=0.65, combineRandom=False,
+def cluster_kfold_split(x, dist_type='substruct', clusterSizeThreshold=5, threshold=0.65, combineRandom=False,
                         random_seed=RANDOM_SEED, n_folds=5, selectionStrategy='clust_holdout'):
     """
     Assigns data points to training and testing sets for k-fold cross-validation based on selection strategies using clustering.
@@ -443,8 +456,8 @@ def add_fold_columns(df, prefix, train_folds, test_folds):
 def random_splitter(df, n_folds, aim):
     """
     Apply stratified random split to the dataset for two stereo modes:
-    - rmvStereo0: full dataset
-    - rmvStereo1: dataset without stereochemical siblings
+    - rmvS0: full dataset
+    - rmvS1: dataset without stereochemical siblings
 
     params
     ------
@@ -470,37 +483,29 @@ def random_splitter(df, n_folds, aim):
         x = sub_df['canonical_smiles_by_Std'].tolist()
         y = sub_df[activity_col].tolist()
 
-        # Adjust folds if class imbalance prevents stratification
-        unique, counts = np.unique(y, return_counts=True)
-        min_class_count = min(counts)
-        if min_class_count < n_folds:
-            print(f"{prefix}: resetting n_folds {n_folds} → {min_class_count} due to class imbalance.")
-            n_folds = min_class_count
-
-        if n_folds < 2:
-            print(f"{prefix}: skipped — k-fold CV not applicable (n_folds < 2).")
-            return None
-        else:
-            try:
-                train_folds, test_folds = random_split(x, y, n_folds, RANDOM_SEED)
+        try:
+            train_folds, test_folds = random_split(x, y, n_folds, RANDOM_SEED)
+            if train_folds is None or test_folds is None:
+                return None
+            else:
                 df_split = add_fold_columns(sub_df, prefix, train_folds, test_folds)
                 return df_split
-            except ValueError as e:
-                print(f"{prefix}: skipped due to {e}")
-                return None
+        except ValueError as e:
+            print(f"{prefix}: skipped due to {e}")
+            return None
 
     # --- Perform both splits ---
-    df_rmvStereo0 = _safe_split(df, f"int.rmvStereo0_rs_{aim}", n_folds)
-    df_rmvStereo1_sub = _safe_split(df[df['stereoSiblings'] == False].reset_index(drop=True),
-                                    f"int.rmvStereo1_rs_{aim}", n_folds)
+    df_rmvS0 = _safe_split(df, f"int.rmvS0_rs_{aim}", n_folds)
+    df_rmvS1_sub = _safe_split(df[df['stereoSiblings'] == False].reset_index(drop=True),
+                                    f"int.rmvS1_rs_{aim}", n_folds)
 
     # --- Merge results ---
-    if df_rmvStereo0 is not None:
-        df_result = df_rmvStereo0.copy()
+    if df_rmvS0 is not None:
+        df_result = df_rmvS0.copy()
 
-    if df_rmvStereo1_sub is not None:
-        merge_cols = ['activity_id'] + [col for col in df_rmvStereo1_sub.columns if col.startswith(f"int.rmvStereo1_rs_{aim}")]
-        df_result = df_result.merge(df_rmvStereo1_sub[merge_cols], on='activity_id', how='left')
+    if df_rmvS1_sub is not None:
+        merge_cols = ['activity_id'] + [col for col in df_rmvS1_sub.columns if col.startswith(f"int.rmvS1_rs_{aim}")]
+        df_result = df_result.merge(df_rmvS1_sub[merge_cols], on='activity_id', how='left')
 
     print("Random splitting completed.")
 
@@ -535,7 +540,6 @@ def cluster_kfold_splitter(df, selectionStrategy):
 
             try:
                 train_folds, test_folds = cluster_kfold_split(
-                    dist_type='substruct', 
                     x=x,
                     selectionStrategy=selectionStrategy,
                 )
@@ -553,27 +557,27 @@ def cluster_kfold_splitter(df, selectionStrategy):
                 print(f"{prefix}: cluster-aware split skipped due to {e}")
                 return None
 
-    # --- Run for both rmvStereo0 and rmvStereo1 ---
-    df_rmvStereo0 = _safe_cluster_split(df, f"int.rmvStereo0_{sS}", selectionStrategy)
-    df_rmvStereo1_sub = _safe_cluster_split(
+    # --- Run for both rmvS0 and rmvS1 ---
+    df_rmvS0 = _safe_cluster_split(df, f"int.rmvS0_{sS}", selectionStrategy)
+    df_rmvS1_sub = _safe_cluster_split(
         df[df['stereoSiblings'] == False].reset_index(drop=True),
-        f"int.rmvStereo1_{sS}",
+        f"int.rmvS1_{sS}",
         selectionStrategy
     )
 
     # --- Merge results ---
-    if df_rmvStereo0 is not None:
-        df_result = df_rmvStereo0.copy()
+    if df_rmvS0 is not None:
+        df_result = df_rmvS0.copy()
 
-    if df_rmvStereo1_sub is not None:
-        merge_cols = ['activity_id'] + [col for col in df_rmvStereo1_sub.columns if col.startswith(f"int.rmvStereo1_{sS}")]
-        df_result = df_result.merge(df_rmvStereo1_sub[merge_cols], on='activity_id', how='left')
+    if df_rmvS1_sub is not None:
+        merge_cols = ['activity_id'] + [col for col in df_rmvS1_sub.columns if col.startswith(f"int.rmvS1_{sS}")]
+        df_result = df_result.merge(df_rmvS1_sub[merge_cols], on='activity_id', how='left')
 
     print(f"Cluster-aware split completed for strategy '{selectionStrategy}'.")
 
     return df_result
 
-def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmvDupMol: int = 1):
+def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmvD: int = 1):
     """
     Split data into train-test folds for file(s) in the input directory.
 
@@ -583,11 +587,11 @@ def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmvDupMol: int = 1):
     """
     # input directory
     print(f"in_dir is: {in_dir}\n")
-    in_file_dir = os.path.join(in_dir, f'rmvDupMol{str(rmvDupMol)}')
+    in_file_dir = os.path.join(in_dir, f'rmvD{str(rmvD)}')
     files = os.listdir(in_file_dir)
 
     # output directory
-    out_dir = os.path.join(Cura_Spl_Dic[in_dir], f'rmvDupMol{str(rmvDupMol)}')
+    out_dir = os.path.join(Cura_Spl_Dic[in_dir], f'rmvD{str(rmvD)}')
     print(f"out_dir is: {out_dir}\n")
     os.makedirs(out_dir, exist_ok=True)
 
@@ -619,8 +623,8 @@ def internal_split(in_dir: str = CURA_HHD_OR_DIR, rmvDupMol: int = 1):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Split data into test/train internally for ML model training and evaluation")
     parser.add_argument('--in_dir', type=str, required=True, help= 'Input directory containing files to be split')
-    parser.add_argument('--rmvDupMol', type=int, required=True, help='Remove duplicate molecules')
+    parser.add_argument('--rmvD', type=int, required=True, help='Remove duplicate molecules')
 
     args = parser.parse_args()
 
-    internal_split(in_dir=args.in_dir, rmvDupMol=args.rmvDupMol)
+    internal_split(in_dir=args.in_dir, rmvD=args.rmvD)

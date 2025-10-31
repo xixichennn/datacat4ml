@@ -13,13 +13,13 @@ conda activate datacat
 descriptors=('ECFP4' 'ECFP6' 'MACCS' 'RDKITFP' 'PHARM2D' 'ERG'\
              'PHYSICOCHEM'\
              'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY')
-rmvDupMols=(0 1)
+rmvDs=(0 1)
 
 # SLURM_ARRAY_TASK_ID will be automatically set by SLURM for each job in the array
 descriptor="${descriptors[$SLURM_ARRAY_TASK_ID % ${#descriptors[@]}]}"
-rmvDupMol="${rmvDupMols[($SLURM_ARRAY_TASK_ID / ${#descriptors[@]}) % ${#rmvDupMols[@]}]}"
+rmvD="${rmvDs[($SLURM_ARRAY_TASK_ID / ${#descriptors[@]}) % ${#rmvDs[@]}]}"
 
-python3 tsne.py --descriptor "$descriptor" --rmvDupMol "$rmvDupMol"
+python3 tsne.py --descriptor "$descriptor" --rmvD "$rmvD"
 
 # run the blow command in terminal to submit all the job
 # sbatch --array=0-25 run_tsne_slurm.sh # 13*2=26: 26-1=25.
