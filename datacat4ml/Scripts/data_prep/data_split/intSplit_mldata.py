@@ -495,16 +495,16 @@ def random_splitter(df, n_folds, aim):
             return None
 
     # --- Perform both splits ---
-    df_rmvS0 = _safe_split(df, f"int.rmvS0_rs_{aim}", n_folds)
+    df_rmvS0 = _safe_split(df, f"rmvS0_rs-{aim}", n_folds)
     df_rmvS1_sub = _safe_split(df[df['stereoSiblings'] == False].reset_index(drop=True),
-                                    f"int.rmvS1_rs_{aim}", n_folds)
+                                    f"rmvS1_rs-{aim}", n_folds)
 
     # --- Merge results ---
     if df_rmvS0 is not None:
         df_result = df_rmvS0.copy()
 
     if df_rmvS1_sub is not None:
-        merge_cols = ['activity_id'] + [col for col in df_rmvS1_sub.columns if col.startswith(f"int.rmvS1_rs_{aim}")]
+        merge_cols = ['activity_id'] + [col for col in df_rmvS1_sub.columns if col.startswith(f"rmvS1_rs-{aim}")]
         df_result = df_result.merge(df_rmvS1_sub[merge_cols], on='activity_id', how='left')
 
     print("Random splitting completed.")
@@ -558,10 +558,10 @@ def cluster_kfold_splitter(df, selectionStrategy):
                 return None
 
     # --- Run for both rmvS0 and rmvS1 ---
-    df_rmvS0 = _safe_cluster_split(df, f"int.rmvS0_{sS}", selectionStrategy)
+    df_rmvS0 = _safe_cluster_split(df, f"rmvS0_{sS}", selectionStrategy)
     df_rmvS1_sub = _safe_cluster_split(
         df[df['stereoSiblings'] == False].reset_index(drop=True),
-        f"int.rmvS1_{sS}",
+        f"rmvS1_{sS}",
         selectionStrategy
     )
 
@@ -570,7 +570,7 @@ def cluster_kfold_splitter(df, selectionStrategy):
         df_result = df_rmvS0.copy()
 
     if df_rmvS1_sub is not None:
-        merge_cols = ['activity_id'] + [col for col in df_rmvS1_sub.columns if col.startswith(f"int.rmvS1_{sS}")]
+        merge_cols = ['activity_id'] + [col for col in df_rmvS1_sub.columns if col.startswith(f"rmvS1_{sS}")]
         df_result = df_result.merge(df_rmvS1_sub[merge_cols], on='activity_id', how='left')
 
     print(f"Cluster-aware split completed for strategy '{selectionStrategy}'.")

@@ -24,9 +24,9 @@ def get_spl_stats(in_path: str = SPL_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_t
     print(f'{len(files)} files found.')
 
     pattern_labels = [
-        "int.rmvS0_rs_lo", "int.rmvS0_rs_vs", "int.rmvS0_cs", "int.rmvS0_ch",
-        "int.rmvS1_rs_lo", "int.rmvS1_rs_vs", "int.rmvS1_cs", "int.rmvS1_ch",
-        "aln.parent", "aln.child"
+        "rmvS0_rs-lo", "rmvS0_rs-vs", "rmvS0_cs", "rmvS0_ch",
+        "rmvS1_rs-lo", "rmvS1_rs-vs", "rmvS1_cs", "rmvS1_ch",
+        "parent", "child"
     ]
 
     stats = []
@@ -37,8 +37,8 @@ def get_spl_stats(in_path: str = SPL_HHD_OR_DIR, ds_cat_level: str = 'hhd', ds_t
 
         # Create a metadata dictionary
         meta = {}
-        meta["ds_size_level"] = parts[6]
-        meta["ds_size_level_noStereo"] = parts[7]
+        meta["rmvS0_ds_size_level"] = parts[6]
+        meta["rmvS1_ds_size_level"] = parts[7]
         meta["target_chembl_id"] = parts[0]
         meta["effect"] = parts[1]
         meta["assay"] = parts[2]
