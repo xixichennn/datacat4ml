@@ -4,10 +4,9 @@ import pandas as pd
 from loguru import logger
 
 from sklearn import metrics
+from sklearn.metrics import r2_score, balanced_accuracy_score, cohen_kappa_score
 from rdkit.ML.Scoring.Scoring import CalcBEDROC
 import torch
-
-from sklearn.metrics import r2_score
 
 #====================================For CLIP-alike Model =========================================================
 
@@ -180,8 +179,33 @@ def top_k_accuracy(y_true, y_pred, k=5, ret_arocc=False, ret_mrocc=False, verbos
     
     return tkaccs[0] if len(tkaccs) == 1 else tkaccs
 
-
 #====================================For ML classifiers =========================================================
+def calc_balanced_acc(y_true, y_pred):
+    """
+    Calculates the Balanced Accuracy for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The Balanced Accuracy score.
+    """
+    bal_acc = balanced_accuracy_score(y_true, y_pred)
+    return bal_acc
+
+def calc_cohen_kappa(y_true, y_pred):
+    """
+    Calculates the Cohen's Kappa score for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The Cohen's Kappa score.
+    """
+    kappa = cohen_kappa_score(y_true, y_pred)
+    return kappa
+
 def calc_auroc(y_true, y_pred_prob):
     """
     Calculates the Area Under the Receiver Operating Characteristic Curve (ROC AUC) for a binary classification task.
@@ -211,7 +235,7 @@ def calc_auprc(y_true, y_pred_prob):
     auprc = metrics.auc(recall, precision)
     return auprc
 
-def calc_bedroc_on_ml(y_true, y_pred_proba, alpha: float = 20.0):
+def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
     """ Calculates the bedroc score unsing rdkit.ML.Scoring.CalcBEDROC.
     The source code is available at https://github.com/rdkit/rdkit/blob/master/rdkit/ML/Scoring/Scoring.py#L103
     This function is defined as `def CalcBEDROC(score, col, alpha)`, 
@@ -226,9 +250,9 @@ def calc_bedroc_on_ml(y_true, y_pred_proba, alpha: float = 20.0):
                    y_pred_proba[:, 1] is the probability of the positive class (1).
     y_true: (lst/array) a list of true values for all compounds.
     alpha: (float)  early recognition parameter. 
-            alpha = 80.5, 2% of the top-ranked compounds of the all compounds were calculated; 2% represents the proportion of active compounds in the DUD-E database;
+            alpha = 80.5(default), 2% of the top-ranked compounds of the all compounds were calculated; 2% represents the proportion of active compounds in the DUD-E database; Set this value as default due to the later-on test is on the deepcoy generated data.
             alpha = 321.5, 0.5% of the top-ranked compounds of the all compounds  were calculated; 4 times smaller than 2% --> early recognition.
-            alpha = 20.0(default), 8% of the top-ranked compounds of the all compounds were calculated; 4 times larger than 2% --> is interesting for the cases where relatively high-throughput experiments are available.
+            alpha = 20.0, 8% of the top-ranked compounds of the all compounds were calculated; 4 times larger than 2% --> is interesting for the cases where relatively high-throughput experiments are available.
 
     returns
     -------
