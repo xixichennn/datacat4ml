@@ -6,9 +6,9 @@ import argparse
 import numpy as np
 import pandas as pd
 
-#from datacat4ml.const import Descriptors
 from datacat4ml.const import SPL_DATA_DIR, SPL_HHD_OR_DIR, SPL_MHD_OR_DIR, SPL_LHD_OR_DIR, SPL_MHD_effect_OR_DIR
 from datacat4ml.const import FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
+from datacat4ml.const import Spl_Feat_Dic
 
 #===================== Utility functions =====================#
 def mol_from_smi(smi: str):
@@ -375,12 +375,6 @@ class Featurizer:
             return self.graph_conv(**kwargs)
         
 # ===================== Featurize data =====================#
-Spl_Feat_Dic = {SPL_HHD_OR_DIR: FEAT_HHD_OR_DIR, 
-                SPL_MHD_OR_DIR: FEAT_MHD_OR_DIR,
-                SPL_LHD_OR_DIR: FEAT_LHD_OR_DIR,
-                SPL_MHD_effect_OR_DIR: FEAT_MHD_effect_OR_DIR
-                }
-
 def featurize_data(descriptor="ECFP4", in_dir:str = SPL_HHD_OR_DIR, rmvD: int=1):
     """ 
     Featurize data using specified descriptor and save the featurized data as pickle files in the specified output directory.

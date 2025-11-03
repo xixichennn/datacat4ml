@@ -27,6 +27,7 @@ from Levenshtein import distance as levenshtein
 from datacat4ml.const import RANDOM_SEED
 from datacat4ml.const import CURA_LHD_OR_DIR, CURA_MHD_OR_DIR, CURA_MHD_effect_OR_DIR, CURA_HHD_OR_DIR
 from datacat4ml.const import SPL_DATA_DIR, SPL_LHD_OR_DIR, SPL_MHD_OR_DIR, SPL_MHD_effect_OR_DIR, SPL_HHD_OR_DIR
+from datacat4ml.const import Cura_Spl_Dic
 
 #===============================================================================
 # Molecular distance 
@@ -433,12 +434,6 @@ def cluster_kfold_split(x, dist_type='substruct', clusterSizeThreshold=5, thresh
 #===============================================================================
 # Internal splitting
 #===============================================================================
-Cura_Spl_Dic = {CURA_HHD_OR_DIR: SPL_HHD_OR_DIR,
-                 CURA_MHD_OR_DIR: SPL_MHD_OR_DIR,
-                 CURA_LHD_OR_DIR: SPL_LHD_OR_DIR,
-                 CURA_MHD_effect_OR_DIR: SPL_MHD_effect_OR_DIR
-                 }
-
 def add_fold_columns(df, prefix, train_folds, test_folds):
     """
     Add 'train/test' columns to df for each fold using prefix.

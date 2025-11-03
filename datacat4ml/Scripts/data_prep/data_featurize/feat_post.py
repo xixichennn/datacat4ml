@@ -3,6 +3,7 @@ import pandas as pd
 import argparse
 
 from datacat4ml.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
+from datacat4ml.const import DESCRIPTORS
 from datacat4ml.Scripts.data_prep.data_featurize.feat_smi_list import Spl_Feat_Dic
 
 #=============================================================================
@@ -25,10 +26,6 @@ def merge_feat_pkls(in_dir, rmvD: int = 0):
     -------
     None
     """
-    descriptors = ['ECFP4', 'ECFP6', 'MACCS', 'RDKITFP', 'PHARM2D', 'ERG', 
-                   'PHYSICOCHEM', 
-                   'SHAPE3D', 'AUTOCORR3D', 'RDF', 'MORSE', 'WHIM', 'GETAWAY']
-    
     # input directory
     in_file_dir = os.path.join(in_dir, f'rmvD{str(rmvD)}')
     print(f'in_file_dir is {in_file_dir}\n')
@@ -44,7 +41,7 @@ def merge_feat_pkls(in_dir, rmvD: int = 0):
         f_prefix = f.replace('_split.csv', '')
         df = pd.read_csv(os.path.join(in_file_dir, f"{f_prefix}_split.csv"))
 
-        for descriptor in descriptors:
+        for descriptor in DESCRIPTORS:
             pkl_file = os.path.join(pkl_dir, f"{f_prefix}_{descriptor}.pkl")
             pkl_df = pd.read_pickle(pkl_file)
             # append the descriptor column to the original dataframe
@@ -55,7 +52,7 @@ def merge_feat_pkls(in_dir, rmvD: int = 0):
         df.to_pickle(merged_pkl_file)
 
         # remove the temporary descriptor pickle files
-        for descriptor in descriptors:
+        for descriptor in DESCRIPTORS:
             pkl_file = os.path.join(pkl_dir, f"{f_prefix}_{descriptor}.pkl")
             os.remove(pkl_file)
 
