@@ -21,7 +21,7 @@ DATACAT4ML_DIR = os.path.join(ROOT_PATH, "datacat4ml")
 SCRIPTS_DIR = os.path.join(DATACAT4ML_DIR, "Scripts")
 
 
-# Data directories
+# ========== Data preparation directories ==========
 DATA_DIR = os.path.join(DATACAT4ML_DIR, "Data")
 PREP_DATA_DIR = os.path.join(DATA_DIR, "data_prep")
 # "data_fetch"
@@ -63,21 +63,27 @@ FEAT_MHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd_or")
 FEAT_LHD_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_lhd_or")
 FEAT_MHD_effect_OR_DIR = os.path.join(FEAT_DATA_DIR, "feat_mhd-effect_or")
 
-# hparams
+# ========= Model development directories ==========
 MODEL_DIR = os.path.join(DATA_DIR, "model_dev")
-ML_HP_DIR= os.path.join(MODEL_DIR, 'ml_hp')
-CL_HP_DIR = os.path.join(MODEL_DIR, 'cl_hp')
+CL_DIR = os.path.join(MODEL_DIR, 'cl')
+ML_DIR = os.path.join(MODEL_DIR, 'ml')
+
+# hparams
+CL_HP_DIR = os.path.join(CL_DIR, 'cl_hp')
+ML_HP_DIR = os.path.join(ML_DIR, 'ml_hp')
+
+# saved models
+CL_MODEL_DIR = os.path.join(CL_DIR, 'cl_model')
+ML_MODEL_DIR = os.path.join(ML_DIR, 'ml_model')
 
 
-# benchmark
+# ============ benchmark directories ============
 BMK_DIR = os.path.join(DATA_DIR, "benchmark")
 BMK_CAT_DIR = os.path.join(BMK_DIR, "cat_datasets")
 
-
-HYPERPARAM_SPACE_DIR = os.path.join(DATA_DIR, 'model_dev', 'hyperparam_space')
 AUGMENT_SMILES = os.path.join(DATA_DIR, "data_prep", 'data_augment', 'SMILES.yml')
 
-# Figures directories
+# =================== Figures directories ===================
 FIG_DIR= os.path.join(DATACAT4ML_DIR, "Figures")
 FETCH_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_fetch")
 CAT_FIG_DIR = os.path.join(FIG_DIR, "data_prep", "data_categorize")
@@ -135,7 +141,7 @@ RESULTS_ASSAYWISE_ALPHA_HIGH_DIR = os.path.join(RESULTS_ASSAYWISE_DIR, 'alpha321
 
 
 
-#======================data categorize ======================#
+#====================== data categorize ======================#
 # data categorize
 OR_uniprot_ids = ['P35372', 'P41145', 'P41143', 'P41146']
 OR_chemblids = ['CHEMBL233', 'CHEMBL237', 'CHEMBL236', 'CHEMBL2014']
@@ -148,15 +154,7 @@ Assays = ['RBA',
           'G-GTP', 'G-cAMP', 'G-Ca', # G: G protein activation
           'B-arrest',
           'None'] # B: beta arrestin recruitment
-Std_types=['Ki', 'IC50', 'EC50']
-
-
-Tasks = ['cls', 'reg']
-#File_paths = [CAT_OR_DIR, FETCH_DATA_DIR]
-Confidence_scores = [8, 9]
-Thr_classes=[6, 7]
-Use_clusterings = [True, False]
-Use_smotes = [True, False]
+Std_types=['Ki', 'IC50', 'EC50', 'None']
 
 EFFECT_TYPE_LOOKUP = {
       'CHEMBL233': {
@@ -475,9 +473,22 @@ EFFECT_TYPE_LOOKUP = {
             }
       }
 
-#======================data featurize ======================#
+#====================== data split ======================#
+Cura_Spl_Dic = {CURA_HHD_OR_DIR: SPL_HHD_OR_DIR,
+                CURA_MHD_OR_DIR: SPL_MHD_OR_DIR,
+                CURA_LHD_OR_DIR: SPL_LHD_OR_DIR,
+                CURA_MHD_effect_OR_DIR: SPL_MHD_effect_OR_DIR
+                }
 
-Descriptors = {
+
+#====================== data featurize ======================#
+Spl_Feat_Dic = {SPL_HHD_OR_DIR: FEAT_HHD_OR_DIR, 
+                SPL_MHD_OR_DIR: FEAT_MHD_OR_DIR,
+                SPL_LHD_OR_DIR: FEAT_LHD_OR_DIR,
+                SPL_MHD_effect_OR_DIR: FEAT_MHD_effect_OR_DIR
+                }
+
+Desc_dict = {
       # fingerprints
       'FP': ['ECFP4', 'ECFP6', 'MACCS', 'RDKITFP', 'PHARM2D', 'ERG'],
       # physicochemical properties
@@ -493,7 +504,30 @@ Descriptors = {
 }
 
 Descriptor_cats = ['FP', 'PHYSICOCHEM', 'THREE_D', 'TOKENS', 'ONEHOT', 'GRAPH']
+DESCRIPTORS = ['ECFP4', 'ECFP6', 'MACCS', 'RDKITFP', 'PHARM2D', 'ERG', 
+               'PHYSICOCHEM', 
+               'SHAPE3D', 'AUTOCORR3D', 'RDF', 'MORSE', 'WHIM', 'GETAWAY']
+
 #======================data process ======================#
 RANDOM_SEED = 42
+Use_clusterings = [True, False]
+Use_smotes = [True, False]
 
-#====================== ML models ========================
+#====================== Benchmark Pipeline ========================
+from datacat4ml.Scripts.model_dev.ml_models import RF, GB, SVM, KNN
+
+Algos = [RF, GB, SVM, KNN]
+Input_dirs = [FEAT_HHD_OR_DIR, FEAT_MHD_effect_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR]
+rmvDs = [0, 1] # remove duplicate molecules
+SPLs = ['int', 'aln'] # 'int': internal split; 'aln': aligned split
+rmvSs = [0, 1] # remove stereoSiblings
+Aim_Spl_combinations = {
+    'lo': ['rs-lo', 'cs'], # when aim is 'lo', the test set would have similar structures as those in the training set. Thus, 'cs', i.e. cluster-stratified splitting is suitable here.
+    'vs': ['rs-vs', 'ch']
+}
+
+# for aligned benchmarking
+
+
+
+
