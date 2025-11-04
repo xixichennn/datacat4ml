@@ -12,7 +12,7 @@ from datacat4ml.const import SPL_DATA_DIR, SPL_LHD_OR_DIR, SPL_MHD_OR_DIR, SPL_M
 #===============================================================================
 
 ################## get parent_child_pairs ##################
-dir_name_dict = {
+spl_dir_name_dict = {
     'hhd': SPL_HHD_OR_DIR,
     'mhd-effect': SPL_MHD_effect_OR_DIR,
     'mhd': SPL_MHD_OR_DIR,
@@ -78,9 +78,9 @@ def get_pfp_cfps_all(rmvD: int = 1):
         # get the dir
         pd_cat_level, cd_cat_level = pair
         #print(f"\nparent directory is {pd}, child directory is {cd}")
-        pd = dir_name_dict[pd_cat_level]
+        pd = spl_dir_name_dict[pd_cat_level]
         #print(f'pd is {pd}')
-        cd = dir_name_dict[cd_cat_level]
+        cd = spl_dir_name_dict[cd_cat_level]
         #print(f'cd is {cd}')
 
         pfp_cfps_map = {} # pfp = parent file prefix, cfp = child file prefixes
@@ -130,8 +130,8 @@ def aligned_split(rmvD: int = 1):
     #cf_map = {}  # key = (cd_cat_level, cf), value = dict of DataFrame with added columns
 
     for (pd_cat_level, cd_cat_level), pfp_cfps_map in pfp_cfps_all.items():
-        pf_path = os.path.join(dir_name_dict[pd_cat_level], f'rmvD{rmvD}')
-        cf_path = os.path.join(dir_name_dict[cd_cat_level], f'rmvD{rmvD}')
+        pf_path = os.path.join(spl_dir_name_dict[pd_cat_level], f'rmvD{rmvD}')
+        cf_path = os.path.join(spl_dir_name_dict[cd_cat_level], f'rmvD{rmvD}')
         print(f"\nProcessing pd_cat_level:'{pd_cat_level}', cd_cat_level:'{cd_cat_level}' ...")
 
         for pf_prefix, cf_prefixes in pfp_cfps_map.items():
@@ -205,7 +205,7 @@ def aligned_split(rmvD: int = 1):
 
     # --------- After all pairs are processed, save each parent file once -----------
     for (pd_cat_level, pf), pf_df in pf_storage_dict.items():
-        pf_path = os.path.join(dir_name_dict[pd_cat_level], f'rmvD{rmvD}')
+        pf_path = os.path.join(spl_dir_name_dict[pd_cat_level], f'rmvD{rmvD}')
         pf_df.to_csv(os.path.join(pf_path, pf), index=False) # overwrite the original parent file with added columns
         print(f'Saved aligned parent file: {os.path.join(pf_path, pf)}')
 

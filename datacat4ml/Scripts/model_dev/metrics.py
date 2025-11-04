@@ -265,6 +265,14 @@ def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
 
     return bedroc_score
 
+METRICS_FUNC = {
+    'auroc': calc_auroc,
+    'auprc': calc_auprc,
+    'balanced': calc_balanced_acc,
+    'kappa': calc_cohen_kappa,
+    'bedroc': calc_ml_bedroc
+}
+
 #====================================For ML regressor =========================================================
 def calc_rmse(y_true, y_pred):
     """ Calculates the Root Mean Square Error
