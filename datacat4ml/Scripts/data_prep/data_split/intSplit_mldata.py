@@ -191,7 +191,7 @@ def random_split(x, y, n_folds=5, random_seed=RANDOM_SEED):
     # adjust folds if class imbalance prevents stratification
     unique, counts = np.unique(y, return_counts=True)
     min_class_count = min(counts)
-    print(f'min_class_count: {min_class_count}')
+    #print(f'min_class_count: {min_class_count}')
 
     if min_class_count < n_folds:
         print(f'resetting n_folds {n_folds} → {min_class_count} due to class imbalance.')
@@ -358,6 +358,10 @@ def cluster_kfold_split(x, dist_type='substruct', clusterSizeThreshold=5, thresh
                         random_seed=RANDOM_SEED, n_folds=5, selectionStrategy='clust_holdout'):
     """
     Assigns data points to training and testing sets for k-fold cross-validation based on selection strategies using clustering.
+    
+    params
+    ------
+    - x: list of SMILES strings
     """
 
     random.seed(random_seed)

@@ -4,7 +4,7 @@ import pandas as pd
 from loguru import logger
 
 from sklearn import metrics
-from sklearn.metrics import r2_score, balanced_accuracy_score, cohen_kappa_score
+from sklearn.metrics import r2_score, balanced_accuracy_score, cohen_kappa_score, accuracy_score
 from rdkit.ML.Scoring.Scoring import CalcBEDROC
 import torch
 
@@ -263,14 +263,28 @@ def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
     score.sort(key=lambda x: x[0], reverse=True) # sort the list by the first element, i.e. # the predicted probability of the positive class (1), in descending order.
     bedroc_score = CalcBEDROC(score, 1, alpha) # 1 is the column index for the ground-truth values (y_true)
 
-    return bedroc_score
+    return 
+
+def calc_accuracy(y_true, y_pred):
+    """
+    Calculates the Accuracy for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The Accuracy score.
+    """
+    accuracy = accuracy_score(y_true, y_pred)
+    return accuracy
 
 METRICS_FUNC = {
     'auroc': calc_auroc,
     'auprc': calc_auprc,
     'balanced': calc_balanced_acc,
     'kappa': calc_cohen_kappa,
-    'bedroc': calc_ml_bedroc
+    'bedroc': calc_ml_bedroc,
+    'accuracy': calc_accuracy
 }
 
 #====================================For ML regressor =========================================================

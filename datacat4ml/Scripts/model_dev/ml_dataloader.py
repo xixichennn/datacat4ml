@@ -1,11 +1,46 @@
 
 import numpy as np
 import pandas as pd
+from typing import List
 
 from datacat4ml.Scripts.data_prep.data_split.intSplit_mldata import random_split, cluster_kfold_split
 
 #====================== class MLData ======================
-def retrieve_splits(assignments, x, y, activity_ids, spl):
+def find_best_index(A: List[int], B: List[int], threshold: int = 2) -> int:
+    """
+    Finds the index 'i' where A[i] and B[i] are both strictly greater than 
+    the threshold, and the sum (A[i] + B[i]) is maximized.
+
+    params
+    ------
+    A: list of int => train_minClass_counts in outer splits
+    B: list of int => test_minClass_counts in outer splits
+    threshold: int => the number of folds for inner splits
+        The threshold value to compare against.
+
+    Returns the index of the best match, or 0 if match is found.
+    """
+    
+    if len(A) == 0 or len(B) == 0:
+        print(f'Empty train_minClass_counts or test_minClass_counts list found.\n Skip model training for this dataset.')
+        best_index = -1
+    else:
+        best_index = None
+        max_sum = float('-inf')
+        for i, (a_val, b_val) in enumerate(zip(A, B)):
+            if a_val >= threshold and b_val >= threshold:
+                current_sum = a_val + b_val
+                if current_sum > max_sum:
+                    max_sum = current_sum
+                    best_index = i
+        
+        if best_index is None:
+            print(f'No suitable outer fold found with both y_train and y_test having at least 2 points for each class (0, 1)\n. Take the first outer fold as default.')
+            best_index = 0
+
+    return best_index
+    
+def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
     """
     A helper function to retrieve the split data based on the provided assignments.
 
@@ -52,11 +87,14 @@ def retrieve_splits(assignments, x, y, activity_ids, spl):
               {'inner_train_idx': [2, 3, 4, 5], 'inner_valid_idx': [6]}]
     inner_splits_all: list of list of dictionaries
     """
-    print(f'Generating outer splits ...')
-    outer_splits = []
+    print(f'\nGenerating outer splits ...') if verbose else None
+    
     outer_train_idx_full = []
     outer_test_idx_full = []
-    minClass_counts = []
+    outer_splits = []
+
+    train_minClass_counts = []
+    test_minClass_counts = []
 
     # ========================== Generate outer splits ==========================
     for assignment in assignments:
@@ -65,7 +103,8 @@ def retrieve_splits(assignments, x, y, activity_ids, spl):
 
         outer_train_idx_full.append(outer_train_idx)
         outer_test_idx_full.append(outer_test_idx)
-        outer_splits.append({'outer_train_idx': outer_train_idx, 'outer_test_idx': outer_test_idx})
+        outer_splits.append({'outer_train_idx': outer_train_idx, 
+                             'outer_test_idx': outer_test_idx})
 
         # ============================================================================
         # Select one outer_fold which has the maximum min-class count in outer_y_train,
@@ -73,91 +112,116 @@ def retrieve_splits(assignments, x, y, activity_ids, spl):
         # ============================================================================
         outer_y_train = [y[i] for i in outer_train_idx]
         #print(f'outer_y_train: {outer_y_train}')
-        #outer_y_test = [y[i] for i in outer_test_idx]
+        outer_y_test = [y[i] for i in outer_test_idx]
         #print(f'outer_y_test: {outer_y_test}')
 
-        unique, counts = np.unique(outer_y_train, return_counts=True)
+        train_unique, train_counts = np.unique(outer_y_train, return_counts=True)
+        test_unique, test_counts = np.unique(outer_y_test, return_counts=True)
         #print(f'classes: {unique}, counts: {counts}')
-        if len(unique) >= 2:
-            minClass_count = min(counts)
-            print(f'minClass_count: {minClass_count}')
-            minClass_counts.append(minClass_count)
+        if len(train_unique) >= 2:
+            train_minClass_count = min(train_counts)
+            #print(f'minClass_count: {minClass_count}')
+            train_minClass_counts.append(train_minClass_count)
         else:
             print('Only one class in outer_y_train, skip this fold.')
-            continue
+            train_minClass_counts.append(0)
 
-    max_minClass_count = max(minClass_counts) # get the indices with the maximum minClass_count
-    print(f'max_minClass_count: {max_minClass_count}')
+        if len(test_unique) >= 2:
+            test_minClass_count = min(test_counts)
+            #print(f'minClass_count: {minClass_count}')
+            test_minClass_counts.append(test_minClass_count)
+        else:
+            test_minClass_counts.append(0)
+            print('Only one class in outer_y_test, skip this fold.')
+
+    print(f'train_minClass_counts: \n{train_minClass_counts}') if verbose else None
+    print(f'test_minClass_counts: \n{test_minClass_counts}') if verbose else None
 
     # length of the outer splits
     outer_n_fold = len(outer_splits)
 
-    # the idx of the outer fold picked
-    outer_fold_idx_pick = minClass_counts.index(max_minClass_count)
-    outer_train_idx_pick = outer_train_idx_full[outer_fold_idx_pick]
-    outer_test_idx_pick = outer_test_idx_full[outer_fold_idx_pick]
+    best_index = find_best_index(train_minClass_counts, test_minClass_counts, threshold=2)
 
-    # generate the inner splits based on the picked outer_train_idx
-    outer_x_train_pick = [x[i] for i in outer_train_idx_pick]
-    outer_y_train_pick = [y[i] for i in outer_train_idx_pick]
-    outer_actid_train_pick = [activity_ids[i] for i in outer_train_idx_pick]
+    if best_index == -1:
+        return outer_splits, outer_n_fold, None, None, None, None, None, None
+    else:
+        # the idx of the outer fold picked
+        outer_train_idx_pick = outer_train_idx_full[best_index]
+        outer_test_idx_pick = outer_test_idx_full[best_index]
 
-    outer_x_test_pick = [x[i] for i in outer_test_idx_pick]
-    outer_y_test_pick = [y[i] for i in outer_test_idx_pick]
-    outer_actid_test_pick = [activity_ids[i] for i in outer_test_idx_pick]
+        # when spl is 'rs-lo' or 'rs-vs': 
+        # get the picked outer train and test sets of x, y, activity_ids
+        outer_x_train_pick = [x[i] for i in outer_train_idx_pick]
+        outer_y_train_pick = [y[i] for i in outer_train_idx_pick]
+        outer_actid_train_pick = [activity_ids[i] for i in outer_train_idx_pick]
 
-    # ================== Get the inner splits ====================
-    print(f'Generating inner splits for ...')
-    inner_splits = []
-    try:
-        if spl in ['rs_lo', 'rs_vs']:
-            inner_train_folds, inner_valid_folds = random_split(x=outer_x_train_pick, y=outer_y_train_pick, n_folds=5)
-        elif spl== 'cs':
-            inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_x_train_pick, selectionStrategy='clust_stratified')
-        elif spl== 'ch':
-            inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_x_train_pick, selectionStrategy='clust_holdout')
-        print(f'Inner train folds: {inner_train_folds}')
-        print(f'Inner valid folds: {inner_valid_folds}\n')
+        outer_x_test_pick = [x[i] for i in outer_test_idx_pick]
+        outer_y_test_pick = [y[i] for i in outer_test_idx_pick]
+        outer_actid_test_pick = [activity_ids[i] for i in outer_test_idx_pick]
 
-        for tr, va in zip(inner_train_folds, inner_valid_folds):
-            inner_splits.append({
-                'inner_train_idx':[outer_train_idx_pick[i] for i in tr], # map back to the original dataset indices
-                'inner_valid_idx':[outer_train_idx_pick[i] for i in va]})
-            
-    except Exception as e:
-        print(f'Error during inner split generation: {e}')
-    
-    # ================= Get the inner splits all ====================
-    print(f'Generating all inner splits ...')
-    inner_splits_all = []
-    for outer_train_idx in outer_train_idx_full:
-        try:
-            if spl in ['rs_lo', 'rs_vs']:
-                inner_train_folds, inner_valid_folds = random_split(x=[x[i] for i in outer_train_idx],
-                                                                    y=[y[i] for i in outer_train_idx],
-                                                                    n_folds=5)
-            elif spl== 'cs':
-                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[x[i] for i in outer_train_idx],
-                                                                        selectionStrategy='clust_stratified')
-            elif spl== 'ch':
-                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[x[i] for i in outer_train_idx],
-                                                                        selectionStrategy='clust_holdout')
-        except Exception as e:
-            print(f'Error during inner split generation for outer_train_idx {outer_train_idx}: {e}')
-            continue
+        # when spl is 'cs' or 'ch':
+        # get the picked outer train and test sets of smiles
+        outer_smi_train_pick = [smis[i] for i in outer_train_idx_pick]
+        outer_smi_test_pick = [smis[i] for i in outer_test_idx_pick]
 
+        # ================== Get the inner splits ====================
+        print(f'\nGenerating inner splits for ...') if verbose else None
         inner_splits = []
-        for tr, va in zip(inner_train_folds, inner_valid_folds):
-            inner_splits.append({
-                'inner_train_idx':[outer_train_idx[i] for i in tr], 
-                'inner_valid_idx':[outer_train_idx[i] for i in va]})
-        
-        inner_splits_all.append(inner_splits)
+        try:
+            if spl in ['rs-lo', 'rs-vs']:
+                # generate the inner splits
+                inner_train_folds, inner_valid_folds = random_split(x=outer_x_train_pick, y=outer_y_train_pick, n_folds=5)
+            
+            elif spl== 'cs':
+                # generate the inner splits
+                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train_pick, selectionStrategy='clust_stratified')
+            
+            elif spl== 'ch':
+                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train_pick, selectionStrategy='clust_holdout')
+            #print(f'Inner train folds: {inner_train_folds}')
+            #print(f'Inner valid folds: {inner_valid_folds}\n')
 
-    return outer_splits, outer_n_fold,\
-        outer_x_train_pick, outer_y_train_pick,\
-        outer_x_test_pick, outer_y_test_pick,\
-        inner_splits, inner_splits_all
+            for tr, va in zip(inner_train_folds, inner_valid_folds):
+                inner_splits.append({
+                    'inner_train_idx':[outer_train_idx_pick[i] for i in tr], # map back to the original dataset indices
+                    'inner_valid_idx':[outer_train_idx_pick[i] for i in va]})
+
+        except Exception as e:
+            print(f'Error during inner split generation: {e}')
+
+        # ================= Get the inner splits all ====================
+        print(f'\nGenerating all inner splits ...') if verbose else None
+        inner_splits_all = []
+        for outer_train_idx in outer_train_idx_full:
+            try:
+                if spl in ['rs-lo', 'rs-vs']:
+                    inner_train_folds, inner_valid_folds = random_split(x=[x[i] for i in outer_train_idx],
+                                                                        y=[y[i] for i in outer_train_idx],
+                                                                        n_folds=5)
+                elif spl== 'cs':
+                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[smis[i] for i in outer_train_idx],
+                                                                            selectionStrategy='clust_stratified')
+                elif spl== 'ch':
+                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[smis[i] for i in outer_train_idx],
+                                                                            selectionStrategy='clust_holdout')
+            except Exception as e:
+                print(f'Error during inner split generation for outer_train_idx {outer_train_idx}: {e}')
+                continue
+
+            inner_splits = []
+            for tr, va in zip(inner_train_folds, inner_valid_folds):
+                inner_splits.append({
+                    'inner_train_idx':[outer_train_idx[i] for i in tr], 
+                    'inner_valid_idx':[outer_train_idx[i] for i in va]})
+
+            inner_splits_all.append(inner_splits)
+
+        return outer_splits, outer_n_fold,\
+            outer_x_train_pick, outer_y_train_pick,\
+            outer_x_test_pick, outer_y_test_pick,\
+            inner_splits, inner_splits_all
+        
+
 
 class MLData:
 
@@ -181,7 +245,7 @@ class MLData:
         # based on `fname`, e.g. CHEMBL233_antag_G-GTP_IC50_None_mhd_b50_b50_featurized.pkl
         self.fname = fpath.split('/')[-1]
         self.fids = self.fname.split('_') # e.g. ['CHEMBL233', 'antag', 'None', 'None', 'None', 'mhd-effect', 'b50', 'b50', 'featurized.pkl']
-        self.fprefix = '_'.join(self.fname.split('_')[:6]) # e.g. CHEMBL233_antag_G-GTP_IC50_None_mhd
+        self.f_prefix = '_'.join(self.fname.split('_')[:6]) # e.g. CHEMBL233_antag_G-GTP_IC50_None_mhd
 
         (self.target_chembl_id, 
          self.effect, 
@@ -196,7 +260,7 @@ class MLData:
         # ================= Load the dataset ====================
         self.df = pd.read_pickle(fpath) # filepath is the full path to the dataset pickle file
 
-    def get_x_and_y(self, descriptor, rmvS, aim, spl, **kwargs):
+    def get_x_and_y(self, descriptor, aim, spl, **kwargs):
         """
         Get x and y for model training based on the specified parameters.
 
@@ -204,8 +268,6 @@ class MLData:
         ------
         descriptor: str
             The feature descriptor to be used. Options: 'ECFP4', 'ECFP6', 'MACCS', ...
-        rmvS: int
-            wherether the splitting is done with stereochemistry removed. Options: 0, 1.
         aim: str
             The application aim of the trained model. Options: 'lo' (lead optimization), 'vs' (virtual screening).
         spl: str
@@ -223,193 +285,36 @@ class MLData:
         """
         # ================= Get the data identifiers ====================
         self.descriptor = descriptor
-        self.rmvS = rmvS
         self.aim = aim
         self.spl = spl
 
         # ================= Get x and y ====================
-        stereo_idx = self.df[self.df['stereoSiblings']==True].index.tolist()
-        if self.rmvS==0:
-            self.x = self.df[descriptor].tolist()
-            self.y = self.df[f'{aim}_activity'].tolist()
-            self.activity_ids = self.df['activity_id'].tolist() # `activity_id` is unique among each row in the dataset.
-        elif self.rmvS==1:
-            self.x = [feat for i, feat in enumerate(self.df[descriptor].tolist()) if i not in stereo_idx]
-            self.y = [label for i, label in enumerate(self.df[f'{aim}_activity'].tolist()) if i not in stereo_idx]
-            self.activity_ids = [aid for i, aid in enumerate(self.df['activity_id'].tolist()) if i not in stereo_idx]
+        #stereo_idx = self.df[self.df['stereoSiblings']==True].index.tolist() # not necessary to get stereo_idx here, due to the assignments of rmvS1 has already set the stereo siblings to be Nan.
+        self.x = self.df[descriptor].tolist()
+        self.y = self.df[f'{self.aim}_activity'].tolist()
+        self.activity_ids = self.df['activity_id'].tolist() # `activity_id` is unique among each row in the dataset.
+        self.smiles = self.df['canonical_smiles_by_Std'].tolist()
 
         # ================ get stats of x and y ===================
-        self.data_size = len(self.x)
-        if self.data_size > 50:
-            self.data_size_level = 'b50'
+        self.ds_size = len(self.x)
+        if self.ds_size > 50:
+            self.ds_size_level = 'b50'
         else:
-            self.data_size_level = 's50'
-        self.threshold = self.df[f'{aim}_threshold'].iloc[0]
-        self.percent_a = sum(self.y) / self.data_size
+            self.ds_size_level = 's50'
+        self.threshold = self.df[f'{self.aim}_threshold'].iloc[0]
+        self.percent_a = sum(self.y) / self.ds_size
 
-    def get_int_splits_old(self, descriptor, rmvS, aim, spl, **kwargs):
+    def get_int_splits(self, rmvS, verbose=False, **kwargs):
         """
-        Generate data splits, which will be used in different ML pipelines later.
-
+        Generate data splits based on internal splitting columns, which will be used in different ML pipelines later.
+        
         params
         ------
-        descriptor: str
-            The feature descriptor to be used. Options: 'ECFP4', 'ECFP6', 'MACCS', ...
-        aim: str
-            The application aim of the trained model. Options: 'lo' (lead optimization), 'vs' (virtual screening).
-        SPL: str
-            Split a dataset internally or align to an external split. Options: 'int', 'aln'.
         rmvS: int
             wherether the splitting is done with stereochemistry removed. Options: 0, 1.
-        spl: str
-            The splitting strategy. Options: 'rs-lo', 'rs-vs', 'cs', 'ch'
-        
-        pipeline: str
-            Data processing pipeline to be used. Options: 'simpleCV', 'single_nestedCV', 'full_nested_CV', 'consensus_nestedCV'
-        pair: list
-            parent-child pair for aligned splitting. Options: 'hhd.mhd', 'hhd.lhd', 'mhd-effect.mhd', 'mhd-effect.lhd', 'mhd.lhd'
 
         returns
         -------
-
-        """
-        # ================= Get the data identifiers ====================
-        self.descriptor = descriptor
-        self.aim = aim
-        self.rmvS = rmvS
-        self.spl = spl
-
-        print(f'descriptor: {descriptor}, aim: {aim}, rmvS: {rmvS}, spl: {spl}')
-        # ================= Get x and y ====================
-        stereo_idx = self.df[self.df['stereoSiblings']==True].index.tolist()
-        if rmvS==0:
-            self.x = self.df[descriptor].tolist()
-            self.y = self.df[f'{aim}_activity'].tolist()
-            self.activity_ids = self.df['activity_id'].tolist() # `activity_id` is unique among each row in the dataset.
-        elif rmvS==1:
-            self.x = [feat for i, feat in enumerate(self.df[descriptor].tolist()) if i not in stereo_idx]
-            self.y = [label for i, label in enumerate(self.df[f'{aim}_activity'].tolist()) if i not in stereo_idx]
-            self.activity_ids = [aid for i, aid in enumerate(self.df['activity_id'].tolist()) if i not in stereo_idx]
-
-        # ================ get stats of x and y ===================
-        self.data_size = len(self.x)
-        if self.data_size > 50:
-            self.data_size_level = 'b50'
-        else:
-            self.data_size_level = 's50'
-        self.threshold = self.df[f'{aim}_threshold'].iloc[0]
-        self.percent_a = sum(self.y) / self.data_size
-        
-        # ================== Get the outer splits ====================
-        #  internal split columns
-        col_prefix = f'int.rmvS{rmvS}_{spl}'
-        col_names = [col for col in self.df.columns.tolist() if col.startswith(col_prefix)]
-        assignments = [self.df[col].to_list() for col in col_names]
-
-        print(f'Generating outer splits for {col_prefix}...')
-        self.outer_splits = []
-        outer_train_idx_full = []
-        outer_test_idx_full = []
-        minClass_counts = []
-        for assignment in assignments:
-            outer_train_idx = [i for i, v in enumerate(assignment) if v == 'train']
-            outer_test_idx = [i for i, v in enumerate(assignment) if v == 'test']
-
-            outer_train_idx_full.append(outer_train_idx)
-            outer_test_idx_full.append(outer_test_idx)
-            self.outer_splits.append({'outer_train_idx': outer_train_idx, 'outer_test_idx': outer_test_idx})
-
-            # ============================================================================
-            # Select one outer_fold which has the maximum min-class count in outer_y_train,
-            # thus to ensure the inner splits can be generated as many folds as possible.
-            # ============================================================================
-            outer_y_train = [self.y[i] for i in outer_train_idx]
-            #print(f'outer_y_train: {outer_y_train}')
-            #outer_y_test = [y[i] for i in outer_test_idx]
-            #print(f'outer_y_test: {outer_y_test}')
-
-            unique, counts = np.unique(outer_y_train, return_counts=True)
-            #print(f'classes: {unique}, counts: {counts}')
-            if len(unique) >= 2:
-                minClass_count = min(counts)
-                print(f'minClass_count: {minClass_count}')
-                minClass_counts.append(minClass_count)
-            else:
-                print('Only one class in outer_y_train, skip this fold.')
-                continue
-
-        max_minClass_count = max(minClass_counts) # get the indices with the maximum minClass_count
-        print(f'max_minClass_count: {max_minClass_count}')
-
-        # length of the outer splits
-        self.outer_n_fold = len(self.outer_splits)
-        
-        # the idx of the outer fold picked
-        self.outer_fold_idx_pick = minClass_counts.index(max_minClass_count)
-        self.outer_train_idx_pick = outer_train_idx_full[self.outer_fold_idx_pick]
-        self.outer_test_idx_pick = outer_test_idx_full[self.outer_fold_idx_pick]
-
-        # generate the inner splits based on the picked outer_train_idx
-        self.outer_x_train_pick = [self.x[i] for i in self.outer_train_idx_pick]
-        self.outer_y_train_pick = [self.y[i] for i in self.outer_train_idx_pick]
-        self.outer_actid_train_pick = [self.activity_ids[i] for i in self.outer_train_idx_pick]
-
-        self.outer_x_test_pick = [self.x[i] for i in self.outer_test_idx_pick]
-        self.outer_y_test_pick = [self.y[i] for i in self.outer_test_idx_pick]
-        self.outer_actid_test_pick = [self.activity_ids[i] for i in self.outer_test_idx_pick]
-
-        # ================== Get the inner splits ====================
-        print(f'Generating inner splits for {col_prefix}...')
-        self.inner_splits = []
-        try:
-            if spl in ['rs_lo', 'rs_vs']:
-                inner_train_folds, inner_valid_folds = random_split(x=self.outer_x_train_pick, y=self.outer_y_train_pick, n_folds=5)
-            elif spl== 'cs':
-                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=self.outer_x_train_pick, selectionStrategy='clust_stratified')
-            elif spl== 'ch':
-                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=self.outer_x_train_pick, selectionStrategy='clust_holdout')
-            print(f'Inner train folds: {inner_train_folds}')
-            print(f'Inner valid folds: {inner_valid_folds}\n')
-
-            for tr, va in zip(inner_train_folds, inner_valid_folds):
-                self.inner_splits.append({
-                    'inner_train_idx':[self.outer_train_idx_pick[i] for i in tr], # map back to the original dataset indices
-                    'inner_valid_idx':[self.outer_train_idx_pick[i] for i in va]})
-                
-        except Exception as e:
-            print(f'Error during inner split generation: {e}')
-        
-        # ================= Get the inner splits all ====================
-        print(f'Generating all inner splits for {col_prefix}...')
-        self.inner_splits_all = []
-        for outer_train_idx in outer_train_idx_full:
-            try:
-                if spl in ['rs_lo', 'rs_vs']:
-                    inner_train_folds, inner_valid_folds = random_split(x=[self.x[i] for i in outer_train_idx],
-                                                                        y=[self.y[i] for i in outer_train_idx],
-                                                                        n_folds=5)
-                elif spl== 'cs':
-                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[self.x[i] for i in outer_train_idx],
-                                                                            selectionStrategy='clust_stratified')
-                elif spl== 'ch':
-                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[self.x[i] for i in outer_train_idx],
-                                                                            selectionStrategy='clust_holdout')
-            except Exception as e:
-                print(f'Error during inner split generation for outer_train_idx {outer_train_idx}: {e}')
-                continue
-
-            inner_splits = []
-            for tr, va in zip(inner_train_folds, inner_valid_folds):
-                inner_splits.append({
-                    'inner_train_idx':[outer_train_idx[i] for i in tr], 
-                    'inner_valid_idx':[outer_train_idx[i] for i in va]})
-            
-            self.inner_splits_all.append(inner_splits)
-    
-    def get_int_splits(self, **kwargs):
-        """
-        Generate data splits based on internal splitting columns, which will be used in different ML pipelines later.
-
         An example of 'outer_splits':
         [
             {'outer_train_idx': [0, 1, 2, 3, 4, 5], 'outer_test_idx': [6, 7]},
@@ -417,28 +322,35 @@ class MLData:
             ...
         ]
         """
+        print (f'\n------> Run  get_int_splits ') if verbose else None
+        self.rmvS = rmvS
         #  internal split columns
         self.int_col_prefix = f'rmvS{self.rmvS}_{self.spl}'
         int_col_names = [col for col in self.df.columns.tolist() if col.startswith(self.int_col_prefix)]
-        int_assigns = [self.df[col].to_list() for col in int_col_names]
+        if len(int_col_names) == 0:
+            print(f'No internal split columns found for prefix: {self.int_col_prefix}')
+            self.int_outer_n_fold = None
+            self.int_outer_x_test_pick = None
+        else:
+            int_assigns = [self.df[col].to_list() for col in int_col_names]
+            # generate splits
+            self.int_outer_splits, self.int_outer_n_fold,\
+            self.int_outer_x_train_pick, self.int_outer_y_train_pick,\
+            self.int_outer_x_test_pick, self.int_outer_y_test_pick,\
+            self.int_inner_splits, self.int_inner_splits_all = retrieve_splits(int_assigns, self.x, self.y, self.activity_ids, self.smiles,
+                                                                               self.spl, verbose=verbose)
 
-        # generate splits
-        self.int_outer_splits, self.int_outer_n_fold,\
-        self.int_outer_x_train_pick, self.int_outer_y_train_pick,\
-        self.int_outer_x_test_pick, self.int_outer_y_test_pick,\
-        self.int_inner_splits, self.int_inner_splits_all = retrieve_splits(int_assigns, self.x, self.y, self.activity_ids, self.spl)
-    
-    def get_aln_splits(self, pf_prefix:str=None, cf_prefix:str=None, **kwargs):
+    def get_aln_splits(self, pf_prefix:str=None, cf_prefix:str=None, verbose=False, **kwargs):
         """
         Generate data splits based on aligned splitting columns, which will be used in different ML pipelines later.
 
         params
         ------
         pf_prefix: str. e.g. CHEMBL233_None_None_Ki_None_hhd
-            if pf_prefix is provided, it indicate the self.fprefix is for child dataset.
+            if pf_prefix is provided, it indicate the self.f_prefix is for child dataset.
             to get the parent aligned split columns, we need to use pf_prefix.
         cf_prefix: str. e.g. CHEMBL233_bind_RBA_Ki_None_mhd
-            if cf_prefix is provided, it indicate the self.fprefix is for parent dataset.
+            if cf_prefix is provided, it indicate the self.f_prefix is for parent dataset.
             to get the child aligned split columns, we need to use cf_prefix.
 
         returns
@@ -448,34 +360,41 @@ class MLData:
         if cf_prefix is provided:
             pf-related aligned split columns will be retrieved.
         """
+        print (f'\n------> Run  get_aln_splits ...') if verbose else None
         # aligned split columns
         # if spl starts with 'parent', 
         if cf_prefix:
-            pf_aln_col_prefix = f'parent.{self.fprefix}.{cf_prefix}.{self.int_col_prefix}'
+            pf_aln_col_prefix = f'parent.{self.f_prefix}.{cf_prefix}.{self.int_col_prefix}'
             pf_aln_col_names = [col for col in self.df.columns.tolist() if col.startswith(pf_aln_col_prefix)]
             if len(pf_aln_col_names) == 0:
                 print(f'No aligned split columns found for prefix: {pf_aln_col_prefix}')
+                self.pf_aln_outer_n_fold = None
+                self.pf_aln_outer_x_test_pick = None
             else:
                 pf_aln_assigns = [self.df[col].to_list() for col in pf_aln_col_names]
                 # ================== retrieve split data for pf_aln_assigns ====================
                 self.pf_aln_outer_splits, self.pf_aln_outer_n_fold,\
                 self.pf_aln_outer_x_train_pick, self.pf_aln_outer_y_train_pick,\
                 self.pf_aln_outer_x_test_pick, self.pf_aln_outer_y_test_pick,\
-                self.pf_aln_inner_splits, self.pf_aln_inner_splits_all = retrieve_splits(pf_aln_assigns, self.x, self.y, self.activity_ids, self.spl)
+                self.pf_aln_inner_splits, self.pf_aln_inner_splits_all = retrieve_splits(pf_aln_assigns, self.x, self.y, self.activity_ids, self.smiles,
+                                                                                         self.spl, verbose=verbose)
         
         if pf_prefix:
             # if spl starts with 'child', the training set should be same as that from the corresponding columns with 'int_col_prefix', just the test set is different.
-            cf_aln_col_prefix = f'child.{pf_prefix}.{self.fprefix}.{self.int_col_prefix}'
+            cf_aln_col_prefix = f'child.{pf_prefix}.{self.f_prefix}.{self.int_col_prefix}'
             cf_aln_col_names = [col for col in self.df.columns.tolist() if col.startswith(cf_aln_col_prefix)]
             if len(cf_aln_col_names) == 0:
                 print(f'No aligned split columns found for prefix: {cf_aln_col_prefix}')
+                self.cf_aln_outer_n_fold = None
+                self.cf_aln_outer_x_test_pick = None
             else:
                 cf_aln_assigns = [self.df[col].to_list() for col in cf_aln_col_names]
                 # ================== retrieve split data for cf_aln_assigns ====================
                 self.cf_aln_outer_splits, self.cf_aln_outer_n_fold,\
                 self.cf_aln_outer_x_train_pick, self.cf_aln_outer_y_train_pick,\
                 self.cf_aln_outer_x_test_pick, self.cf_aln_outer_y_test_pick,\
-                self.cf_aln_inner_splits, self.cf_aln_inner_splits_all = retrieve_splits(cf_aln_assigns, self.x, self.y, self.activity_ids, self.spl)
+                self.cf_aln_inner_splits, self.cf_aln_inner_splits_all = retrieve_splits(cf_aln_assigns, self.x, self.y, self.activity_ids, self.smiles,
+                                                                                         self.spl, verbose=verbose)
 
     def featurize_data(self):
         # SMILES to descriptors
@@ -495,8 +414,8 @@ class MLData:
         # Shuffle the data
         pass
 
-    def __call__(self, descriptor, rmvS, aim, spl, **kwargs):
-        self.get_x_and_y(descriptor, rmvS, aim, spl, **kwargs)
+    def __call__(self, descriptor, aim, spl, **kwargs):
+        self.get_x_and_y(descriptor, aim, spl, **kwargs)
 
     def __repr__(self):
         return f"MLData Object: {self.fname} with {self.df.shape[0]} samples."
