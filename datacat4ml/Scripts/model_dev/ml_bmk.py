@@ -40,13 +40,13 @@ def get_mldata_info(fpath, descriptor, aim_spl_combo, rmvS,
 
     # ----- x ------
     # descriptor
-    print(f'descriptor: {descriptor}')
+    print(f'descriptor: {descriptor}') if verbose else None
 
     # ----- y -----
     # aim and spl
     aim, spl = aim_spl_combo.split(',')
-    print(f'aim: {aim}') # e.g., lo, vs
-    print(f'spl: {spl}') # e.g., rs_lo, rs_vs, cs, ch
+    print(f'aim: {aim}') if verbose else None # e.g., lo, vs
+    print(f'spl: {spl}') if verbose else None # e.g., rs_lo, rs_vs, cs, ch
 
     # ========== prepare data splits ==========
     data(descriptor, aim, spl)
@@ -61,7 +61,7 @@ def get_mldata_info(fpath, descriptor, aim_spl_combo, rmvS,
     
     # ----- internal split columns -----
     # rmvS
-    print(f'rmvS: {rmvS}')
+    print(f'rmvS: {rmvS}') if verbose else None
     print(f'split column: rmvS{rmvS}_{spl}') if verbose else None
     data.get_int_splits(rmvS, verbose)
 
@@ -157,11 +157,11 @@ def int_bmk(bmk_file, algo_name, input_dir,
     count = 0
 
     algo = algo_dict[algo_name]
-    print(f'algo: {algo.__name__}')
+    print(f'algo: {algo.__name__}') if verbose else None
 
     #----config----
     config = get_config(os.path.join(ML_HP_DIR, f'{algo.__name__}.json'))
-    print(f'config: \n{config}')
+    print(f'config: \n{config}') if verbose else None
     #----fpath----
     # input_dir
 
@@ -188,7 +188,8 @@ def int_bmk(bmk_file, algo_name, input_dir,
         if all(required):
             # pipeline
             func = PL_FUNCS[pl]
-            print(f'Pipeline: {pl}, Function: {func.__name__}')
+
+            print(f'\n========>Run pipeline {pl} ...') 
             metrics = func(config, algo, data_info['data'], 
                         save_config=save_config, save_model=save_model, verbose=verbose,
                         SPL='int', position=None)
@@ -242,35 +243,37 @@ def aln_bmk(bmk_file, algo_name,
 
     count = 0
     algo = algo_dict[algo_name]
-    print(f'algo: {algo.__name__}')
+    print(f'algo: {algo.__name__}') if verbose else None
 
     #----config----
     config = get_config(os.path.join(ML_HP_DIR, f'{algo.__name__}.json'))
-    print(f'config: \n{config}')
+    print(f'config: \n{config}') if verbose else None
     #----fpath----
     # input_dir
     for pd_cd_pair, pfp_cfps_map in pfp_cfps_all.items():
+
         print(f'pd_cd_pair: {pd_cd_pair}\n')
         pd_cat_level, cd_cat_level = pd_cd_pair
 
         # rmvD
         rmvD = 1 # To avoid data leakage, only use rmvD1 datasets for ML model benchmarking.
-        print(f'rmvD: {rmvD}')
+        print(f'rmvD: {rmvD}') if verbose else None
 
         pf_path = os.path.join(feat_dir_name_dict[pd_cat_level], f'rmvD{rmvD}')
         cf_path = os.path.join(feat_dir_name_dict[cd_cat_level], f'rmvD{rmvD}')
 
         for pf_prefix, cf_prefixes in pfp_cfps_map.items():
             print(f'=================================\nparent file: {pf_prefix}, \nchild files: \n{cf_prefixes}')
+            
+            if len(cf_prefixes) == 0:  
+                print('No child files found, skip this pair.') 
+            else:
+                for cf_prefix in cf_prefixes:
+                    print(f'---------------------------------\nchild file: {cf_prefix}')
 
-            if pf_prefix == 'CHEMBL2014_None_None_IC50_None_hhd':
-                #YU: get the code lines below indented back
-                if len(cf_prefixes) == 0:  
-                    print('No child files found, skip this pair.') 
-                else:
-                    for cf_prefix in cf_prefixes:
-                        print(f'---------------------------------\nchild file: {cf_prefix}')
-
+                    if pd_cd_pair == ('hhd', 'mhd') and pf_prefix == 'CHEMBL237_None_None_EC50_None_hhd' and cf_prefix == 'CHEMBL237_agon_B-arrest_EC50_None_mhd': # for debugging
+                        
+                        # Yu: move the below lines indentation back
                         # pf
                         pf = [f for f in os.listdir(pf_path) if f.startswith(pf_prefix)][0] # there is only one such file
                         pf_full_path = os.path.join(pf_path, pf)
@@ -279,11 +282,11 @@ def aln_bmk(bmk_file, algo_name,
                         cf_full_path = os.path.join(cf_path, cf)
 
                         # ======> initialize MLData object <=======
-                        print(f'\n========>Getting MLData info for parent file {pf_full_path.split("/")[-1]} ...')
+                        print(f'\n========>pf: Getting MLData {pf_full_path.split("/")[-1]} ...')
                         pf_data_info = get_mldata_info(pf_full_path, descriptor, aim_spl_combo, rmvS,
                                                         cf_prefix=cf_prefix, pf_prefix=None,
                                                         verbose=verbose)
-                        print(f'\n========>Getting MLData info for child file {cf_full_path.split("/")[-1]} ...')
+                        print(f'\n========>cf: Getting MLData {cf_full_path.split("/")[-1]} ...')
                         cf_data_info = get_mldata_info(cf_full_path, descriptor, aim_spl_combo, rmvS,
                                                         cf_prefix=None, pf_prefix=pf_prefix, verbose=verbose)
 
@@ -297,11 +300,11 @@ def aln_bmk(bmk_file, algo_name,
                             # pipeline
                             func = PL_FUNCS[pl]
 
-                            print(f'\n========>Run pipeline {pl} for parent file {pf_prefix} ...')
+                            print(f'\n========>pf: Run pipeline {pl} ...')
                             pf_metrics = func(config, algo, pf_data_info['data'], 
                                             save_config=save_config, save_model=save_model, verbose=verbose, 
                                             SPL='aln', position='parent')
-                            print(f'\n========>Run pipeline {pl} for child file {cf_prefix} ...')
+                            print(f'\n========>cf: Run pipeline {pl} ...')
                             cf_metrics = func(config, algo, cf_data_info['data'], 
                                             save_config=save_config, save_model=save_model, verbose=verbose, 
                                             SPL='aln', position='child')
@@ -320,7 +323,7 @@ def aln_bmk(bmk_file, algo_name,
                                         f'{cf_metrics["auroc"]},{cf_metrics["auprc"]},{cf_metrics["balanced"]},{cf_metrics["kappa"]},{cf_metrics["bedroc"]}\n'
                                         )
                         else:
-                            print(f'Skipping parent file {pf_prefix} and child file {cf_prefix} due to missing required data splits.')
+                            print(f'Skipping pf {pf_prefix} and cf {cf_prefix} due to missing required data splits.')
     return count
 
 #=======================================
@@ -353,6 +356,17 @@ if __name__ == '__main__':
         bmk_fname = f'bmkML_int_{args.algo}_{args.descriptor}_{args.aim_spl_combo.split(",")[0]}_rmvS{args.rmvS}_{args.aim_spl_combo.split(",")[1]}_{args.pl}_{args.input_dir.split("/")[-1]}.csv'
         bmk_file=os.path.join(ML_DIR, bmk_fname)
 
+        # Print the benchmark configuration
+        print(f'algo: {args.algo}')
+        config = get_config(os.path.join(ML_HP_DIR, f'{args.algo.__name__}.json'))
+        print(f'config: \n{config}')
+        print(f'input_dir: {args.input_dir}')
+        print(f'rmvD: 1')
+        print (f'descriptor: {args.descriptor}')
+        print(f'aim_spl_combo: {args.aim_spl_combo}')
+        print(f'rmvS: {args.rmvS}')
+        print(f'pipeline: {args.pl}')
+
         total_runs = int_bmk(bmk_file, args.algo, args.input_dir, args.descriptor, args.aim_spl_combo, args.rmvS, args.pl,
                              save_config=False, save_model=False, verbose=False)
         print(f'Total benchmark runs completed: {total_runs}')
@@ -360,6 +374,14 @@ if __name__ == '__main__':
     elif args.bmk_type == 'aln':
         bmk_fname = f'bmkML_aln_{args.algo}_{args.descriptor}_{args.aim_spl_combo.split(",")[0]}_rmvS{args.rmvS}_{args.aim_spl_combo.split(",")[1]}_{args.pl}.csv'
         bmk_file=os.path.join(ML_DIR, bmk_fname)
+        
+        # Print the benchmark configuration
+        print(f'algo: {args.algo}')
+        print(f'rmvD: 1')
+        print (f'descriptor: {args.descriptor}')
+        print(f'aim_spl_combo: {args.aim_spl_combo}')
+        print(f'rmvS: {args.rmvS}')
+        print(f'pipeline: {args.pl}')
 
         total_runs = aln_bmk(bmk_file, args.algo, args.descriptor, args.aim_spl_combo, args.rmvS, args.pl,
                                 save_config=False, save_model=False, verbose=False)

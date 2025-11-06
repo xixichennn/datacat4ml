@@ -15,7 +15,7 @@ def calc_metrics(y_true, y_pred, y_pred_proba):
     """
     # check the number of classes in y_true
     unique = np.unique(y_true, return_counts=False)
-    if unique.shape[0] == 1:
+    if unique.shape[0] < 2:
         print("Warning: Only one class present in y_true. Metrics cannot be computed reliablym, returning NaN for all metrics.")
         return {
             'auroc': float('nan'),
@@ -105,7 +105,7 @@ def holdout_cv(config, model, data:MLData,
     rmvS = data.rmvS
     spl = data.spl
     
-    pipeline = 'holdoutCV'
+    pipeline = 'HoldoutCV'
 
     f_prefix = data.f_prefix
 
@@ -187,41 +187,45 @@ def single_nested_cv(config, model, data:MLData,
 
     # 3. Outer CV: train and evaluate on each outer fold using the best_hparams
     aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
-
+    
     for i, outer_split in enumerate(outer_splits):
         print(f'\nOuter Fold {i+1}/{len(outer_splits)}')
 
-        # train data for the current outer fold
-        x_train = [data.x[j] for j in outer_split['outer_train_idx']]
-        y_train = [data.y[j] for j in outer_split['outer_train_idx']]
+        if len(outer_split['outer_test_idx']) == 0: # skip empty test set
+            print(f"Outer Fold {i+1} skipped -- empty test set.")
 
-        # test data for the current outer fold
-        x_test = [data.x[j] for j in outer_split['outer_test_idx']]
-        y_test = [data.y[j] for j in outer_split['outer_test_idx']]
+        else:
+            # train data for the current outer fold
+            x_train = [data.x[j] for j in outer_split['outer_train_idx']]
+            y_train = [data.y[j] for j in outer_split['outer_train_idx']]
 
-        # Train the model with the best_hparams, and evaluate on the outer test set.
-        print(f'train model ...') if verbose else None
-        f = model(**best_hparams)
-        f.train(x_train=x_train, y_train=y_train)
+            # test data for the current outer fold
+            x_test = [data.x[j] for j in outer_split['outer_test_idx']]
+            y_test = [data.y[j] for j in outer_split['outer_test_idx']]
 
-        y_pred = f.predict(x_test)
-        y_pred_proba = f.predict_proba(x_test)
+            # Train the model with the best_hparams, and evaluate on the outer test set.
+            print(f'train model ...') if verbose else None
+            f = model(**best_hparams)
+            f.train(x_train=x_train, y_train=y_train)
 
-        # calculate metrics
-        metrics = calc_metrics(y_test, y_pred, y_pred_proba)
+            y_pred = f.predict(x_test)
+            y_pred_proba = f.predict_proba(x_test)
 
-        aurocs.append(metrics['auroc'])
-        auprcs.append(metrics['auprc'])
-        balanceds.append(metrics['balanced'])
-        kappas.append(metrics['kappa'])
-        bedrocs.append(metrics['bedroc'])
+            # calculate metrics
+            metrics = calc_metrics(y_test, y_pred, y_pred_proba)
 
-        # Optional: save hparamsmodel for each fold
-        if save_model:
-            model_path = os.path.join(ML_MODEL_DIR, ds_path.replace('feat_', ''))
-            os.makedirs(model_path, exist_ok=True)
-            with open(os.path.join(model_path, f'{save_name}_fold{i+1}.joblib'), 'wb') as handle:
-                joblib.dump(f, handle)
+            aurocs.append(metrics['auroc'])
+            auprcs.append(metrics['auprc'])
+            balanceds.append(metrics['balanced'])
+            kappas.append(metrics['kappa'])
+            bedrocs.append(metrics['bedroc'])
+
+            # Optional: save hparamsmodel for each fold
+            if save_model:
+                model_path = os.path.join(ML_MODEL_DIR, ds_path.replace('feat_', ''))
+                os.makedirs(model_path, exist_ok=True)
+                with open(os.path.join(model_path, f'{save_name}_fold{i+1}.joblib'), 'wb') as handle:
+                    joblib.dump(f, handle)
 
     
     print(f'outer_fold_aurocs: {aurocs}\n'
@@ -272,76 +276,80 @@ def nested_cv(config, model, data:MLData,
             outer_splits = data.cf_aln_outer_splits
             inner_splits_all = data.cf_aln_inner_splits_all
 
-
-    aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
-
     # 2. Iterate through all outer folds
+    aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
+    
     for i, outer_split in enumerate(outer_splits):
-        print(f'\nOuter Fold {i+1}/{len(outer_splits)}') if verbose else None
+        print(f'\nOuter Fold {i+1}/{len(outer_splits)}') 
 
-        # Get training data (for HPO and final model training)
-        x_hpo = [data.x[j] for j in outer_split['outer_train_idx']]
-        y_hpo = [data.y[j] for j in outer_split['outer_train_idx']]
+        if len(outer_split['outer_test_idx']) == 0: # skip empty test set
+            print(f"Outer Fold {i+1} skipped -- empty test set.")
 
-        # Get test data (for final evaluation)
-        x_test = [data.x[j] for j in outer_split['outer_test_idx']]
-        y_test = [data.y[j] for j in outer_split['outer_test_idx']]
+        else:
 
-        # Get the inner splits corresponding to this outer fold
-        splits_hpo = inner_splits_all[i]
+            # Get training data (for HPO and final model training)
+            x_hpo = [data.x[j] for j in outer_split['outer_train_idx']]
+            y_hpo = [data.y[j] for j in outer_split['outer_train_idx']]
 
-        # A. HPO: Find best hparams for this outer fold
-        best_hparams, _ = optuna_hpo(config, model, splits_hpo, x, y, metric, verbose)
-        print(f'\nFold {i+1} Best Hparams: {best_hparams}') #if verbose else None
+            # Get test data (for final evaluation)
+            x_test = [data.x[j] for j in outer_split['outer_test_idx']]
+            y_test = [data.y[j] for j in outer_split['outer_test_idx']]
 
-        # B. Train final model on the outer training set with best_hparams
-        print(f'train model ...') if verbose else None
-        f = model(**best_hparams)
-        f.train(x_train=x_hpo, y_train=y_hpo)
+            # Get the inner splits corresponding to this outer fold
+            splits_hpo = inner_splits_all[i]
 
-        # C. Evaluate on the outer test set
-        y_pred = f.predict(x_test)
-        y_pred_proba = f.predict_proba(x_test)
+            # A. HPO: Find best hparams for this outer fold
+            best_hparams, _ = optuna_hpo(config, model, splits_hpo, x, y, metric, verbose)
+            print(f'\nFold {i+1} Best Hparams: {best_hparams}') #if verbose else None
 
-        # calculate metrics
-        metrics = calc_metrics(y_test, y_pred, y_pred_proba)
+            # B. Train final model on the outer training set with best_hparams
+            print(f'train model ...') if verbose else None
+            f = model(**best_hparams)
+            f.train(x_train=x_hpo, y_train=y_hpo)
 
-        aurocs.append(metrics['auroc'])
-        auprcs.append(metrics['auprc'])
-        balanceds.append(metrics['balanced'])
-        kappas.append(metrics['kappa'])
-        bedrocs.append(metrics['bedroc'])
+            # C. Evaluate on the outer test set
+            y_pred = f.predict(x_test)
+            y_pred_proba = f.predict_proba(x_test)
 
-        # Optional: save hparams and model for each fold
-        ds_path = data.ds_path # e.g. feat_mhd_or # Set `config_path` and `model_path` based on `filepath`
+            # calculate metrics
+            metrics = calc_metrics(y_test, y_pred, y_pred_proba)
 
-        descriptor = data.descriptor
-        aim = data.aim
-        rmvS = data.rmvS
-        spl = data.spl
+            aurocs.append(metrics['auroc'])
+            auprcs.append(metrics['auprc'])
+            balanceds.append(metrics['balanced'])
+            kappas.append(metrics['kappa'])
+            bedrocs.append(metrics['bedroc'])
 
-        pipeline = 'NestedCV'
+            # Optional: save hparams and model for each fold
+            ds_path = data.ds_path # e.g. feat_mhd_or # Set `config_path` and `model_path` based on `filepath`
 
-        f_prefix = data.f_prefix
+            descriptor = data.descriptor
+            aim = data.aim
+            rmvS = data.rmvS
+            spl = data.spl
 
-        save_name = f'{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}_fold{i+1}'
+            pipeline = 'NestedCV'
 
-        if save_config: 
-            config_path = os.path.join(ML_HP_DIR, ds_path.replace('feat_', ''))
-            os.makedirs(config_path, exist_ok=True)
-            write_hparams(os.path.join(config_path, f'{save_name}.json'), best_hparams)
-        
-        if save_model:
-            model_path = os.path.join(ML_MODEL_DIR, ds_path.replace('feat_', ''))
-            os.makedirs(model_path, exist_ok=True)
-            with open(os.path.join(model_path, f'{save_name}.joblib'), 'wb') as handle:
-                joblib.dump(f, handle)
+            f_prefix = data.f_prefix
+
+            save_name = f'{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}_fold{i+1}'
+
+            if save_config: 
+                config_path = os.path.join(ML_HP_DIR, ds_path.replace('feat_', ''))
+                os.makedirs(config_path, exist_ok=True)
+                write_hparams(os.path.join(config_path, f'{save_name}.json'), best_hparams)
+            
+            if save_model:
+                model_path = os.path.join(ML_MODEL_DIR, ds_path.replace('feat_', ''))
+                os.makedirs(model_path, exist_ok=True)
+                with open(os.path.join(model_path, f'{save_name}.joblib'), 'wb') as handle:
+                    joblib.dump(f, handle)
 
     print(f'outer_fold_aurocs: {aurocs}\n'
-          f'outer_fold_auprcs: {auprcs}\n'
-          f'outer_fold_balanceds: {balanceds}\n'
-          f'outer_fold_kappas: {kappas}\n'
-          f'outer_fold_bedrocs: {bedrocs}\n'
+        f'outer_fold_auprcs: {auprcs}\n'
+        f'outer_fold_balanceds: {balanceds}\n'
+        f'outer_fold_kappas: {kappas}\n'
+        f'outer_fold_bedrocs: {bedrocs}\n'
     ) if verbose else None
 
     return {'auroc': np.nanmean(aurocs),
@@ -394,14 +402,18 @@ def consensus_nested_cv(config, model, data:MLData,
     for i, outer_split in enumerate(outer_splits):
         print(f'\nOuter Fold {i+1}/{len(outer_splits)}')
 
-        splits_hpo = inner_splits_all[i]
+        if len(outer_split['outer_test_idx']) == 0: # skip empty test set
+            print(f"Outer Fold {i+1} skipped -- empty test set.")
+        else:
+            # Get the inner splits corresponding to this outer fold
+            splits_hpo = inner_splits_all[i]
 
-        # HPO: Find best hparams for this outer fold
-        best_hparams, _ = optuna_hpo(config, model, splits_hpo, x, y, metric, verbose)
-        # Convert dict to tuple for counting
-        hparams_tuple = tuple(sorted(best_hparams.items()))
-        all_best_hparams.append(hparams_tuple)
-        print(f'Fold {i+1} Best Hparams: {best_hparams}') #if verbose else None
+            # HPO: Find best hparams for this outer fold
+            best_hparams, _ = optuna_hpo(config, model, splits_hpo, x, y, metric, verbose)
+            # Convert dict to tuple for counting
+            hparams_tuple = tuple(sorted(best_hparams.items()))
+            all_best_hparams.append(hparams_tuple)
+            print(f'Fold {i+1} Best Hparams: {best_hparams}') #if verbose else None
 
     # B Identify the consensus(most frequent) hparams 
     from collections import Counter
@@ -435,48 +447,52 @@ def consensus_nested_cv(config, model, data:MLData,
     # 2. Outer CV: Evaluate using the consensus_hparams across all outer folds
     print(f"\n--- Phase 2: Outer cross-validation with consensus hparams") if verbose else None
     aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
-    
+
     for i, outer_split in enumerate(outer_splits):
         print(f'\nOuter Fold {i+1}/{len(outer_splits)}')
 
-        # train data for the current outer fold
-        x_train = [data.x[j] for j in outer_split['outer_train_idx']]
-        y_train = [data.y[j] for j in outer_split['outer_train_idx']]
+        if len(outer_split['outer_test_idx']) == 0: # skip empty test set
+            print(f"Outer Fold {i+1} skipped -- empty test set.")
+        
+        else:
+            # train data for the current outer fold
+            x_train = [data.x[j] for j in outer_split['outer_train_idx']]
+            y_train = [data.y[j] for j in outer_split['outer_train_idx']]
 
-        # test data for the current outer fold
-        x_test = [data.x[j] for j in outer_split['outer_test_idx']]
-        y_test = [data.y[j] for j in outer_split['outer_test_idx']]
+            # test data for the current outer fold
+            x_test = [data.x[j] for j in outer_split['outer_test_idx']]
+            y_test = [data.y[j] for j in outer_split['outer_test_idx']]
 
-        # Train the model with the consensus_hparams, and evaluate on the outer test set.
-        print(f'train model ...') if verbose else None
-        f = model(**consensus_hparams)
-        f.train(x_train=x_train, y_train=y_train)
+            # Train the model with the consensus_hparams, and evaluate on the outer test set.
+            print(f'train model ...') if verbose else None
+            f = model(**consensus_hparams)
+            f.train(x_train=x_train, y_train=y_train)
 
-        y_pred = f.predict(x_test)
-        y_pred_proba = f.predict_proba(x_test)
+            y_pred = f.predict(x_test)
+            y_pred_proba = f.predict_proba(x_test)
 
-        # calculate metrics
-        metrics = calc_metrics(y_test, y_pred, y_pred_proba)
+            # calculate metrics
+            metrics = calc_metrics(y_test, y_pred, y_pred_proba)
 
-        aurocs.append(metrics['auroc'])
-        auprcs.append(metrics['auprc'])
-        balanceds.append(metrics['balanced'])
-        kappas.append(metrics['kappa'])
-        bedrocs.append(metrics['bedroc'])
+            aurocs.append(metrics['auroc'])
+            auprcs.append(metrics['auprc'])
+            balanceds.append(metrics['balanced'])
+            kappas.append(metrics['kappa'])
+            bedrocs.append(metrics['bedroc'])
 
-        # Optional: save hparams and model for each fold
-        if save_model:
-            model_path = os.path.join(ML_MODEL_DIR, ds_path.replace('feat_', ''))
-            os.makedirs(model_path, exist_ok=True)
-            with open(os.path.join(model_path, f'{save_name}_fold{i+1}.joblib'), 'wb') as handle:
-                joblib.dump(f, handle)
-                print('Done')
+            # Optional: save hparams and model for each fold
+            if save_model:
+                model_path = os.path.join(ML_MODEL_DIR, ds_path.replace('feat_', ''))
+                os.makedirs(model_path, exist_ok=True)
+                with open(os.path.join(model_path, f'{save_name}_fold{i+1}.joblib'), 'wb') as handle:
+                    joblib.dump(f, handle)
+                    print('Done')
 
     print(f'outer_fold_aurocs: {aurocs}\n'
-          f'outer_fold_auprcs: {auprcs}\n'
-          f'outer_fold_balanceds: {balanceds}\n'
-          f'outer_fold_kappas: {kappas}\n'
-          f'outer_fold_bedrocs: {bedrocs}\n'
+        f'outer_fold_auprcs: {auprcs}\n'
+        f'outer_fold_balanceds: {balanceds}\n'
+        f'outer_fold_kappas: {kappas}\n'
+        f'outer_fold_bedrocs: {bedrocs}\n'
     ) if verbose else None
 
     return {
@@ -488,8 +504,8 @@ def consensus_nested_cv(config, model, data:MLData,
     }
 
 PL_FUNCS = {
-    'holdout_cv': holdout_cv,
-    'single_nested_cv': single_nested_cv,
-    'nested_cv': nested_cv,
-    'consensus_nested_cv': consensus_nested_cv
+    'HoldoutCV': holdout_cv,
+    'SingleNestedCV': single_nested_cv,
+    'NestedCV': nested_cv,
+    'ConsensusNestedCV': consensus_nested_cv
     }

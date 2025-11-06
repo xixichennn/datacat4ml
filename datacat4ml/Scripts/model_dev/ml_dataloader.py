@@ -134,8 +134,8 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
             test_minClass_counts.append(0)
             print('Only one class in outer_y_test, skip this fold.')
 
-    print(f'train_minClass_counts: \n{train_minClass_counts}') if verbose else None
-    print(f'test_minClass_counts: \n{test_minClass_counts}') if verbose else None
+    print(f'train_minClass_counts: \n{train_minClass_counts}') #if verbose else None
+    print(f'test_minClass_counts: \n{test_minClass_counts}') #if verbose else None
 
     # length of the outer splits
     outer_n_fold = len(outer_splits)
@@ -180,6 +180,10 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
                 inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train_pick, selectionStrategy='clust_holdout')
             #print(f'Inner train folds: {inner_train_folds}')
             #print(f'Inner valid folds: {inner_valid_folds}\n')
+
+            # YU: remove the if statement below
+            if inner_train_folds is None or inner_valid_folds is None:
+                print('Cannot generate inner splits for the picked outer training set. Thus skip model training for this dataset.')
 
             for tr, va in zip(inner_train_folds, inner_valid_folds):
                 inner_splits.append({

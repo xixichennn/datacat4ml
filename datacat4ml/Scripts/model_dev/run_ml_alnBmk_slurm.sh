@@ -22,7 +22,7 @@ descriptors=('ECFP4'
              )
 rmvSs=(0 1)
 aim_spl_combos=('lo,rs-lo' 'lo,cs' 'vs,rs-vs' 'vs,ch')
-pls=('holdout_cv' 'single_nested_cv' 'nested_cv' 'consensus_nested_cv')
+pls=('HoldoutCV' 'SingleNestedCV' 'NestedCV' 'ConsensusNestedCV')
 
 # SLURM_ARRAY_TASK_ID
 algo="${algos[$SLURM_ARRAY_TASK_ID % ${#algos[@]}]}"

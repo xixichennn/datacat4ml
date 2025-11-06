@@ -153,8 +153,8 @@ def optuna_hpo(config, model, splits, x, y, metric='auroc', verbose=False):
         """
         hparams = set_hpspace(trial, config)
 
-        print(f"\n<Trial {trial.number}>")
-        print(f'Sampled HParams: {hparams}')
+        print(f"\n<Trial {trial.number}>") if verbose else None
+        print(f'Sampled HParams: {hparams}') if verbose else None
 
         try:
             mean_score, _, _= cross_validate(hparams, model, splits, x, y, metric, verbose)

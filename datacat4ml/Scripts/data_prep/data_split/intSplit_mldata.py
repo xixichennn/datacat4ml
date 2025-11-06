@@ -194,10 +194,10 @@ def random_split(x, y, n_folds=5, random_seed=RANDOM_SEED):
     #print(f'min_class_count: {min_class_count}')
 
     if min_class_count < n_folds:
-        print(f'resetting n_folds {n_folds} → {min_class_count} due to class imbalance.')
+        print(f'reset n_folds {n_folds} → {min_class_count} due to class imbalance.')
         n_folds = min_class_count
     if n_folds < 2:
-        print(f"skipped — k-fold CV not applicable due to n_folds < 2).")
+        print(f"skip k-fold CV not applicable due to n_folds < 2).")
         return None, None
 
     else:

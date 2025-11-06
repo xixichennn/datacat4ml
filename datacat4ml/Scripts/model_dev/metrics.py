@@ -263,7 +263,7 @@ def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
     score.sort(key=lambda x: x[0], reverse=True) # sort the list by the first element, i.e. # the predicted probability of the positive class (1), in descending order.
     bedroc_score = CalcBEDROC(score, 1, alpha) # 1 is the column index for the ground-truth values (y_true)
 
-    return 
+    return bedroc_score
 
 def calc_accuracy(y_true, y_pred):
     """
