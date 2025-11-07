@@ -271,7 +271,7 @@ def aln_bmk(bmk_file, algo_name,
                 for cf_prefix in cf_prefixes:
                     print(f'---------------------------------\nchild file: {cf_prefix}')
 
-                    #if pd_cd_pair == ('hhd', 'lhd') and pf_prefix == 'CHEMBL236_None_None_Ki_None_hhd' and cf_prefix == 'CHEMBL236_bind_RBA_Ki_CHEMBL3887031_lhd': # for debugging
+                    #if pd_cd_pair == ('hhd', 'mhd') and pf_prefix == 'CHEMBL2014_None_None_EC50_None_hhd' and cf_prefix == 'CHEMBL2014_agon_G-Ca_EC50_None_mhd': # for debugging
                         
                     # Yu: move the below lines indentation back
                     # pf

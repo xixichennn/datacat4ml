@@ -130,11 +130,6 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
             if len(train_unique) <2 or len(test_unique) <2:
                 print(f'Only one class in outer_y_train or outer_y_test in outer fold {fold_id+1}. Cannot do k-fold inner splits, skip this fold.')
             else:
-                train_minClass_count = min(train_counts)
-                test_minClass_count = min(test_counts)
-                train_minClass_counts.append(train_minClass_count)
-                test_minClass_counts.append(test_minClass_count)
-
                 # ========================== Get the inner splits all ==========================
                 try:
                     if spl in ['rs-lo', 'rs-vs']:
@@ -147,6 +142,14 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
                     if inner_train_folds is None or inner_valid_folds is None:
                         print(f'Cannot generate inner splits for this outer fold {fold_id+1}.Skipping this fold.') if verbose else None
                     else:
+                        
+                        # for picking the best outer fold
+                        train_minClass_count = min(train_counts)
+                        test_minClass_count = min(test_counts)
+                        train_minClass_counts.append(train_minClass_count)
+                        test_minClass_counts.append(test_minClass_count)
+
+                        # for getting the inner splits all
                         inner_splits = []
                         for tr, va in zip(inner_train_folds, inner_valid_folds):
                             inner_splits.append({
