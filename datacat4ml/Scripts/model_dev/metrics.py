@@ -180,32 +180,6 @@ def top_k_accuracy(y_true, y_pred, k=5, ret_arocc=False, ret_mrocc=False, verbos
     return tkaccs[0] if len(tkaccs) == 1 else tkaccs
 
 #====================================For ML classifiers =========================================================
-def calc_balanced_acc(y_true, y_pred):
-    """
-    Calculates the Balanced Accuracy for a binary classification task.
-
-    Args:
-        y_true (array-like): True binary labels (0 or 1).
-        y_pred (array-like): Predicted binary labels (0 or 1).
-    Returns:
-        float: The Balanced Accuracy score.
-    """
-    bal_acc = balanced_accuracy_score(y_true, y_pred)
-    return bal_acc
-
-def calc_cohen_kappa(y_true, y_pred):
-    """
-    Calculates the Cohen's Kappa score for a binary classification task.
-
-    Args:
-        y_true (array-like): True binary labels (0 or 1).
-        y_pred (array-like): Predicted binary labels (0 or 1).
-    Returns:
-        float: The Cohen's Kappa score.
-    """
-    kappa = cohen_kappa_score(y_true, y_pred)
-    return kappa
-
 def calc_auroc(y_true, y_pred_prob):
     """
     Calculates the Area Under the Receiver Operating Characteristic Curve (ROC AUC) for a binary classification task.
@@ -217,8 +191,21 @@ def calc_auroc(y_true, y_pred_prob):
     Returns:
         float: The ROC AUC score.
     """
-    auroc = metrics.roc_auc_score(y_true, y_pred_prob[:, 1])
-    return auroc
+    # If y_true has only one class → AUROC undefined
+    if len(np.unique(y_true)) < 2:
+        print("Warning: Only one class present in y_true. AUROC cannot be computed reliably, returning NaN.")
+        return float('nan')
+    
+    # Ensure y_pred_prob has 2 columns
+    if y_pred_prob.ndim == 1 or y_pred_prob.shape[1] == 1:
+        print("Warning: y_pred_prob has only one column. Cannot compute AUROC reliably. Returning NaN.")
+        return float('nan')
+    
+    try:
+        return metrics.roc_auc_score(y_true, y_pred_prob[:, 1])
+    except Exception as e:
+        print(f"AUROC computation failed: {e}")
+        return float('nan')
 
 def calc_auprc(y_true, y_pred_prob):
     """
@@ -231,11 +218,51 @@ def calc_auprc(y_true, y_pred_prob):
     Returns:
         float: The AUPRC score.
     """
-    precision, recall, _ = metrics.precision_recall_curve(y_true, y_pred_prob[:, 1])
-    auprc = metrics.auc(recall, precision)
-    return auprc
+    # If y_true has only one class → AUROC undefined
+    if len(np.unique(y_true)) < 2:
+        print("Warning: Only one class present in y_true. AUROC cannot be computed reliably, returning NaN.")
+        return float('nan')
+    
+    # Ensure y_pred_prob has 2 columns
+    if y_pred_prob.ndim == 1 or y_pred_prob.shape[1] == 1:
+        print("Warning: y_pred_prob has only one column. Cannot compute AUROC reliably. Returning NaN.")
+        return float('nan')
+    
+    try:
+        precision, recall, _ = metrics.precision_recall_curve(y_true, y_pred_prob[:, 1])
+        auprc = metrics.auc(recall, precision)
+        return auprc
+    except Exception as e:
+        print(f"AUPRC computation failed: {e}")
+        return float('nan')
 
-def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
+def calc_balanced_acc(y_true, y_pred): #Yu: the definaton of y_pred is different from that was used in SIMPD
+    """
+    Calculates the Balanced Accuracy for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The Balanced Accuracy score.
+    """
+    bal_acc = balanced_accuracy_score(y_true, y_pred)
+    return bal_acc
+
+def calc_cohen_kappa(y_true, y_pred): #Yu: the defination of y_pred is different from that was used in SIMPD
+    """
+    Calculates the Cohen's Kappa score for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The Cohen's Kappa score.
+    """
+    kappa = cohen_kappa_score(y_true, y_pred)
+    return kappa
+
+def calc_ml_bedroc(y_true, y_pred_prob, alpha: float = 80.5):
     """ Calculates the bedroc score unsing rdkit.ML.Scoring.CalcBEDROC.
     The source code is available at https://github.com/rdkit/rdkit/blob/master/rdkit/ML/Scoring/Scoring.py#L103
     This function is defined as `def CalcBEDROC(score, col, alpha)`, 
@@ -246,7 +273,7 @@ def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
     
     Params
     ------
-    y_pred_proba: (lst/array) a list of predicted probabilities for all compounds, i.e. the value of model.predict_proba(x_test). 
+    y_pred_prob: (lst/array) a list of predicted probabilities for all compounds, i.e. the value of model.predict_proba(x_test). 
                    y_pred_proba[:, 1] is the probability of the positive class (1).
     y_true: (lst/array) a list of true values for all compounds.
     alpha: (float)  early recognition parameter. 
@@ -258,12 +285,25 @@ def calc_ml_bedroc(y_true, y_pred_proba, alpha: float = 80.5):
     -------
     (float) BEDROC score
     """
-
-    score = list(zip(y_pred_proba[:, 1], y_true))
-    score.sort(key=lambda x: x[0], reverse=True) # sort the list by the first element, i.e. # the predicted probability of the positive class (1), in descending order.
-    bedroc_score = CalcBEDROC(score, 1, alpha) # 1 is the column index for the ground-truth values (y_true)
-
-    return bedroc_score
+    # If y_true has only one class → AUROC undefined
+    if len(np.unique(y_true)) < 2:
+        print("Warning: Only one class present in y_true. AUROC cannot be computed reliably, returning NaN.")
+        return float('nan')
+    
+    # Ensure y_pred_prob has 2 columns
+    if y_pred_prob.ndim == 1 or y_pred_prob.shape[1] == 1:
+        print("Warning: y_pred_prob has only one column. Cannot compute AUROC reliably. Returning NaN.")
+        return float('nan')
+    
+    try:
+        score = list(zip(y_pred_prob[:, 1], y_true))
+        score.sort(key=lambda x: x[0], reverse=True) # sort the list by the first element, i.e. # the predicted probability of the positive class (1), in descending order.
+        bedroc_score = CalcBEDROC(score, 1, alpha) # 1 is the column index for the ground-truth values (y_true)
+        return bedroc_score#
+    
+    except Exception as e:
+        print(f"BEDROC computation failed: {e}")
+        return float('nan')
 
 def calc_accuracy(y_true, y_pred):
     """

@@ -271,7 +271,7 @@ def aln_bmk(bmk_file, algo_name,
                 for cf_prefix in cf_prefixes:
                     print(f'---------------------------------\nchild file: {cf_prefix}')
 
-                    if pd_cd_pair == ('hhd', 'mhd') and pf_prefix == 'CHEMBL237_None_None_EC50_None_hhd' and cf_prefix == 'CHEMBL237_agon_B-arrest_EC50_None_mhd': # for debugging
+                    if pd_cd_pair == ('hhd', 'mhd') and pf_prefix == 'CHEMBL236_None_None_IC50_None_hhd' and cf_prefix == 'CHEMBL236_agon_G-cAMP_IC50_None_mhd': # for debugging
                         
                         # Yu: move the below lines indentation back
                         # pf
@@ -283,17 +283,17 @@ def aln_bmk(bmk_file, algo_name,
 
                         # ======> initialize MLData object <=======
                         print(f'\n========>pf: Getting MLData {pf_full_path.split("/")[-1]} ...')
-                        pf_data_info = get_mldata_info(pf_full_path, descriptor, aim_spl_combo, rmvS,
-                                                        cf_prefix=cf_prefix, pf_prefix=None,
-                                                        verbose=verbose)
+                        #pf_data_info = get_mldata_info(pf_full_path, descriptor, aim_spl_combo, rmvS,
+                        #                                cf_prefix=cf_prefix, pf_prefix=None,
+                        #                                verbose=verbose)
                         print(f'\n========>cf: Getting MLData {cf_full_path.split("/")[-1]} ...')
                         cf_data_info = get_mldata_info(cf_full_path, descriptor, aim_spl_combo, rmvS,
                                                         cf_prefix=None, pf_prefix=pf_prefix, verbose=verbose)
 
                         required = (
-                            pf_data_info['pf_aln_outer_n_fold'],
+                            #pf_data_info['pf_aln_outer_n_fold'],
                             cf_data_info['cf_aln_outer_n_fold'],
-                            pf_data_info['pf_aln_outer_x_test_pick'],
+                            #pf_data_info['pf_aln_outer_x_test_pick'],
                             cf_data_info['cf_aln_outer_x_test_pick']
                         )
                         if all(required):
@@ -301,27 +301,27 @@ def aln_bmk(bmk_file, algo_name,
                             func = PL_FUNCS[pl]
 
                             print(f'\n========>pf: Run pipeline {pl} ...')
-                            pf_metrics = func(config, algo, pf_data_info['data'], 
-                                            save_config=save_config, save_model=save_model, verbose=verbose, 
-                                            SPL='aln', position='parent')
+                            #pf_metrics = func(config, algo, pf_data_info['data'], 
+                            #                save_config=save_config, save_model=save_model, verbose=verbose, 
+                            #                SPL='aln', position='parent')
                             print(f'\n========>cf: Run pipeline {pl} ...')
                             cf_metrics = func(config, algo, cf_data_info['data'], 
                                             save_config=save_config, save_model=save_model, verbose=verbose, 
                                             SPL='aln', position='child')
                             count += 1
 
-                            with open(bmk_file, 'a') as f:
-                                f.write(f'{algo.__name__},'# algo: e.g. RF
-                                        f'{pd_cd_pair[0]},{pd_cd_pair[1]},1,'# pd_cat_level, cd_cat_level:e.g. hhd,mhd
-                                        f'{pf_data_info["f_prefix"]},{pf_data_info["target_chembl_id"]},{pf_data_info["effect"]},{pf_data_info["assay"]},{pf_data_info["standard_type"]},{pf_data_info["assay_chembl_id"]},'# pf_prefix: e.g. CHEMBL233_None_None_Ki_None_hhd,
-                                        f'{cf_data_info["f_prefix"]},{cf_data_info["target_chembl_id"]},{cf_data_info["effect"]},{cf_data_info["assay"]},{cf_data_info["standard_type"]},{cf_data_info["assay_chembl_id"]},'# cf_prefix: e.g. CHEMBL233_antag_G-GTP_Ki_None_mhd
-                                        f'{descriptor},aln,{pf_data_info["aim"]},{pf_data_info["spl"]},rmvS{rmvS},' # pf_data_info and cf_data_info have the same aim and spl
-                                        f'{pf_data_info["ds_size"]},{pf_data_info["ds_size_level"]},{pf_data_info["threshold"]},{pf_data_info["percent_a"]},{pf_data_info["pf_aln_outer_n_fold"]},'
-                                        f'{cf_data_info["ds_size"]},{cf_data_info["ds_size_level"]},{cf_data_info["threshold"]},{cf_data_info["percent_a"]},{cf_data_info["cf_aln_outer_n_fold"]},'
-                                        f'{pl},'
-                                        f'{pf_metrics["auroc"]},{pf_metrics["auprc"]},{pf_metrics["balanced"]},{pf_metrics["kappa"]},{pf_metrics["bedroc"]},'
-                                        f'{cf_metrics["auroc"]},{cf_metrics["auprc"]},{cf_metrics["balanced"]},{cf_metrics["kappa"]},{cf_metrics["bedroc"]}\n'
-                                        )
+                            #with open(bmk_file, 'a') as f:
+                            #    f.write(f'{algo.__name__},'# algo: e.g. RF
+                            #            f'{pd_cd_pair[0]},{pd_cd_pair[1]},1,'# pd_cat_level, cd_cat_level:e.g. hhd,mhd
+                            #            f'{pf_data_info["f_prefix"]},{pf_data_info["target_chembl_id"]},{pf_data_info["effect"]},{pf_data_info["assay"]},{pf_data_info["standard_type"]},{pf_data_info["assay_chembl_id"]},'# pf_prefix: e.g. CHEMBL233_None_None_Ki_None_hhd,
+                            #            f'{cf_data_info["f_prefix"]},{cf_data_info["target_chembl_id"]},{cf_data_info["effect"]},{cf_data_info["assay"]},{cf_data_info["standard_type"]},{cf_data_info["assay_chembl_id"]},'# cf_prefix: e.g. CHEMBL233_antag_G-GTP_Ki_None_mhd
+                            #            f'{descriptor},aln,{pf_data_info["aim"]},{pf_data_info["spl"]},rmvS{rmvS},' # pf_data_info and cf_data_info have the same aim and spl
+                            #            f'{pf_data_info["ds_size"]},{pf_data_info["ds_size_level"]},{pf_data_info["threshold"]},{pf_data_info["percent_a"]},{pf_data_info["pf_aln_outer_n_fold"]},'
+                            #            f'{cf_data_info["ds_size"]},{cf_data_info["ds_size_level"]},{cf_data_info["threshold"]},{cf_data_info["percent_a"]},{cf_data_info["cf_aln_outer_n_fold"]},'
+                            #            f'{pl},'
+                            #            f'{pf_metrics["auroc"]},{pf_metrics["auprc"]},{pf_metrics["balanced"]},{pf_metrics["kappa"]},{pf_metrics["bedroc"]},'
+                            #            f'{cf_metrics["auroc"]},{cf_metrics["auprc"]},{cf_metrics["balanced"]},{cf_metrics["kappa"]},{cf_metrics["bedroc"]}\n'
+                            #            )
                         else:
                             print(f'Skipping pf {pf_prefix} and cf {cf_prefix} due to missing required data splits.')
     return count

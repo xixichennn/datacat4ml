@@ -20,15 +20,14 @@ def find_best_index(A: List[int], B: List[int], threshold: int = 2) -> int:
 
     Returns the index of the best match, or 0 if match is found.
     """
-    
-    if len(A) == 0 or len(B) == 0:
-        print(f'Empty train_minClass_counts or test_minClass_counts list found.\n Skip model training for this dataset.')
+    if all(x == 0 for x in A) or all(x == 0 for x in B):
+        print(f'Each fold in outer splits only has one class in y_train and y_test, cannot generate any at least 2-fold inner splits.\n Skip model training for this dataset.')
         best_index = -1
     else:
         best_index = None
         max_sum = float('-inf')
         for i, (a_val, b_val) in enumerate(zip(A, B)):
-            if a_val >= threshold and b_val >= threshold:
+            if a_val >= threshold and b_val >= threshold: # ensure at least 2 fold cross-validation.
                 current_sum = a_val + b_val
                 if current_sum > max_sum:
                     max_sum = current_sum
@@ -87,8 +86,8 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
               {'inner_train_idx': [2, 3, 4, 5], 'inner_valid_idx': [6]}]
     inner_splits_all: list of list of dictionaries
     """
-    print(f'\nGenerating outer splits ...') if verbose else None
-    
+    inner_splits_all = []
+
     outer_train_idx_full = []
     outer_test_idx_full = []
     outer_splits = []
@@ -96,136 +95,97 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
     train_minClass_counts = []
     test_minClass_counts = []
 
-    # ========================== Generate outer splits ==========================
-    for assignment in assignments:
+    for fold_id, assignment in enumerate(assignments):
+
+        #=========================== Prepare outer train and test idx ===========================
         outer_train_idx = [i for i, v in enumerate(assignment) if v == 'train']
         outer_test_idx = [i for i, v in enumerate(assignment) if v == 'test']
 
-        outer_train_idx_full.append(outer_train_idx)
-        outer_test_idx_full.append(outer_test_idx)
-        outer_splits.append({'outer_train_idx': outer_train_idx, 
-                             'outer_test_idx': outer_test_idx})
-
-        # ============================================================================
-        # Select one outer_fold which has the maximum min-class count in outer_y_train,
-        # thus to ensure the inner splits can be generated as many folds as possible.
-        # ============================================================================
-        outer_y_train = [y[i] for i in outer_train_idx]
-        #print(f'outer_y_train: {outer_y_train}')
-        outer_y_test = [y[i] for i in outer_test_idx]
-        #print(f'outer_y_test: {outer_y_test}')
-
-        train_unique, train_counts = np.unique(outer_y_train, return_counts=True)
-        test_unique, test_counts = np.unique(outer_y_test, return_counts=True)
-        #print(f'classes: {unique}, counts: {counts}')
-        if len(train_unique) >= 2:
-            train_minClass_count = min(train_counts)
-            #print(f'minClass_count: {minClass_count}')
-            train_minClass_counts.append(train_minClass_count)
+        if len(outer_test_idx) == 0:
+            print(f' No test set found in this outer fold {fold_id+1}. Skipping this fold.') if verbose else None
         else:
-            print('Only one class in outer_y_train, skip this fold.')
-            train_minClass_counts.append(0)
+            # When spl is 'rs-lo' or 'rs-vs':
+            # get x, y, activity_ids
+            outer_x_train = [x[i] for i in outer_train_idx]
+            outer_y_train = [y[i] for i in outer_train_idx]
+            outer_actid_train = [activity_ids[i] for i in outer_train_idx]
 
-        if len(test_unique) >= 2:
-            test_minClass_count = min(test_counts)
-            #print(f'minClass_count: {minClass_count}')
-            test_minClass_counts.append(test_minClass_count)
-        else:
-            test_minClass_counts.append(0)
-            print('Only one class in outer_y_test, skip this fold.')
+            outer_x_test = [x[i] for i in outer_test_idx]
+            outer_y_test = [y[i] for i in outer_test_idx]
+            outer_actid_train = [activity_ids[i] for i in outer_train_idx]
 
-    print(f'train_minClass_counts: \n{train_minClass_counts}') #if verbose else None
-    print(f'test_minClass_counts: \n{test_minClass_counts}') #if verbose else None
+            # When spl is 'cs' or 'ch':
+            # get smiles
+            outer_smi_train = [smis[i] for i in outer_train_idx]
+            outer_smi_test = [smis[i] for i in outer_test_idx]
 
-    # length of the outer splits
+            try:
+                # ========================== Get the inner splits all ==========================
+                if spl in ['rs-lo', 'rs-vs']:
+                    inner_train_folds, inner_valid_folds = random_split(x=outer_x_train, y=outer_y_train, n_folds=5)
+                elif spl== 'cs':
+                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train,selectionStrategy='clust_stratified')
+                elif spl== 'ch':
+                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train,selectionStrategy='clust_holdout')
+
+                
+                if inner_train_folds is None or inner_valid_folds is None:
+                    print(f'Cannot generate inner splits for this outer fold {fold_id+1}.Skipping this fold.') if verbose else None
+                else:
+                    inner_splits = []
+                    for tr, va in zip(inner_train_folds, inner_valid_folds):
+                        inner_splits.append({
+                            'inner_train_idx':[outer_train_idx[i] for i in tr], 
+                            'inner_valid_idx':[outer_train_idx[i] for i in va]})
+                     
+                    inner_splits_all.append(inner_splits)
+                    # ====================================Get the outer splits ====================================
+                    outer_train_idx_full.append(outer_train_idx)
+                    outer_test_idx_full.append(outer_test_idx)
+                    outer_splits.append({'outer_train_idx': outer_train_idx,
+                                        'outer_test_idx': outer_test_idx})
+                    
+                    # ============================ Pick the best outer fold ============================
+                    outer_y_train = [y[i] for i in outer_train_idx]
+                    outer_y_test = [y[i] for i in outer_test_idx]
+
+                    train_unique, train_counts = np.unique(outer_y_train, return_counts=True)
+                    test_unique, test_counts = np.unique(outer_y_test, return_counts=True)
+
+                    if len(train_unique) <2 or len(test_unique) <2:
+                        print(f'Only one class in outer_y_train or outer_y_test for outer fold {fold_id+1}, \Cannot do k-fold inner splits, skip this fold.')
+                        train_minClass_counts.append(0)
+                        test_minClass_counts.append(0)
+                    else:
+                        train_minClass_count = min(train_counts)
+                        test_minClass_count = min(test_counts)
+                        train_minClass_counts.append(train_minClass_count)
+                        test_minClass_counts.append(test_minClass_count)
+
+            except Exception as e:
+                print(f'Error during inner split generation for outer fold {fold_id+1}: {e}')
+                continue
+        
     outer_n_fold = len(outer_splits)
 
     best_index = find_best_index(train_minClass_counts, test_minClass_counts, threshold=2)
 
     if best_index == -1:
-        return outer_splits, outer_n_fold, None, None, None, None, None, None
+        return outer_splits, outer_n_fold, None, None, None, None, None
     else:
-        # the idx of the outer fold picked
+        inner_splits_pick = inner_splits_all[best_index]
         outer_train_idx_pick = outer_train_idx_full[best_index]
         outer_test_idx_pick = outer_test_idx_full[best_index]
 
-        # when spl is 'rs-lo' or 'rs-vs': 
-        # get the picked outer train and test sets of x, y, activity_ids
         outer_x_train_pick = [x[i] for i in outer_train_idx_pick]
         outer_y_train_pick = [y[i] for i in outer_train_idx_pick]
-        outer_actid_train_pick = [activity_ids[i] for i in outer_train_idx_pick]
-
         outer_x_test_pick = [x[i] for i in outer_test_idx_pick]
         outer_y_test_pick = [y[i] for i in outer_test_idx_pick]
-        outer_actid_test_pick = [activity_ids[i] for i in outer_test_idx_pick]
-
-        # when spl is 'cs' or 'ch':
-        # get the picked outer train and test sets of smiles
-        outer_smi_train_pick = [smis[i] for i in outer_train_idx_pick]
-        outer_smi_test_pick = [smis[i] for i in outer_test_idx_pick]
-
-        # ================== Get the inner splits ====================
-        print(f'\nGenerating inner splits for ...') if verbose else None
-        inner_splits = []
-        try:
-            if spl in ['rs-lo', 'rs-vs']:
-                # generate the inner splits
-                inner_train_folds, inner_valid_folds = random_split(x=outer_x_train_pick, y=outer_y_train_pick, n_folds=5)
-            
-            elif spl== 'cs':
-                # generate the inner splits
-                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train_pick, selectionStrategy='clust_stratified')
-            
-            elif spl== 'ch':
-                inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train_pick, selectionStrategy='clust_holdout')
-            #print(f'Inner train folds: {inner_train_folds}')
-            #print(f'Inner valid folds: {inner_valid_folds}\n')
-
-            # YU: remove the if statement below
-            if inner_train_folds is None or inner_valid_folds is None:
-                print('Cannot generate inner splits for the picked outer training set. Thus skip model training for this dataset.')
-
-            for tr, va in zip(inner_train_folds, inner_valid_folds):
-                inner_splits.append({
-                    'inner_train_idx':[outer_train_idx_pick[i] for i in tr], # map back to the original dataset indices
-                    'inner_valid_idx':[outer_train_idx_pick[i] for i in va]})
-
-        except Exception as e:
-            print(f'Error during inner split generation: {e}')
-
-        # ================= Get the inner splits all ====================
-        print(f'\nGenerating all inner splits ...') if verbose else None
-        inner_splits_all = []
-        for outer_train_idx in outer_train_idx_full:
-            try:
-                if spl in ['rs-lo', 'rs-vs']:
-                    inner_train_folds, inner_valid_folds = random_split(x=[x[i] for i in outer_train_idx],
-                                                                        y=[y[i] for i in outer_train_idx],
-                                                                        n_folds=5)
-                elif spl== 'cs':
-                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[smis[i] for i in outer_train_idx],
-                                                                            selectionStrategy='clust_stratified')
-                elif spl== 'ch':
-                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=[smis[i] for i in outer_train_idx],
-                                                                            selectionStrategy='clust_holdout')
-            except Exception as e:
-                print(f'Error during inner split generation for outer_train_idx {outer_train_idx}: {e}')
-                continue
-
-            inner_splits = []
-            for tr, va in zip(inner_train_folds, inner_valid_folds):
-                inner_splits.append({
-                    'inner_train_idx':[outer_train_idx[i] for i in tr], 
-                    'inner_valid_idx':[outer_train_idx[i] for i in va]})
-
-            inner_splits_all.append(inner_splits)
 
         return outer_splits, outer_n_fold,\
-            outer_x_train_pick, outer_y_train_pick,\
-            outer_x_test_pick, outer_y_test_pick,\
-            inner_splits, inner_splits_all
-        
-
+                outer_x_train_pick, outer_y_train_pick,\
+                outer_x_test_pick, outer_y_test_pick,\
+                inner_splits_pick, inner_splits_all
 
 class MLData:
 
@@ -341,7 +301,7 @@ class MLData:
             self.int_outer_splits, self.int_outer_n_fold,\
             self.int_outer_x_train_pick, self.int_outer_y_train_pick,\
             self.int_outer_x_test_pick, self.int_outer_y_test_pick,\
-            self.int_inner_splits, self.int_inner_splits_all = retrieve_splits(int_assigns, self.x, self.y, self.activity_ids, self.smiles,
+            self.int_inner_splits_pick, self.int_inner_splits_all = retrieve_splits(int_assigns, self.x, self.y, self.activity_ids, self.smiles,
                                                                                self.spl, verbose=verbose)
 
     def get_aln_splits(self, pf_prefix:str=None, cf_prefix:str=None, verbose=False, **kwargs):
@@ -397,7 +357,7 @@ class MLData:
                 self.cf_aln_outer_splits, self.cf_aln_outer_n_fold,\
                 self.cf_aln_outer_x_train_pick, self.cf_aln_outer_y_train_pick,\
                 self.cf_aln_outer_x_test_pick, self.cf_aln_outer_y_test_pick,\
-                self.cf_aln_inner_splits, self.cf_aln_inner_splits_all = retrieve_splits(cf_aln_assigns, self.x, self.y, self.activity_ids, self.smiles,
+                self.cf_aln_inner_splits_pick, self.cf_aln_inner_splits_all = retrieve_splits(cf_aln_assigns, self.x, self.y, self.activity_ids, self.smiles,
                                                                                          self.spl, verbose=verbose)
 
     def featurize_data(self):
