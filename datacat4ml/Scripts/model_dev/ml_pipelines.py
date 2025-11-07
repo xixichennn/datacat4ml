@@ -63,7 +63,7 @@ def holdout_cv(config, model, data:MLData,
             x_test_pick = data.pf_aln_outer_x_test_pick
             y_test_pick = data.pf_aln_outer_y_test_pick
         elif position == 'child':
-            inner_splits_pick = data.cf_aln_inner_splits
+            inner_splits_pick = data.cf_aln_inner_splits_pick
 
             x_train_pick = data.cf_aln_outer_x_train_pick
             y_train_pick = data.cf_aln_outer_y_train_pick
@@ -97,7 +97,7 @@ def holdout_cv(config, model, data:MLData,
 
     f_prefix = data.f_prefix
 
-    save_name = f'{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}'
+    save_name = f'{SPL}_{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}'
 
     if save_config: 
         config_path = os.path.join(ML_HP_DIR, ds_path.replace('feat_', ''))
@@ -109,6 +109,8 @@ def holdout_cv(config, model, data:MLData,
         os.makedirs(model_path, exist_ok=True)
         with open(os.path.join(model_path, f'{save_name}.joblib'), 'wb') as handle:
             joblib.dump(f, handle)
+    
+    print(f'HoldoutCV Metrics: {metrics}')
 
     return metrics
 
@@ -165,7 +167,7 @@ def single_nested_cv(config, model, data:MLData,
 
     f_prefix = data.f_prefix
     
-    save_name = f'{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}'
+    save_name = f'{SPL}_{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}'
 
     if save_config: 
         config_path = os.path.join(ML_HP_DIR, ds_path.replace('feat_', ''))
@@ -216,7 +218,7 @@ def single_nested_cv(config, model, data:MLData,
         f'outer_fold_balanceds: {balanceds}\n'
         f'outer_fold_kappas: {kappas}\n'
         f'outer_fold_bedrocs: {bedrocs}\n'
-    ) if verbose else None
+    )
 
     return {'auroc': np.nanmean(aurocs), # to ignore nan values
         'auprc': np.nanmean(auprcs),
@@ -313,7 +315,7 @@ def nested_cv(config, model, data:MLData,
 
         f_prefix = data.f_prefix
 
-        save_name = f'{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}_fold{i+1}'
+        save_name = f'{SPL}_{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}_fold{i+1}'
 
         if save_config: 
             config_path = os.path.join(ML_HP_DIR, ds_path.replace('feat_', ''))
@@ -331,7 +333,7 @@ def nested_cv(config, model, data:MLData,
         f'outer_fold_balanceds: {balanceds}\n'
         f'outer_fold_kappas: {kappas}\n'
         f'outer_fold_bedrocs: {bedrocs}\n'
-    ) if verbose else None
+    )
 
     return {'auroc': np.nanmean(aurocs),
         'auprc': np.nanmean(auprcs),
@@ -414,7 +416,7 @@ def consensus_nested_cv(config, model, data:MLData,
     
     f_prefix = data.f_prefix
 
-    save_name = f'{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}'
+    save_name = f'{SPL}_{model.__name__}_{descriptor}_{aim}_rmvS{rmvS}_{spl}_{pipeline}_{f_prefix}'
 
     if save_config: 
         config_path = os.path.join(ML_HP_DIR, ds_path.replace('feat_', ''))
@@ -467,7 +469,7 @@ def consensus_nested_cv(config, model, data:MLData,
         f'outer_fold_balanceds: {balanceds}\n'
         f'outer_fold_kappas: {kappas}\n'
         f'outer_fold_bedrocs: {bedrocs}\n'
-    ) if verbose else None
+    )
 
     return {
         'auroc': np.nanmean(aurocs), # to ignore nan values

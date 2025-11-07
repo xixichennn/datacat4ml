@@ -57,6 +57,8 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
         A list of labels for the dataset. (original dataset)
     activity_ids: list
         A list of activity IDs for the dataset. (original dataset)
+    smis: list
+        A list of SMILES for the dataset. (original dataset)
     spl: str
         The splitting strategy. Options: 'rs-lo', 'rs-vs', 'cs', 'ch'
 
@@ -86,14 +88,16 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
               {'inner_train_idx': [2, 3, 4, 5], 'inner_valid_idx': [6]}]
     inner_splits_all: list of list of dictionaries
     """
+    train_minClass_counts = []
+    test_minClass_counts = []
+
     inner_splits_all = []
 
     outer_train_idx_full = []
     outer_test_idx_full = []
     outer_splits = []
 
-    train_minClass_counts = []
-    test_minClass_counts = []
+    
 
     for fold_id, assignment in enumerate(assignments):
 
@@ -118,62 +122,55 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
             # get smiles
             outer_smi_train = [smis[i] for i in outer_train_idx]
             outer_smi_test = [smis[i] for i in outer_test_idx]
+            
+            # ============================ Pick the best outer fold ============================
+            train_unique, train_counts = np.unique(outer_y_train, return_counts=True)
+            test_unique, test_counts = np.unique(outer_y_test, return_counts=True)
 
-            try:
+            if len(train_unique) <2 or len(test_unique) <2:
+                print(f'Only one class in outer_y_train or outer_y_test in outer fold {fold_id+1}. Cannot do k-fold inner splits, skip this fold.')
+            else:
+                train_minClass_count = min(train_counts)
+                test_minClass_count = min(test_counts)
+                train_minClass_counts.append(train_minClass_count)
+                test_minClass_counts.append(test_minClass_count)
+
                 # ========================== Get the inner splits all ==========================
-                if spl in ['rs-lo', 'rs-vs']:
-                    inner_train_folds, inner_valid_folds = random_split(x=outer_x_train, y=outer_y_train, n_folds=5)
-                elif spl== 'cs':
-                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train,selectionStrategy='clust_stratified')
-                elif spl== 'ch':
-                    inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train,selectionStrategy='clust_holdout')
+                try:
+                    if spl in ['rs-lo', 'rs-vs']:
+                        inner_train_folds, inner_valid_folds = random_split(x=outer_x_train, y=outer_y_train, n_folds=5)
+                    elif spl== 'cs':
+                        inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train,selectionStrategy='clust_stratified')
+                    elif spl== 'ch':
+                        inner_train_folds, inner_valid_folds = cluster_kfold_split(x=outer_smi_train,selectionStrategy='clust_holdout')
 
-                
-                if inner_train_folds is None or inner_valid_folds is None:
-                    print(f'Cannot generate inner splits for this outer fold {fold_id+1}.Skipping this fold.') if verbose else None
-                else:
-                    inner_splits = []
-                    for tr, va in zip(inner_train_folds, inner_valid_folds):
-                        inner_splits.append({
-                            'inner_train_idx':[outer_train_idx[i] for i in tr], 
-                            'inner_valid_idx':[outer_train_idx[i] for i in va]})
-                     
-                    inner_splits_all.append(inner_splits)
-                    # ====================================Get the outer splits ====================================
-                    outer_train_idx_full.append(outer_train_idx)
-                    outer_test_idx_full.append(outer_test_idx)
-                    outer_splits.append({'outer_train_idx': outer_train_idx,
-                                        'outer_test_idx': outer_test_idx})
-                    
-                    # ============================ Pick the best outer fold ============================
-                    outer_y_train = [y[i] for i in outer_train_idx]
-                    outer_y_test = [y[i] for i in outer_test_idx]
-
-                    train_unique, train_counts = np.unique(outer_y_train, return_counts=True)
-                    test_unique, test_counts = np.unique(outer_y_test, return_counts=True)
-
-                    if len(train_unique) <2 or len(test_unique) <2:
-                        print(f'Only one class in outer_y_train or outer_y_test for outer fold {fold_id+1}, \Cannot do k-fold inner splits, skip this fold.')
-                        train_minClass_counts.append(0)
-                        test_minClass_counts.append(0)
+                    if inner_train_folds is None or inner_valid_folds is None:
+                        print(f'Cannot generate inner splits for this outer fold {fold_id+1}.Skipping this fold.') if verbose else None
                     else:
-                        train_minClass_count = min(train_counts)
-                        test_minClass_count = min(test_counts)
-                        train_minClass_counts.append(train_minClass_count)
-                        test_minClass_counts.append(test_minClass_count)
-
-            except Exception as e:
-                print(f'Error during inner split generation for outer fold {fold_id+1}: {e}')
+                        inner_splits = []
+                        for tr, va in zip(inner_train_folds, inner_valid_folds):
+                            inner_splits.append({
+                                'inner_train_idx':[outer_train_idx[i] for i in tr], 
+                                'inner_valid_idx':[outer_train_idx[i] for i in va]})
+                        
+                        inner_splits_all.append(inner_splits)
+                        # ====================================Get the outer splits ====================================
+                        outer_train_idx_full.append(outer_train_idx)
+                        outer_test_idx_full.append(outer_test_idx)
+                        outer_splits.append({'outer_train_idx': outer_train_idx,
+                                            'outer_test_idx': outer_test_idx})
+                        
+                except Exception as e:
+                    print(f'Error during inner split generation for outer fold {fold_id+1}: {e}')
                 continue
-        
+
     outer_n_fold = len(outer_splits)
 
     best_index = find_best_index(train_minClass_counts, test_minClass_counts, threshold=2)
 
     if best_index == -1:
-        return outer_splits, outer_n_fold, None, None, None, None, None
+        return outer_splits, outer_n_fold, None, None, None, None, None, None
     else:
-        inner_splits_pick = inner_splits_all[best_index]
         outer_train_idx_pick = outer_train_idx_full[best_index]
         outer_test_idx_pick = outer_test_idx_full[best_index]
 
@@ -181,6 +178,8 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
         outer_y_train_pick = [y[i] for i in outer_train_idx_pick]
         outer_x_test_pick = [x[i] for i in outer_test_idx_pick]
         outer_y_test_pick = [y[i] for i in outer_test_idx_pick]
+
+        inner_splits_pick = inner_splits_all[best_index]
 
         return outer_splits, outer_n_fold,\
                 outer_x_train_pick, outer_y_train_pick,\
@@ -201,7 +200,6 @@ class MLData:
         #=============== Get the identifiers of the dataset ================
         # based on `ds_path`, e.g. feat_mhd_or
         self.ds_path = fpath.split('/')[-3] # e.g. feat_mhd_or
-        print(f'ds_path: {self.ds_path}')
         self.ds_cat_level = self.ds_path.split('_')[1] # e.g. mhd
         self.ds_type = self.ds_path.split('_')[2] # e.g. or
         # based on `rmvD`, e.g. rmvD0
@@ -340,7 +338,7 @@ class MLData:
                 self.pf_aln_outer_splits, self.pf_aln_outer_n_fold,\
                 self.pf_aln_outer_x_train_pick, self.pf_aln_outer_y_train_pick,\
                 self.pf_aln_outer_x_test_pick, self.pf_aln_outer_y_test_pick,\
-                self.pf_aln_inner_splits, self.pf_aln_inner_splits_all = retrieve_splits(pf_aln_assigns, self.x, self.y, self.activity_ids, self.smiles,
+                self.pf_aln_inner_splits_pick, self.pf_aln_inner_splits_all = retrieve_splits(pf_aln_assigns, self.x, self.y, self.activity_ids, self.smiles,
                                                                                          self.spl, verbose=verbose)
         
         if pf_prefix:

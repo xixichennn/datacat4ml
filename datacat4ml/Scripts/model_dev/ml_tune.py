@@ -132,7 +132,7 @@ def cross_validate(hparams:Dict[str, Any], model, splits, x, y, metric='auroc', 
 
     # First try: run cv folds using 'auroc' metric
     mean_score, fold_scores, avg_epoch = _run_cv_folds(hparams, model, splits, x, y, metric, verbose)
-    print(f'Mean {metric} across folds: {mean_score:.4f}')
+    print(f'During HPO, Mean {metric} across folds: {mean_score:.4f}') if verbose else None
     print(f'np.isnan(mean_score): {np.isnan(mean_score)}') if verbose else None
 
     # if all fold scores are nan
