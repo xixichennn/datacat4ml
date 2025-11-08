@@ -88,16 +88,17 @@ def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
               {'inner_train_idx': [2, 3, 4, 5], 'inner_valid_idx': [6]}]
     inner_splits_all: list of list of dictionaries
     """
+    # for picking the best outer fold
     train_minClass_counts = []
     test_minClass_counts = []
 
+    # for getting all the inner splits
     inner_splits_all = []
 
+    # for getting all the outer splits
     outer_train_idx_full = []
     outer_test_idx_full = []
     outer_splits = []
-
-    
 
     for fold_id, assignment in enumerate(assignments):
 

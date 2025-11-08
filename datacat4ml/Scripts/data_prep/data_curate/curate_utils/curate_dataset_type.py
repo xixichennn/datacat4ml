@@ -15,150 +15,8 @@ from datacat4ml.Scripts.data_prep.data_curate.curate_utils.apply_thresholds impo
 
 from datacat4ml.Scripts.data_prep.data_split.intSplit_mldata import find_stereochemical_siblings
 
-
-DEFAULT_CLEANING = {
-    "hard_only": False, # keep weak actives/inactives.
-    "automate_threshold": True,
-    "num_workers": cpu_count()}
-
-def curate(df: pd.DataFrame, rmvD: int = 1) -> pd.DataFrame:
-    """
-    apply the curation pipeline to a dataframe
-
-    param:
-    -----
-    df: pd.DataFrame: The input dataset to be curated, should be from cat_hhd or cat_mhd
-    rmvD: whether to remove duplicate SMILES with different values. 1 or True means remove, 0 or False means keep.
-
-
-    return:
-    -----
-    df: pd.DataFrame: The curated dataset and save it to the output_path
-    """
-    try:
-        print(f"======= Curating dataset=======")
-        df = select_assays(df, **DEFAULT_CLEANING)
-        df = standardize(df, rmvD, **DEFAULT_CLEANING)
-        df = apply_thresholds(df, aim='vs', **DEFAULT_CLEANING)
-        df = apply_thresholds(df, aim='lo', **DEFAULT_CLEANING)
-
-        print(f'Done curation.\n')
-
-        return df
-
-    except Exception as e:
-        df = pd.DataFrame()
-        logger.warning(f"Failed curating the dataset due to {e}")
-
-        return df
-
-# =============================================================================
-# process columns: rename, add, delete columns 
-# =============================================================================
-effect_dict = {
-    'bind': 'binding affinity',
-    'agon': 'agonism',
-    'antag': 'antagonism'}
-
-assay_dict = {
-    'RBA': 'Receptor binding assay: radioligand binding assay',
-    'G-GTP': 'G-protein dependent functional assays: GTPγS binding assay',
-    'G-cAMP': 'G-protein dependent functional assays: cAMP accumulation assay',
-    'G-Ca': 'G-protein dependent functional assays: IP3/IP1 and calcium accumulation assays',
-    'B-arrest': 'Arrestin recruitment assay',
-}
-
-def rename_add_delete_cols(df: pd.DataFrame) -> pd.DataFrame:
-   
-    # add the following columns:
-    df['effect_description'] = df['effect'].map(effect_dict)
-    df['assay_keywords_description'] = df['assay'].map(assay_dict)
-
-    # rename the following columns:
-    df.rename(columns={
-        'assay_desc': 'assay_description',
-        'assay_type_desc': 'assay_type_description',
-        'relationship_type_desc': 'relationship_type_description',
-        'confidence_score_desc': 'confidence_score_description',
-        'assay_info_hash': 'assay_metadata_hash',
-        }, 
-        inplace=True)
-    
-    # delete the following columns
-    df.drop(columns=['max_num_atoms', 'max_molecular_weight',
-                    'relationship_type', 'relationship_type_description'], inplace=True)
-
-    return df
-
-#=============================================================================
-# delete_failed_smi
-#=============================================================================
-failed_dict = { 
-    # For hhd_gpcr, 10 files, 23 failed times, and 10 unique failed SMILES
-    # file_basename: {row index in the file: SMILES}
-    "CHEMBL5850_EC50_hhd":{26: "COc1ccc(-c2ccc(C(=O)Nc3cccc(Cn4ncc(N5C[C@H]6C[C@H]5CN6C)c(Cl)c4=O)c3C)cc2)cn1"},
-    "CHEMBL256_EC50_hhd":{108:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL226_IC50_hhd":{132:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                         133:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                         136:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         138:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         139:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         142:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         146:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21"},
-    "CHEMBL226_EC50_hhd":{196:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL256_Ki_hhd":{3439:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL251_Ki_hhd":{4280:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL251_EC50_hhd":{163:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL226_Ki_hhd":{1474:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                         1475:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                         1478:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         1480:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         1481:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         1484:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                         1488:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21",
-                                         3597:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL255_EC50_hhd":{193:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL3772_EC50_hhd":{127:"O=C(Nc1ccc(-n2c(O)c3c(c2O)[C@H]2C=C[C@H]3C2)c(Cl)c1)c1ccccn1"},
-    # For mhd_gpcr 5 files, 18 failed times, and 5 unique failed SMILES
-    "CHEMBL256_bind_RBA_Ki_mhd":{3397:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL226_bind_RBA_Ki_mhd":{1428:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                                 1429:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                                 1432:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                 1434:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                 1435:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                 1438:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                 1442:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21",
-                                                 3309:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
-    "CHEMBL5850_agon_G-Ca_EC50_mhd":{19:"COc1ccc(-c2ccc(C(=O)Nc3cccc(Cn4ncc(N5C[C@H]6C[C@H]5CN6C)c(Cl)c4=O)c3C)cc2)cn1"},
-    "CHEMBL226_agon_G-cAMP_IC50_mhd":{20:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                                      21:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
-                                                      24:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                      26:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                      27:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                      30:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
-                                                      34:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21"},
-    "CHEMBL251_bind_RBA_Ki_mhd":{3859:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"}
-    }
-
 #===============================================================================
-# find stereochemical siblings and add a column 'stereochemical_siblings'
-#===============================================================================
-def add_stereoSiblings_col(df: pd.DataFrame) -> pd.DataFrame:
-
-    if len(df) == 0:
-        return df
-    
-    else:
-        new_df = df.copy()
-        smiles = df['canonical_smiles_by_Std'].tolist()
-        pair_smis, pair_idx = find_stereochemical_siblings(smiles)
-        # add a column 'stereoSiblings' to df, if the index is in the list, then True, else False
-        new_df['stereoSiblings'] = new_df.index.isin(list(set(sum(pair_idx, []))))
-
-        return new_df
-
-#===============================================================================
-# delete wrong activity_ids
+# delete wrong activity_ids documented by ChEMBL
 #===============================================================================
 wrong_activity_ids = [
     ##################### file: CHEMBL233_bind_RBA_Ki_CHEMBL3707592_lhd #####################
@@ -224,6 +82,165 @@ wrong_activity_ids = [
     16289762
 ]
 
+#=============================================================================
+# remove rows with SMILESs that will fail to be embedded for 3D descriptors feature generation
+#=============================================================================
+failed_dict = { 
+    # For hhd_gpcr, 10 files, 23 failed times, and 10 unique failed SMILES
+    # file_basename: {row index in the file: SMILES}
+    "CHEMBL5850_EC50_hhd":{26: "COc1ccc(-c2ccc(C(=O)Nc3cccc(Cn4ncc(N5C[C@H]6C[C@H]5CN6C)c(Cl)c4=O)c3C)cc2)cn1"},
+    "CHEMBL256_EC50_hhd":{108:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL226_IC50_hhd":{132:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                         133:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                         136:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         138:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         139:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         142:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         146:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21"},
+    "CHEMBL226_EC50_hhd":{196:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL256_Ki_hhd":{3439:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL251_Ki_hhd":{4280:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL251_EC50_hhd":{163:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL226_Ki_hhd":{1474:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                         1475:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                         1478:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         1480:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         1481:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         1484:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                         1488:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21",
+                                         3597:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL255_EC50_hhd":{193:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL3772_EC50_hhd":{127:"O=C(Nc1ccc(-n2c(O)c3c(c2O)[C@H]2C=C[C@H]3C2)c(Cl)c1)c1ccccn1"},
+    # For mhd_gpcr 5 files, 18 failed times, and 5 unique failed SMILES
+    "CHEMBL256_bind_RBA_Ki_mhd":{3397:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL226_bind_RBA_Ki_mhd":{1428:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                                 1429:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                                 1432:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                 1434:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                 1435:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                 1438:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                 1442:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21",
+                                                 3309:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"},
+    "CHEMBL5850_agon_G-Ca_EC50_mhd":{19:"COc1ccc(-c2ccc(C(=O)Nc3cccc(Cn4ncc(N5C[C@H]6C[C@H]5CN6C)c(Cl)c4=O)c3C)cc2)cn1"},
+    "CHEMBL226_agon_G-cAMP_IC50_mhd":{20:"CN(C)C(=S)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                                      21:"CNC(=O)O[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@@H]5C[C@@H]4C4SC45)ncnc32)[C@H](O)[C@@H]1O",
+                                                      24:"CCCNC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                      26:"NC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                      27:"C[Se]C[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                      30:"CCSC[C@H]1O[C@@H](n2cnc3c(N[C@H]4C[C@H]5CC[C@H]4C5)ncnc32)[C@H](O)[C@@H]1O",
+                                                      34:"O[C@@H]1[C@H](O)[C@@H](CF)O[C@H]1n1cnc2c(N[C@H]3C[C@H]4CC[C@H]3C4)ncnc21"},
+    "CHEMBL251_bind_RBA_Ki_mhd":{3859:"CCn1nnc([C@H]2O[C@@H](n3cnc4c(N[C@H]5C[C@@H]6CC[C@@H]5C6)nc(Cl)nc43)[C@H](O)[C@@H]2O)n1"}
+    }
+
+#===============================================================================
+# Based on literature checking, remove the wrong activity_ids assigned by 'data_categorize' step
+#===============================================================================
+ds_dupActids = {
+    'CHEMBL233_antag_G-GTP_Ki_None_mhd':[1282351,1292631,1298256], # keep: after checking the orignal literature, keep these activity_ids in this dataset. 
+    'CHEMBL233_bind_RBA_Ki_None_mhd':[1282351,1292631,1298256,], # remove.
+    'CHEMBL233_bind_RBA_IC50_None_mhd':[1679560,1679561,1679562,1679563,1679564,1679496], #keep
+    'CHEMBL233_agon_G-cAMP_IC50_None_mhd':[1679560,1679561,1679562,1679563,1679564,1679496] #remov.
+}
+
+ds_dupActids_2_remove = {
+    'CHEMBL233_bind_RBA_Ki_None_mhd':[1282351,1292631,1298256], # assay_chembl_id: CHEMBL753396
+    'CHEMBL233_agon_G-cAMP_IC50_None_mhd':[1679560,1679561,1679562,1679563,1679564,1679496] # assay_chembl_id: CHEMBL865906
+}
+
+#===============================================================================
+# curation
+#===============================================================================
+DEFAULT_CLEANING = {
+    "hard_only": False, # keep weak actives/inactives.
+    "automate_threshold": True,
+    "num_workers": cpu_count()}
+
+def curate(df: pd.DataFrame, rmvD: int = 1) -> pd.DataFrame:
+    """
+    apply the curation pipeline to a dataframe
+
+    param:
+    -----
+    df: pd.DataFrame: The input dataset to be curated, should be from cat_hhd or cat_mhd
+    rmvD: whether to remove duplicate SMILES with different values. 1 or True means remove, 0 or False means keep.
+
+
+    return:
+    -----
+    df: pd.DataFrame: The curated dataset and save it to the output_path
+    """
+    try:
+        print(f"======= Curating dataset=======")
+        df = select_assays(df, **DEFAULT_CLEANING)
+        df = standardize(df, rmvD, **DEFAULT_CLEANING)
+        df = apply_thresholds(df, aim='vs', **DEFAULT_CLEANING)
+        df = apply_thresholds(df, aim='lo', **DEFAULT_CLEANING)
+
+        print(f'Done curation.\n')
+
+        return df
+
+    except Exception as e:
+        df = pd.DataFrame()
+        logger.warning(f"Failed curating the dataset due to {e}")
+
+        return df
+
+#===============================================================================
+# find stereochemical siblings and add a column 'stereochemical_siblings'
+#===============================================================================
+def add_stereoSiblings_col(df: pd.DataFrame) -> pd.DataFrame:
+
+    if len(df) == 0:
+        return df
+    
+    else:
+        new_df = df.copy()
+        smiles = df['canonical_smiles_by_Std'].tolist()
+        pair_smis, pair_idx = find_stereochemical_siblings(smiles)
+        # add a column 'stereoSiblings' to df, if the index is in the list, then True, else False
+        new_df['stereoSiblings'] = new_df.index.isin(list(set(sum(pair_idx, []))))
+
+        return new_df
+    
+# =============================================================================
+# process columns: rename, add, delete columns 
+# =============================================================================
+effect_dict = {
+    'bind': 'binding affinity',
+    'agon': 'agonism',
+    'antag': 'antagonism'}
+
+assay_dict = {
+    'RBA': 'Receptor binding assay: radioligand binding assay',
+    'G-GTP': 'G-protein dependent functional assays: GTPγS binding assay',
+    'G-cAMP': 'G-protein dependent functional assays: cAMP accumulation assay',
+    'G-Ca': 'G-protein dependent functional assays: IP3/IP1 and calcium accumulation assays',
+    'B-arrest': 'Arrestin recruitment assay',
+}
+
+def rename_add_delete_cols(df: pd.DataFrame) -> pd.DataFrame:
+   
+    # add the following columns:
+    df['effect_description'] = df['effect'].map(effect_dict)
+    df['assay_keywords_description'] = df['assay'].map(assay_dict)
+
+    # rename the following columns:
+    df.rename(columns={
+        'assay_desc': 'assay_description',
+        'assay_type_desc': 'assay_type_description',
+        'relationship_type_desc': 'relationship_type_description',
+        'confidence_score_desc': 'confidence_score_description',
+        'assay_info_hash': 'assay_metadata_hash',
+        }, 
+        inplace=True)
+    
+    # delete the following columns
+    df.drop(columns=['max_num_atoms', 'max_molecular_weight',
+                    'relationship_type', 'relationship_type_description'], inplace=True)
+
+    return df
+
 #===============================================================================
 # run_curation
 #===============================================================================
@@ -275,40 +292,47 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                 else: 
                     raw_size = len(input_df)
                     print(f'The shape of the raw dataset is {input_df.shape}')
-                    ########################### preprocess df ###########################
-                    # remove rows with wrong activity_ids
+                    ########################### preprocess input_df ###########################
+                    # fprefix
+                    if ds_cat_level == 'hhd':
+                        fprefix = f'{target_chembl_id}_None_None_{standard_type}_None_hhd'
+                    elif ds_cat_level == 'mhd':
+                        fprefix = f'{target_chembl_id}_{effect}_{assay}_{standard_type}_None_mhd'
+                    
+                    # remove rows with wrong activity_ids documented by ChEMBL
                     input_df = input_df[~input_df['activity_id'].isin(wrong_activity_ids)]
 
+                    # remove rows with SMILES strings that will fail to be embeded for 3D descriptor featurization
+                    for f in failed_dict.keys():
+                        if f == fprefix:
+                            for key, value in failed_dict[f].items():
+                                idx_to_drop = input_df[input_df['canonical_smiles'] == value].index
+                                print(f'index to drop is {idx_to_drop} for SMILES: {value}')
+                                input_df = input_df.drop(index=idx_to_drop)
+
+                    print(f'After dropping failed SMILES, the length of the input dataset is {len(input_df)}')
+
+                    # remove rows with wrong activity_ids assigned by `data_categorize` step
+                    if fprefix in ds_dupActids_2_remove.keys():
+                        actids_to_remove = ds_dupActids_2_remove[fprefix]
+                        idx_to_drop = input_df[input_df['activity_id'].isin(actids_to_remove)].index
+                        input_df = input_df.drop(index=idx_to_drop)
+
+                    ########################### run curation ###############################
                     # run the curation pipeline
                     curated_df = curate(input_df, rmvD)
                     print(f'After curation, the shape of the df: {curated_df.shape}')
+
+                    ########################## post-curation process ##############################
 
                     if len(curated_df) == 0:
                         print(f'No data points left after curation for the dataset at {input_df_path}')
                     elif len(curated_df) > 0:
 
-                        ########################### prepare df name ###############################
                         # add a column 'stereochemical_siblings'
                         curated_df = add_stereoSiblings_col(curated_df)
-                        
                         curated_df['effect'] = effect
                         curated_df['assay'] = assay
-
-                         # fprefix
-                        if ds_cat_level == 'hhd':
-                            fprefix = f'{target_chembl_id}_None_None_{standard_type}_None_hhd'
-                        elif ds_cat_level == 'mhd':
-                            fprefix = f'{target_chembl_id}_{effect}_{assay}_{standard_type}_None_mhd'
-
-                        # delete rows with SMILES strings that will fail to be embeded for 3D descriptor featurization
-                        for f in failed_dict.keys():
-                            if f == fprefix:
-                                for key, value in failed_dict[f].items():
-                                    idx_to_drop = curated_df[curated_df['canonical_smiles'] == value].index
-                                    print(f'index to drop is {idx_to_drop} for SMILES: {value}')
-                                    curated_df = curated_df.drop(index=idx_to_drop)
-                        
-                        print(f'After dropping failed SMILES, the length of the curated dataset is {len(curated_df)}')
 
                         # rename, add, delete columns
                         curated_df = rename_add_delete_cols(curated_df)
@@ -405,14 +429,16 @@ def run_curation(ds_cat_level='hhd', input_path=CAT_HHD_OR_DIR, output_path= CUR
                             else:
                                 lhd_raw_size = len(lhd_df)
                                 print(f'The shape of the raw lhd dataset is {lhd_df.shape}')
+
+                                ############################# preprocess lhd_df ###########################
+                                # remove rows with wrong activity_ids documented by ChEMBL
+                                lhd_df = lhd_df[~lhd_df['activity_id'].isin(wrong_activity_ids)] # necesary due to lhd_df is read form categorized data, not from the above curated-hhd/mhd data
                                 
-                                ############################# preprocess df ###########################
-                                # remove rows with wrong activity_ids
-                                lhd_df = lhd_df[~lhd_df['activity_id'].isin(wrong_activity_ids)]
+                                ############################# run curation ###########################
                                 # run the curation pipeline
                                 curated_lhd_df = curate(lhd_df, rmvD)
 
-                                ############################ prepare df name ###############################
+                                ############################ post-curation process###############################
                                 if len(curated_lhd_df) == 0:
                                     print(f'No data points left after curation for the dataset at {lhd_df_path}')
                                 elif len(curated_lhd_df) > 0:

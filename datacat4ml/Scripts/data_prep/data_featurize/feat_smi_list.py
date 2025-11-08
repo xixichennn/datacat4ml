@@ -403,7 +403,7 @@ def featurize_data(descriptor="ECFP4", in_dir:str = SPL_HHD_OR_DIR, rmvD: int=1)
     files = os.listdir(in_file_dir)
 
     # output directory
-    out_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvD{str(rmvD)}') #YU: remember to delete
+    out_dir = os.path.join(Spl_Feat_Dic[in_dir], f'rmvD{str(rmvD)}')
     print(f"out_dir is: {out_dir}\n")
     os.makedirs(out_dir, exist_ok=True)
 
