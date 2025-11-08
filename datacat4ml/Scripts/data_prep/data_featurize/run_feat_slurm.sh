@@ -30,7 +30,7 @@ in_dir="${in_dirs[$SLURM_ARRAY_TASK_ID % ${#in_dirs[@]}]}"
 descriptor="${descriptors[($SLURM_ARRAY_TASK_ID / ${#in_dirs[@]}) % ${#descriptors[@]}]}"
 rmvD="${rmvDs[($SLURM_ARRAY_TASK_ID / (${#in_dirs[@]} * ${#descriptors[@]})) % ${#rmvDs[@]}]}"
 
-python3 feat_smi_list.py --in_dir "$in_dir" --descriptor "$descriptor" --rmvD "$rmvD"
+python3 feat_smi_list.py --descriptor "$descriptor" --in_dir "$in_dir" --rmvD "$rmvD"
 
 #### run the blow command in terminal to submit all the job
 # sbatch --array=0-77 run_feat_slurm.sh 

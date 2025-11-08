@@ -2,6 +2,7 @@
 import shutil
 import argparse
 import os
+import pandas as pd
 
 from datacat4ml.const import CURA_HHD_OR_DIR, CURA_MHD_OR_DIR #Yu
 from datacat4ml.const import CAT_HHD_OR_DIR, CAT_MHD_OR_DIR, OR_chemblids
@@ -61,7 +62,39 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    #=============================================================================
+    # curate_ORs
+    #=============================================================================
     curate_ORs(args.rmvD)
 
+    #=============================================================================
+    # post_curation
+    #=============================================================================
+    ds_dupActids = {
+        'CHEMBL233_antag_G-GTP_Ki_None_mhd':[1282351,1292631,1298256], # keep: after checking the orignal literature, keep these activity_ids in this dataset. 
+        'CHEMBL233_bind_RBA_Ki_None_mhd':[1282351,1292631,1298256,], # remove.
+        'CHEMBL233_bind_RBA_IC50_None_mhd':[1679560,1679561,1679562,1679563,1679564], #keep
+        'CHEMBL233_agon_G-cAMP_IC50_None_mhd':[1679560,1679561,1679562,1679563,1679564] #remov.
+    }
+
+    ds_dupActids_2_remove = {
+        'CHEMBL233_bind_RBA_Ki_None_mhd':[1282351,1292631,1298256], # assay_chembl_id: CHEMBL753396
+        'CHEMBL233_agon_G-cAMP_IC50_None_mhd':[1679560,1679561,1679562,1679563,1679564] # assay_chembl_id: CHEMBL865906
+    }
+
+    for f_prefix, actids in ds_dupActids_2_remove.items():
+
+        fpath = os.path.join(CURA_MHD_OR_DIR, f'rmvD{args.rmvD}')
+        fname = [f for f in os.listdir(fpath) if f.startswith(f_prefix)][0]
+        df = pd.read_csv(os.path.join(fpath, fname))
+        # delete rows with these activity ids
+        df_cleaned = df[~df['activity_id'].isin(actids)]
+        # save back
+        df_cleaned.to_csv(os.path.join(fpath, fname), index=False)
+    print('Post-curation duplicate activity IDs removal done.')
+
+    #=============================================================================
+    # mhd-effect_or
+    #=============================================================================
     group_by_effect(ds_type='or', ds_cat_level='mhd', rmvD=args.rmvD)
 
