@@ -2,9 +2,8 @@
 import os
 import pandas as pd
 
-from datacat4ml.utils import mkdirs
-from datacat4ml.const import FETCH_DATA_DIR, CAT_DATA_DIR, CAT_HHD_GPCR_DIR, CAT_HHD_OR_DIR
-from datacat4ml.const import OR_chemblids
+from datacat4ml.Scripts.const import FETCH_DATA_DIR, CAT_DATA_DIR, CAT_HHD_GPCR_DIR, CAT_HHD_OR_DIR
+from datacat4ml.Scripts.const import OR_chemblids
 from datacat4ml.Scripts.data_prep.data_categorize.cat_utils import hhd, mhd_lhd
 
 #===========================================================================

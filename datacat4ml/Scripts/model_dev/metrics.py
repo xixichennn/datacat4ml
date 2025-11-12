@@ -4,7 +4,7 @@ import pandas as pd
 from loguru import logger
 
 from sklearn import metrics
-from sklearn.metrics import r2_score, balanced_accuracy_score, cohen_kappa_score, accuracy_score
+from sklearn.metrics import r2_score, balanced_accuracy_score, cohen_kappa_score, accuracy_score, f1_score, matthews_corrcoef
 from rdkit.ML.Scoring.Scoring import CalcBEDROC
 import torch
 
@@ -305,6 +305,32 @@ def calc_ml_bedroc(y_true, y_pred_prob, alpha: float = 80.5):
         print(f"BEDROC computation failed: {e}")
         return float('nan')
 
+def calc_f1(y_true, y_pred):
+    """
+    Calculates the F1 Score for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The F1 Score.
+    """
+    f1 = f1_score(y_true, y_pred)
+    return f1
+
+def calc_mcc(y_true, y_pred):
+    """
+    Calculates the Matthews Correlation Coefficient (MCC) for a binary classification task.
+
+    Args:
+        y_true (array-like): True binary labels (0 or 1).
+        y_pred (array-like): Predicted binary labels (0 or 1).
+    Returns:
+        float: The MCC score.
+    """
+    mcc = matthews_corrcoef(y_true, y_pred)
+    return mcc
+
 def calc_accuracy(y_true, y_pred):
     """
     Calculates the Accuracy for a binary classification task.
@@ -324,6 +350,8 @@ METRICS_FUNC = {
     'balanced': calc_balanced_acc,
     'kappa': calc_cohen_kappa,
     'bedroc': calc_ml_bedroc,
+    'f1': calc_f1,
+    'mcc': calc_mcc,
     'accuracy': calc_accuracy
 }
 

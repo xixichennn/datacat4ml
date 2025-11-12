@@ -5,7 +5,7 @@ import argparse
 
 import pandas as pd
 
-from datacat4ml.const import SPL_DATA_DIR, SPL_LHD_OR_DIR, SPL_MHD_OR_DIR, SPL_MHD_effect_OR_DIR, SPL_HHD_OR_DIR
+from datacat4ml.Scripts.const import SPL_DATA_DIR, SPL_LHD_OR_DIR, SPL_MHD_OR_DIR, SPL_MHD_effect_OR_DIR, SPL_HHD_OR_DIR
 
 #===============================================================================
 # aligned_split

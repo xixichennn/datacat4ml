@@ -2,8 +2,8 @@ import os
 import pandas as pd
 import argparse
 
-from datacat4ml.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
-from datacat4ml.const import DESCRIPTORS
+from datacat4ml.Scripts.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
+from datacat4ml.Scripts.const import DESCRIPTORS
 from datacat4ml.Scripts.data_prep.data_featurize.feat_smi_list import Spl_Feat_Dic
 
 #=============================================================================

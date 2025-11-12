@@ -5,9 +5,9 @@ import pandas as pd
 import argparse
 
 
-from datacat4ml.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR , FEAT_MHD_OR_DIR , FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
-from datacat4ml.const import CAT_FIG_DIR, CURA_FIG_DIR, FEAT_FIG_DIR
-from datacat4ml.utils import mkdirs
+from datacat4ml.Scripts.const import FEAT_DATA_DIR, FEAT_HHD_OR_DIR , FEAT_MHD_OR_DIR , FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
+from datacat4ml.Scripts.const import CAT_FIG_DIR, CURA_FIG_DIR, FEAT_FIG_DIR
+from datacat4ml.Scripts.utils import mkdirs
 
 # ===================== plotting =====================
 import matplotlib

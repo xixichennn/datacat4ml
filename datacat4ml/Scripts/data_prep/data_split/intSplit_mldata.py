@@ -24,10 +24,10 @@ from rdkit.Chem.Scaffolds.MurckoScaffold import MakeScaffoldGeneric as GraphFram
 from rdkit.Chem.Scaffolds.MurckoScaffold import GetScaffoldForMol
 from Levenshtein import distance as levenshtein
 
-from datacat4ml.const import RANDOM_SEED
-from datacat4ml.const import CURA_LHD_OR_DIR, CURA_MHD_OR_DIR, CURA_MHD_effect_OR_DIR, CURA_HHD_OR_DIR
-from datacat4ml.const import SPL_DATA_DIR, SPL_LHD_OR_DIR, SPL_MHD_OR_DIR, SPL_MHD_effect_OR_DIR, SPL_HHD_OR_DIR
-from datacat4ml.const import Cura_Spl_Dic
+from datacat4ml.Scripts.const import RANDOM_SEED
+from datacat4ml.Scripts.const import CURA_LHD_OR_DIR, CURA_MHD_OR_DIR, CURA_MHD_effect_OR_DIR, CURA_HHD_OR_DIR
+from datacat4ml.Scripts.const import SPL_DATA_DIR, SPL_LHD_OR_DIR, SPL_MHD_OR_DIR, SPL_MHD_effect_OR_DIR, SPL_HHD_OR_DIR
+from datacat4ml.Scripts.const import Cura_Spl_Dic
 
 #===============================================================================
 # Molecular distance 

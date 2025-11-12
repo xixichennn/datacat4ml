@@ -15,8 +15,6 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.rdmolops import FastFindRings
 from rdkit.Chem.rdMHFPFingerprint import MHFPEncoder
 
-from datacat4ml.const import SPLIT_DATA_DIR
-
 # ========================= SparseMorganEncoder =========================
 class SparseMorganEncoder:
     """

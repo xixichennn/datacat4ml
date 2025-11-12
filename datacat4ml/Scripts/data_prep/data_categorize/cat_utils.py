@@ -3,8 +3,8 @@ import pandas as pd
 
 from typing import List
 
-from datacat4ml.utils import get_df_name, mkdirs
-from datacat4ml.const import EFFECT_TYPE_LOOKUP, CAT_MHD_OR_DIR, CAT_MHD_GPCR_DIR
+from datacat4ml.Scripts.utils import get_df_name, mkdirs
+from datacat4ml.Scripts.const import EFFECT_TYPE_LOOKUP, CAT_MHD_OR_DIR, CAT_MHD_GPCR_DIR
 
 
 ###################### hhd ######################

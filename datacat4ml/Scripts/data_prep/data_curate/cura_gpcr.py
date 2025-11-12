@@ -3,8 +3,8 @@ import os
 import shutil
 import argparse
 
-from datacat4ml.const import CURA_HHD_GPCR_DIR, CURA_MHD_GPCR_DIR
-from datacat4ml.const import CAT_HHD_GPCR_DIR, CAT_MHD_GPCR_DIR
+from datacat4ml.Scripts.const import CURA_HHD_GPCR_DIR, CURA_MHD_GPCR_DIR
+from datacat4ml.Scripts.const import CAT_HHD_GPCR_DIR, CAT_MHD_GPCR_DIR
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.curate_dataset_type import run_curation
 
 def curate_GPCRs(job_index=0, total_jobs=30):

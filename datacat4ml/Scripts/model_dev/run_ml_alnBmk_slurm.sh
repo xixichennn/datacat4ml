@@ -21,7 +21,7 @@ descriptors=('ECFP4'
              #'SHAPE3D' 'AUTOCORR3D' 'RDF' 'MORSE' 'WHIM' 'GETAWAY'
              )
 rmvSs=(0 1)
-aim_spl_combos=('lo,rs-lo' 'lo,cs' 'vs,rs-vs' 'vs,ch')
+aim_spl_combos=('lo_rs-lo' 'lo_cs' 'vs_rs-vs' 'vs_ch')
 pls=('HoldoutCV' 'SingleNestedCV' 'NestedCV' 'ConsensusNestedCV')
 
 # SLURM_ARRAY_TASK_ID

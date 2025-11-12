@@ -4,8 +4,8 @@ import numpy as np
 
 from datacat4ml.Scripts.model_dev.ml_dataloader import MLData
 from datacat4ml.Scripts.model_dev.ml_tune import optuna_hpo, write_hparams
-from datacat4ml.Scripts.model_dev.metrics import calc_auroc, calc_auprc, calc_balanced_acc, calc_cohen_kappa, calc_ml_bedroc
-from datacat4ml.const import ML_HP_DIR, ML_MODEL_DIR
+from datacat4ml.Scripts.model_dev.metrics import calc_auroc, calc_auprc, calc_balanced_acc, calc_cohen_kappa, calc_ml_bedroc, calc_f1, calc_mcc, calc_accuracy
+from datacat4ml.Scripts.const import ML_HP_DIR, ML_MODEL_DIR
 
 
 #====================== pipeline functions ======================
@@ -18,12 +18,16 @@ def calc_metrics(y_true, y_pred, y_pred_proba):
         'auprc': calc_auprc(y_true, y_pred_proba),
         'balanced': calc_balanced_acc(y_true, y_pred),
         'kappa': calc_cohen_kappa(y_true, y_pred),
-        'bedroc': calc_ml_bedroc(y_true, y_pred_proba) # Yu: to do: use deepcoy negatives
+        'bedroc': calc_ml_bedroc(y_true, y_pred_proba), # Yu: to do: use deepcoy negatives
+        'f1': calc_f1(y_true, y_pred),
+        'mcc': calc_mcc(y_true, y_pred),
+        'accuracy': calc_accuracy(y_true, y_pred)
     }
 
 def holdout_cv(config, model, data:MLData, 
                save_config=False, save_model=False, verbose=False,
-               SPL:str=None, position:str=None, metric='auroc'):
+               SPL:str=None, position:str=None, metric='auroc',
+               balance_data:bool=False, augment_data:bool=False):
 
     """
     Pipeline (1): simple CV with an independent test set.
@@ -50,23 +54,40 @@ def holdout_cv(config, model, data:MLData,
     if SPL == 'int':
         inner_splits_pick = data.int_inner_splits_pick
 
-        x_train_pick = data.int_outer_x_train_pick
-        y_train_pick = data.int_outer_y_train_pick
+        if balance_data:
+            x_train_pick = data.int_outer_x_train_pick_smote
+            y_train_pick = data.int_outer_y_train_pick_smote
+        else:
+            x_train_pick = data.int_outer_x_train_pick
+            y_train_pick = data.int_outer_y_train_pick
+
         x_test_pick = data.int_outer_x_test_pick
         y_test_pick = data.int_outer_y_test_pick
+
     elif SPL == 'aln':
         if position == 'parent':
             inner_splits_pick = data.pf_aln_inner_splits_pick
 
-            x_train_pick = data.pf_aln_outer_x_train_pick
-            y_train_pick = data.pf_aln_outer_y_train_pick
+            if balance_data:
+                x_train_pick = data.pf_aln_outer_x_train_pick_smote
+                y_train_pick = data.pf_aln_outer_y_train_pick_smote
+            else:
+                x_train_pick = data.pf_aln_outer_x_train_pick
+                y_train_pick = data.pf_aln_outer_y_train_pick
+
             x_test_pick = data.pf_aln_outer_x_test_pick
             y_test_pick = data.pf_aln_outer_y_test_pick
+
         elif position == 'child':
             inner_splits_pick = data.cf_aln_inner_splits_pick
 
-            x_train_pick = data.cf_aln_outer_x_train_pick
-            y_train_pick = data.cf_aln_outer_y_train_pick
+            if balance_data:
+                x_train_pick = data.cf_aln_outer_x_train_pick_smote
+                y_train_pick = data.cf_aln_outer_y_train_pick_smote
+            else:
+                x_train_pick = data.cf_aln_outer_x_train_pick
+                y_train_pick = data.cf_aln_outer_y_train_pick
+
             x_test_pick = data.cf_aln_outer_x_test_pick
             y_test_pick = data.cf_aln_outer_y_test_pick
 
@@ -176,7 +197,7 @@ def single_nested_cv(config, model, data:MLData,
 
 
     # 3. Outer CV: train and evaluate on each outer fold using the best_hparams
-    aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
+    aurocs, auprcs, balanceds, kappas, bedrocs, f1s, mccs, accuracies = [], [], [], [], [], [], [], []
     
     for i, outer_split in enumerate(outer_splits):
         print(f'\nOuter Fold {i+1}/{len(outer_splits)}')
@@ -205,6 +226,10 @@ def single_nested_cv(config, model, data:MLData,
         balanceds.append(metrics['balanced'])
         kappas.append(metrics['kappa'])
         bedrocs.append(metrics['bedroc'])
+        f1s.append(metrics['f1'])
+        mccs.append(metrics['mcc'])
+        accuracies.append(metrics['accuracy'])
+
 
         # Optional: save hparamsmodel for each fold
         if save_model:
@@ -218,13 +243,19 @@ def single_nested_cv(config, model, data:MLData,
         f'outer_fold_balanceds: {balanceds}\n'
         f'outer_fold_kappas: {kappas}\n'
         f'outer_fold_bedrocs: {bedrocs}\n'
+        f'outer_fold_f1s: {f1s}\n'
+        f'outer_fold_mccs: {mccs}\n'
+        f'outer_fold_accuracies: {accuracies}\n'
     )
 
     return {'auroc': np.nanmean(aurocs), # to ignore nan values
         'auprc': np.nanmean(auprcs),
         'balanced': np.nanmean(balanceds),
         'kappa': np.nanmean(kappas),
-        'bedroc': np.nanmean(bedrocs)} #Yu: error line 1
+        'bedroc': np.nanmean(bedrocs), # need deepcoy negatives
+        'f1': np.nanmean(f1s),
+        'mcc': np.nanmean(mccs),
+        'accuracy': np.nanmean(accuracies)}
 
 def nested_cv(config, model, data:MLData, 
               save_config=False, save_model=False, verbose=False,
@@ -265,7 +296,7 @@ def nested_cv(config, model, data:MLData,
     print(f'The length of inner_splits_all: {len(inner_splits_all)}')
 
     # 2. Iterate through all outer folds
-    aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
+    aurocs, auprcs, balanceds, kappas, bedrocs, f1s, mccs, accuracies = [], [], [], [], [], [], [], []
     
     for i, outer_split in enumerate(outer_splits):
         print(f'\nOuter Fold {i+1}/{len(outer_splits)}') 
@@ -302,6 +333,9 @@ def nested_cv(config, model, data:MLData,
         balanceds.append(metrics['balanced'])
         kappas.append(metrics['kappa'])
         bedrocs.append(metrics['bedroc'])
+        f1s.append(metrics['f1'])
+        mccs.append(metrics['mcc'])
+        accuracies.append(metrics['accuracy'])
 
         # Optional: save hparams and model for each fold
         ds_path = data.ds_path # e.g. feat_mhd_or # Set `config_path` and `model_path` based on `filepath`
@@ -333,13 +367,19 @@ def nested_cv(config, model, data:MLData,
         f'outer_fold_balanceds: {balanceds}\n'
         f'outer_fold_kappas: {kappas}\n'
         f'outer_fold_bedrocs: {bedrocs}\n'
+        f'outer_fold_f1s: {f1s}\n'
+        f'outer_fold_mccs: {mccs}\n'
+        f'outer_fold_accuracies: {accuracies}\n'
     )
 
     return {'auroc': np.nanmean(aurocs),
         'auprc': np.nanmean(auprcs),
         'balanced': np.nanmean(balanceds),
         'kappa': np.nanmean(kappas),
-        'bedroc': np.nanmean(bedrocs)}
+        'bedroc': np.nanmean(bedrocs),
+        'f1': np.nanmean(f1s),
+        'mcc': np.nanmean(mccs),
+        'accuracy': np.nanmean(accuracies)}
 
 def consensus_nested_cv(config, model, data:MLData, 
                         save_config=False, save_model=False, verbose=False,
@@ -426,7 +466,7 @@ def consensus_nested_cv(config, model, data:MLData,
 
     # 2. Outer CV: Evaluate using the consensus_hparams across all outer folds
     print(f"\n--- Phase 2: Outer cross-validation with consensus hparams") if verbose else None
-    aurocs, auprcs, balanceds, kappas, bedrocs = [], [], [], [], []
+    aurocs, auprcs, balanceds, kappas, bedrocs, f1s, mccs, accuracies = [], [], [], [], [], [], [], []
 
     for i, outer_split in enumerate(outer_splits):
         print(f'\nOuter Fold {i+1}/{len(outer_splits)}')
@@ -455,6 +495,9 @@ def consensus_nested_cv(config, model, data:MLData,
         balanceds.append(metrics['balanced'])
         kappas.append(metrics['kappa'])
         bedrocs.append(metrics['bedroc'])
+        f1s.append(metrics['f1'])
+        mccs.append(metrics['mcc'])
+        accuracies.append(metrics['accuracy'])
 
         # Optional: save hparams and model for each fold
         if save_model:
@@ -469,6 +512,9 @@ def consensus_nested_cv(config, model, data:MLData,
         f'outer_fold_balanceds: {balanceds}\n'
         f'outer_fold_kappas: {kappas}\n'
         f'outer_fold_bedrocs: {bedrocs}\n'
+        f'outer_fold_f1s: {f1s}\n'
+        f'outer_fold_mccs: {mccs}\n'
+        f'outer_fold_accuracies: {accuracies}\n'
     )
 
     return {
@@ -476,7 +522,10 @@ def consensus_nested_cv(config, model, data:MLData,
         'auprc': np.nanmean(auprcs),
         'balanced': np.nanmean(balanceds),
         'kappa': np.nanmean(kappas),
-        'bedroc': np.nanmean(bedrocs)
+        'bedroc': np.nanmean(bedrocs),
+        'f1': np.nanmean(f1s),
+        'mcc': np.nanmean(mccs),
+        'accuracy': np.nanmean(accuracies)
     }
 
 PL_FUNCS = {

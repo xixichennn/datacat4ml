@@ -4,8 +4,8 @@ import argparse
 import os
 import pandas as pd
 
-from datacat4ml.const import CURA_HHD_OR_DIR, CURA_MHD_OR_DIR #Yu
-from datacat4ml.const import CAT_HHD_OR_DIR, CAT_MHD_OR_DIR, OR_chemblids
+from datacat4ml.Scripts.const import CURA_HHD_OR_DIR, CURA_MHD_OR_DIR #Yu
+from datacat4ml.Scripts.const import CAT_HHD_OR_DIR, CAT_MHD_OR_DIR, OR_chemblids
 from datacat4ml.Scripts.data_prep.data_curate.curate_utils.curate_dataset_type import run_curation, group_by_effect
 
 

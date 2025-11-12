@@ -9,7 +9,7 @@ from loguru import logger
 import joblib
 import tqdm
 
-from datacat4ml.const import PREP_DATA_DIR
+from datacat4ml.Scripts.const import PREP_DATA_DIR
 
 """
 Extract assay features like LSA. 

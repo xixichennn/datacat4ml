@@ -22,7 +22,7 @@ import requests
 
 # inner module import
 import sys
-from const import DATA_DIR
+from datacat4ml.Scripts.const import DATA_DIR
 
 
 def download_url(url, file_name):

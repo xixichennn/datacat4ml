@@ -525,6 +525,7 @@ Aim_Spl_combinations = {
     'lo': ['rs-lo', 'cs'], # when aim is 'lo', the test set would have similar structures as those in the training set. Thus, 'cs', i.e. cluster-stratified splitting is suitable here.
     'vs': ['rs-vs', 'ch']
 }
+Pipelines = ['HoldoutCV', 'SingleNestedCV', 'NestedCV', 'ConsensusNestedCV']
 
 # for aligned benchmarking
 

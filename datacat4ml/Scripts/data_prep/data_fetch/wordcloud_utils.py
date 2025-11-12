@@ -2,8 +2,8 @@
 # Error 'Only supported for TrueType fonts' occurs when using pyg env
 import sys
 sys.path.append('/storage/homefs/yc24j783/datacat4ml/')
-from datacat4ml.const import DATA_DIR, FIG_DIR, FETCH_DATA_DIR , FETCH_FIG_DIR, OR_chembl_ids
-from datacat4ml.utils import mkdirs
+from datacat4ml.Scripts.const import DATA_DIR, FIG_DIR, FETCH_DATA_DIR , FETCH_FIG_DIR, OR_chembl_ids
+from datacat4ml.Scripts.utils import mkdirs
 
 import os
 import numpy as np

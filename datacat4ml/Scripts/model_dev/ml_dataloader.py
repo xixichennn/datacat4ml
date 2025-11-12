@@ -4,6 +4,7 @@ import pandas as pd
 from typing import List
 
 from datacat4ml.Scripts.data_prep.data_split.intSplit_mldata import random_split, cluster_kfold_split
+from datacat4ml.Scripts.const import RANDOM_SEED
 
 #====================== class MLData ======================
 def find_best_index(A: List[int], B: List[int], threshold: int = 2) -> int:
@@ -38,8 +39,64 @@ def find_best_index(A: List[int], B: List[int], threshold: int = 2) -> int:
             best_index = 0
 
     return best_index
+
+def balance_data(x: List, y: List):
+    """
+    Balance the dataset using SMOTE.
+    params
+    ------
+    x: list
+        A list of input features.
+    y: list
+        A list of labels.
+    returns
+    -------
+    x_smote: list
+        A list of input features after SMOTE.
+    y_smote: list
+        A list of labels after SMOTE.
+    """
+    n_neighbors = min(6, len(y)) # Yu? the reason to set this.
+    from imblearn.over_sampling import SMOTE
+    smote = SMOTE(random_state=RANDOM_SEED, k_neighbors=n_neighbors)
+    x_smote, y_smote = smote.fit_resample(np.array(x), np.array(y))
     
-def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False):
+    return x_smote, y_smote
+
+def augment_data(x: List, y: List):
+    """
+    Augment the SMILES data by generating non-canonical SMILES.
+
+    params
+    ------
+    x: list
+        A list of input features (SMILES).
+    y: list
+        A list of labels.
+    returns
+    -------
+    x_aug: list
+        A list of augmented input features.
+    y_aug: list
+        A list of augmented labels.
+    """
+    from rdkit import Chem
+    from rdkit.Chem import MolToSmiles, MolFromSmiles
+    x_aug = []
+    y_aug = []
+    for smi, label in zip(x, y):
+        mol = MolFromSmiles(smi)
+        if mol is not None:
+            # Generate a non-canonical SMILES by randomizing the atom order
+            non_canonical_smi = MolToSmiles(mol, canonical=False, doRandom=True)
+            x_aug.append(non_canonical_smi)
+            y_aug.append(label)
+    
+    return x_aug, y_aug
+
+    
+def retrieve_splits(assignments, x, y, activity_ids, smis, spl, verbose=False,
+                    balance_data: bool=False, augment_data: bool=False):
     """
     A helper function to retrieve the split data based on the provided assignments.
 
@@ -367,8 +424,6 @@ class MLData:
         pass
 
     def balance_data(self):
-        # undersampling
-        # oversampling
         pass
 
     def augment_data(self):

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
-from datacat4ml.const import SPLIT_DATA_DIR
+from datacat4ml.Scripts.const import SPLIT_DATA_DIR
 
 # load the .npy file
 npy_path_folder = os.path.join(SPLIT_DATA_DIR, 'fsmol_alike', 'MHDsFold', 'encoded_assays')

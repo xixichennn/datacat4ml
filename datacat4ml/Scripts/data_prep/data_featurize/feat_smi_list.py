@@ -6,9 +6,9 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from datacat4ml.const import SPL_DATA_DIR, SPL_HHD_OR_DIR, SPL_MHD_OR_DIR, SPL_LHD_OR_DIR, SPL_MHD_effect_OR_DIR
-from datacat4ml.const import FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
-from datacat4ml.const import Spl_Feat_Dic
+from datacat4ml.Scripts.const import SPL_DATA_DIR, SPL_HHD_OR_DIR, SPL_MHD_OR_DIR, SPL_LHD_OR_DIR, SPL_MHD_effect_OR_DIR
+from datacat4ml.Scripts.const import FEAT_HHD_OR_DIR, FEAT_MHD_OR_DIR, FEAT_LHD_OR_DIR, FEAT_MHD_effect_OR_DIR
+from datacat4ml.Scripts.const import Spl_Feat_Dic
 
 #===================== Utility functions =====================#
 def mol_from_smi(smi: str):

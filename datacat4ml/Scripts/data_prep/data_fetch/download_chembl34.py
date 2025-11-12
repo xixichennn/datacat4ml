@@ -3,7 +3,7 @@ import requests
 import tarfile
 
 import sys
-from const import DATA_DIR
+from datacat4ml.Scripts.const import DATA_DIR
 
 def download_chembl(download_url, download_dir, download_file):
   
