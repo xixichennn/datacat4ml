@@ -152,4 +152,4 @@ datacat4ml/Scripts/benchmark/slurm*.out
 *wandb*
 
 # third-party libraries
-deepcoy
+datacat4ml/DeepCoy_origin/
